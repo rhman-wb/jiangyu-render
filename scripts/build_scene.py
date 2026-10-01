@@ -11,6 +11,8 @@ import util
 import architecture
 import cameras
 
+builtins_mod = util.load_module('builtins')  # 与 Python 内置 builtins 同名，走文件加载
+
 
 def make_white_materials():
     """M1 白模材质（M4 换 materials.py 正式材质表）。"""
@@ -37,6 +39,10 @@ def make_white_materials():
         'white': base('white_clay', 'D9D9D9', 0.85),
         'glass': base('white_glass', 'C9D4DA', 0.10, alpha=0.30),
         'dark': base('slot_dark', '3A3A3A', 0.6),
+        # M2 白模辅助色（M4 换正式材质表）
+        'wood': base('clay_wood', 'B4A99C', 0.85),      # 木作示意
+        'mirror': base('clay_mirror', 'AEBEC8', 0.15),  # 镜面示意
+        'kfront': base('clay_kfront', 'A79E92', 0.7),   # 厨房下柜门板（独立实例，橄榄绿变体挂载点）
     }
 
 
@@ -83,6 +89,7 @@ def main():
     colls = util.link_all_collections()
 
     warns = architecture.build_all(mats, colls)
+    builtins_mod.build_all(mats, colls)
     cameras.build_all(colls['cameras'])
 
     # MCP Poly Haven 开关是场景级属性（decisions_log D-004）

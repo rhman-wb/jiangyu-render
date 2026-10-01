@@ -221,13 +221,7 @@ def build_doors(layout, mats, coll):
             typ, a, b = op['type'], op['start'], op['end']
             head = op.get('head', CEIL)
             if typ == 'door' and w['id'] == 'W12':
-                # 四联动玻璃门（规格 5.1），关闭状态
-                n = 4
-                for i in range(n):
-                    ua = a + (b - a) * i / n
-                    ub = a + (b - a) * (i + 1) / n
-                    _panel_frame('door_W12_%d' % i, g, ua + 0.015, ub - 0.015,
-                                 0.05, head - 0.05, mats, coll, glass=True)
+                pass  # 四联动门由 builtins.py 按 item（双轨道）建模
             elif typ == 'glass_door':
                 # 开发商玻璃门（W15 两扇 / W17 三扇），关闭
                 n = 2 if (b - a) < 1.5 else 3

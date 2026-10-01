@@ -300,7 +300,158 @@ def check_rays():
                 log('FAIL', 'ray %s blocked by %s' % (w['id'], hobj.name))
 
 
-# ---------------------------------------------------------------- 7 地板重叠
+# ---------------------------------------------------------------- M2: item 检查
+def check_items_bbox():
+    """每个 M2 item：父 Empty 存在、子网格包络在 bbox 内(±5mm)且四向贴近(≤2.5cm/垂3.5cm)。"""
+    B = util.load_module('builtins')
+    m2_ids = set()
+    pending = []
+    for item in L['items']:
+        iid, typ = item['id'], item.get('type')
+        if typ == 'marker':
+            continue
+        root = bpy.data.objects.get(iid)
+        if root is None:
+            pending.append(iid)
+            continue
+        m2_ids.add(iid)
+        kids = [c for c in root.children if c.type == 'MESH']
+        if not kids:
+            log('FAIL', 'item %s: no mesh children' % iid)
+            continue
+        cmin = [min(util.obj_world_bbox(k)[0][k_] for k in kids) for k_ in range(3)]
+        cmax = [max(util.obj_world_bbox(k)[1][k_] for k in kids) for k_ in range(3)]
+        ib = item['bbox']
+        ibmin, ibmax = list(ib['min']), list(ib['max'])
+        # parts 的 bbox 属于该 item 的合法包络（台面等）
+        for p in item.get('parts', []):
+            if 'bbox' not in p:
+                continue
+            for a in range(3):
+                ibmin[a] = min(ibmin[a], p['bbox']['min'][a])
+                ibmax[a] = max(ibmax[a], p['bbox']['max'][a])
+        if iid in B.COVERED:
+            log('INFO', 'item %s covered by architecture object' % iid)
+            continue
+        # 水槽龙头按规格 5.4 必备，允许 z 向高出；高度容差按规格 7.1 ±3cm
+        z_top_allow = (0.40 if item.get('type') == 'sink' else 0.0) + 0.03
+        bad = []
+        for a in range(3):
+            tol_out = 0.005 + (z_top_allow if a == 2 else 0.0)
+            if cmin[a] < ibmin[a] - 0.005 or cmax[a] > ibmax[a] + tol_out:
+                bad.append('axis%d out (%.3f..%.3f vs %.3f..%.3f)'
+                           % (a, cmin[a], cmax[a], ibmin[a], ibmax[a]))
+        tol_near_h, tol_near_z = 0.025, 0.035
+        for a in range(2):
+            if ibmin[a] + tol_near_h < cmin[a] or cmax[a] < ibmax[a] - tol_near_h:
+                bad.append('axis%d not near edge' % a)
+        if ibmin[2] + tol_near_z < cmin[2] or cmax[2] < ibmax[2] - tol_near_z:
+            bad.append('axisZ not near edge (%.3f..%.3f vs %.3f..%.3f)'
+                       % (cmin[2], cmax[2], ibmin[2], ibmax[2]))
+        if bad:
+            log('FAIL', 'item %s: %s' % (iid, '; '.join(bad)))
+        else:
+            log('PASS', 'item %s bbox ok (%d parts)' % (iid, len(kids)))
+        if item.get('type') == 'sink' and cmax[2] > ibmax[2] + 0.035:
+            log('INFO', 'item %s tap rises %.2fm above bbox (spec 5.4)' % (iid, cmax[2] - ibmax[2]))
+    log('INFO', 'items built=%d, pending(M3)=%d' % (len(m2_ids), len(pending)))
+
+
+def check_item_wall_penetration():
+    """与墙穿插：仅当 item 包络贯穿整道墙身（两侧都越过墙皮）才 FAIL；
+    贴墙嵌入（业主数据本身允许，如玄关柜嵌 12cm）记 INFO；墙端延伸小条(接触<5cm)忽略。"""
+    bad = 0
+    for item in L['items']:
+        iid = item['id']
+        root = bpy.data.objects.get(iid)
+        if root is None or iid in ('bay_seat', 'ceiling_box'):
+            continue
+        kids = [c for c in root.children if c.type == 'MESH']
+        if not kids:
+            continue
+        cmin = [min(util.obj_world_bbox(k)[0][a] for k in kids) for a in range(3)]
+        cmax = [max(util.obj_world_bbox(k)[1][a] for k in kids) for a in range(3)]
+        for n in wall_seg_names:
+            (wx0, wy0, wz0), (wx1, wy1, wz1) = SEG_BBOX[n]
+            ox0, ox1 = max(wx0, cmin[0]), min(wx1, cmax[0])
+            oy0, oy1 = max(wy0, cmin[1]), min(wy1, cmax[1])
+            oz0, oz1 = max(wz0, cmin[2]), min(wz1, cmax[2])
+            if ox0 >= ox1 or oy0 >= oy1 or oz0 >= oz1:
+                continue
+            g = GEO[n.split('_')[0]]
+            k = 1 if g['axis'] == 'x' else 0  # 墙法向轴
+            u = 0 if g['axis'] == 'x' else 1  # 墙长度轴
+            u_ov = (oy1 - oy0) if u == 1 else (ox1 - ox0)
+            if u_ov < 0.05:
+                continue  # 墙端延伸小条接触，忽略
+            v0, v1 = (wy0, wy1) if k == 1 else (wx0, wx1)
+            c0, c1 = cmin[k], cmax[k]
+            if c0 <= v0 + 0.003 and c1 >= v1 - 0.003:
+                log('FAIL', 'item %s pierces through %s' % (iid, n))
+                bad += 1
+            else:
+                log('INFO', 'item %s tucks into %s (data-confirmed)' % (iid, n))
+    if bad == 0:
+        log('PASS', 'no item pierces through any wall')
+
+
+def check_door_swing():
+    """室内门开启空间：每樘门至少一侧回转区无 item 阻挡。"""
+    obstacles = []
+    for item in L['items']:
+        root = bpy.data.objects.get(item['id'])
+        if root is None or item.get('type') in ('glass_partition',):
+            continue
+        ib = item['bbox']
+        obstacles.append((item['id'], ib['min'], ib['max']))
+    for w in L['walls']:
+        if w['id'] == 'W12':
+            continue  # 推拉门
+        g = GEO[w['id']]
+        for op in architecture.normalize_openings(w):
+            if op['type'] != 'door':
+                continue
+            a, b = op['start'], op['end']
+            wd = b - a - 0.06
+            zones = []
+            if g['axis'] == 'x':
+                zones = [((a, g['v'], ), ((a + wd, g['v'] - wd))),
+                         (((a, g['v'] + wd), (a + wd, g['v'])))]
+            else:
+                zones = [((g['v'], a), (g['v'] - wd, a + wd)),
+                         ((g['v'] + wd, a), (g['v'], a + wd))]
+            for side, ((zx0, zy0), (zx1, zy1)) in enumerate(zones):
+                clear = True
+                for oid, omin, omax in obstacles:
+                    if (max(zx0, omin[0]) < min(zx1, omax[0]) - 0.02 and
+                            max(zy0, omin[1]) < min(zy1, omax[1]) - 0.02 and
+                            omin[2] < 1.0):
+                        clear = False
+                        break
+                if clear:
+                    log('PASS', 'door swing %s side %d clear' % (w['id'], side))
+                    break
+            else:
+                log('FAIL', 'door %s: both swing sides blocked' % w['id'])
+
+
+def check_scheme_membership():
+    bad = 0
+    expect = {'A': config.COL_SCHEME_A, 'B': config.COL_SCHEME_B, 'common': config.COL_COMMON}
+    for item in L['items']:
+        root = bpy.data.objects.get(item['id'])
+        if root is None:
+            continue
+        want = expect.get(item.get('group', 'common'))
+        got = root.users_collection[0].name if root.users_collection else None
+        if got != want:
+            log('FAIL', 'item %s in collection %s want %s' % (item['id'], got, want))
+            bad += 1
+    if bad == 0:
+        log('PASS', 'scheme collections correct')
+
+
+
 def check_floor_overlap():
     fl = [(o.name, bbox_of(o.name)) for o in bpy.data.objects
            if o.name.startswith('floor_')]
@@ -325,6 +476,11 @@ def main():
     check_ceiling_box()
     check_rays()
     check_floor_overlap()
+    # M2
+    check_items_bbox()
+    check_item_wall_penetration()
+    check_door_swing()
+    check_scheme_membership()
     os.makedirs(config.REVIEW_DIR, exist_ok=True)
     out = os.path.join(config.REVIEW_DIR, 'qa_report.md')
     with open(out, 'w', encoding='utf-8') as f:

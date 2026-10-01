@@ -5,8 +5,19 @@ import bpy
 import bmesh
 import json
 import math
+import os
+import importlib.util
 
 import config
+
+
+def load_module(mod_name):
+    """按路径加载 scripts/ 下的模块（builtins.py 与 Python 内置 builtins 同名，无法直接 import）。"""
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), mod_name + '.py')
+    spec = importlib.util.spec_from_file_location('jy_' + mod_name, path)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
 
 
 def load_json(path):
