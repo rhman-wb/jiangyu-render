@@ -12,8 +12,12 @@ SHIFT_LIMIT = 0.15
 
 # 机位碰撞微调（cameras.json meta 规则：0.3m 内调整并记录）
 CAM_OVERRIDES = {
-    # 18 原位 (10.3,-2.3) 距关闭的公卫门扇 2.8cm，北移 0.3m
-    '18_public_bath_wet': {'location': (10.35, -2.0, 1.5)},
+    # 18 原位 (10.3,-2.3) 距关闭的公卫门扇 2.8cm，北移 0.3m；无日照房间曝光 +0.25
+    '18_public_bath_wet': {'location': (10.35, -2.0, 1.5), 'exposure': 0.25},
+    # 偏暗房间曝光微调（业主 M5 确认时一并授权的候选值，render_log D-031）
+    '15_daughter_room': {'exposure': 0.3},
+    '16_son_room': {'exposure': 0.3},
+    '19_master_bath': {'exposure': 0.25},
 }
 
 
@@ -40,6 +44,8 @@ def build_all(coll):
         cam = bpy.data.objects.new('cam_%s' % cid, cam_data)
         coll.objects.link(cam)
         cam.location = CAM_OVERRIDES.get(cid, {}).get('location', c['location'])
+        if 'exposure' in CAM_OVERRIDES.get(cid, {}):
+            cam['exposure'] = CAM_OVERRIDES[cid]['exposure']
         cam_data.sensor_fit = 'HORIZONTAL'
         cam_data.sensor_width = c.get('sensor_width_mm', 36)
         cam_data.clip_start = 0.02

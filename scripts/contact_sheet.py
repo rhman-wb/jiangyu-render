@@ -25,6 +25,13 @@ def main():
     src_dir = config.RENDER_DIR if final_mode else os.path.join(config.RENDER_DIR, 'preview')
     out_name = 'contact_sheet.png' if final_mode else 'contact_sheet_preview.png'
 
+    def find_img(cid):
+        for d in ('final', 'pano', 'preview'):
+            p = os.path.join(config.RENDER_DIR, d, cid + '.png')
+            if os.path.isfile(p):
+                return p
+        return None
+
     cams = {c['id']: c for c in util.load_cameras()['cameras']}
     by_prefix = {}
     for cid in cams:
@@ -115,8 +122,8 @@ def main():
         cid = by_prefix.get(pref)
         if not cid:
             continue
-        path = os.path.join(src_dir, cid + '.png')
-        if not os.path.isfile(path):
+        path = find_img(cid)
+        if not path:
             continue
         r, c = divmod(i, COLS)
         x = MARG + c * (TILE_W + GAP)
@@ -147,7 +154,7 @@ def main():
         s.view_settings.view_transform = 'Standard'
     except Exception:
         pass
-    out = os.path.join(src_dir, out_name)
+    out = os.path.join(config.RENDER_DIR, 'final', out_name)
     s.render.filepath = out
     bpy.ops.render.render(write_still=True)
     print('[sheet] saved %s' % out)

@@ -171,8 +171,11 @@ def main():
         cid = cam.get('cam_id', cam_prefix)
         out = os.path.join(outdir, '%s%s.png' % (prefix_out, cid))
         scene.render.filepath = out
+        import time
+        t0 = time.perf_counter()
         bpy.ops.render.render(write_still=True)
-        print('[render] saved %s' % out)
+        print('[render] saved %s (%.1fs, exp=%.2f)' %
+              (out, time.perf_counter() - t0, cam.get('exposure', 0.0)))
     if ceil_coll is not None:
         ceil_coll.hide_render = False
     scene.view_settings.exposure = 0.0
