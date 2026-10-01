@@ -1,0 +1,15 @@
+{
+  "blender": "4.5.10 LTS",
+  "resolution": "960x540",
+  "samples": 64,
+  "denoiser": "OIDN",
+  "cpu_threads": 22,
+  "cpu_s": 50.28437660000054,
+  "gpu_devices": [
+    "Intel(R) Arc(TM) Graphics"
+  ],
+  "gpu_cold_s": 11.843408600019757,
+  "gpu_warm_s": 13.976619999972172,
+  "speedup_warm": 3.6,
+  "chosen_device": "GPU"
+}
