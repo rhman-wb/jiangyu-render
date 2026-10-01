@@ -61,9 +61,14 @@ LIVING_SPOTS = [(4.3, -11.35), (5.4, -11.35), (6.5, -11.35), (7.6, -11.35), (8.4
                 (4.3, -4.20), (5.4, -4.20), (6.5, -4.20), (7.6, -4.20), (8.4, -4.20),
                 (3.57, -10.2), (3.57, -9.1), (3.57, -6.8), (3.57, -5.6),
                 (9.02, -10.9), (9.02, -6.9), (9.02, -5.6)]
-ROOM_SPOTS = [(11.0, -8.8, 2.85), (11.0, -6.6, 2.85), (1.75, -9.5, 2.85),
-              (7.65, -3.0, 2.85), (12.2, -2.9, 2.85), (9.9, -4.4, 2.60),
-              (10.6, -3.0, 2.60), (2.7, -5.7, 2.85)]
+ROOM_SPOTS = [(11.0, -8.8, 2.85, 5.0), (11.0, -6.6, 2.85, 5.0),
+              (1.75, -9.5, 2.85, 5.0), (7.65, -3.0, 2.85, 5.0),
+              (12.2, -2.9, 2.85, 5.0), (9.9, -4.4, 2.60, 8.0),
+              (10.6, -3.0, 2.60, 8.0), (2.7, -5.7, 2.85, 5.0),
+              # 厨房 / 主卫 / 公卫（铝扣板顶筒灯，无日照需更高功率）
+              (4.6, -2.6, 2.395, 15.0), (5.7, -2.6, 2.395, 15.0),
+              (11.3, -4.9, 2.395, 15.0), (12.6, -4.6, 2.395, 15.0),
+              (9.5, -1.9, 2.395, 15.0), (10.4, -0.7, 2.395, 15.0)]
 CEILING_LAMPS = {'master': (11.0, -7.7), 'parents': (1.75, -8.3),
                  'daughter': (7.65, -2.05), 'son': (12.2, -1.8)}
 
@@ -75,15 +80,14 @@ def build_lights(mats, colls):
     build_sun(common)
     down = mathutils.Vector((0.0, 0.0, -1.0))
     for i, (x, y) in enumerate(LIVING_SPOTS):
-        lt = _light('lt_spot_liv%02d' % i, 'SPOT', (x, y, 2.595), common, 5.0,
-                    spot_size=math.radians(55), shadow_soft_size=0.08)
-        lt.rotation_euler = (math.radians(90), 0, 0)
-    for i, (x, y, z) in enumerate(ROOM_SPOTS):
-        lt = _light('lt_spot_room%d' % i, 'SPOT', (x, y, z - 0.006), common, 5.0,
-                    spot_size=math.radians(55), shadow_soft_size=0.08)
-        lt.rotation_euler = (math.radians(90), 0, 0)
+        # Spot 默认朝 -Z（向下），无需旋转
+        _light('lt_spot_liv%02d' % i, 'SPOT', (x, y, 2.595), common, 5.0,
+               spot_size=math.radians(55), shadow_soft_size=0.08)
+    for i, (x, y, z, watts) in enumerate(ROOM_SPOTS):
+        _light('lt_spot_room%d' % i, 'SPOT', (x, y, z), common, watts,
+               spot_size=math.radians(55), shadow_soft_size=0.08)
     for rid, (cx, cy) in CEILING_LAMPS.items():
-        _light('lt_ceiling_%s' % rid, 'POINT', (cx, cy, 2.77), common, 12.0,
+        _light('lt_ceiling_%s' % rid, 'POINT', (cx, cy, 2.77), common, 16.0,
                shadow_soft_size=0.15)
     # 床头壁灯
     for i, (x, y) in enumerate([(12.60, -7.0), (12.60, -9.2), (0.32, -8.65)]):

@@ -620,8 +620,7 @@ def _fx_curtains(mats, coll):
     pleated_panel('fx_curt_son_sheer', 11.45, 12.95, -0.32, 0.92, 2.26, 0.03, 0.14, c, sheer)
     pleated_panel('fx_curt_son_bo_w', 11.45, 12.0, -0.24, 0.92, 2.26, 0.05, 0.13, c, blackout)
     pleated_panel('fx_curt_son_bo_e', 12.4, 12.95, -0.24, 0.92, 2.26, 0.05, 0.13, c, blackout)
-    # 主卫窗（W10 y-4.9..-3.8）：防水百叶帘放下 1/3
-    box(None, 'fx_blind_master_bath', (13.575, -4.9, 0.8), (13.585, -3.8, 1.9), c, mats['white'])
+    # 主卫窗（W10 y-4.9..-3.8）：防水百叶帘放下 1/3（只留叶片，叶片间透光）
     for i in range(9):
         box(None, 'fx_blind_mb_slats%d' % i, (13.574, -4.9, 0.8 + i * 0.12),
             (13.586, -3.8, 0.87 + i * 0.12), c, mats['white'])

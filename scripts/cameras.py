@@ -10,6 +10,12 @@ import util
 
 SHIFT_LIMIT = 0.15
 
+# 机位碰撞微调（cameras.json meta 规则：0.3m 内调整并记录）
+CAM_OVERRIDES = {
+    # 18 原位 (10.3,-2.3) 距关闭的公卫门扇 2.8cm，北移 0.3m
+    '18_public_bath_wet': {'location': (10.35, -2.0, 1.5)},
+}
+
 
 def _shift_y(loc, look, lens_mm, res):
     """两点透视 shift_y：让目标高的点大致落在画面中心。"""
@@ -33,7 +39,7 @@ def build_all(coll):
         cam_data = bpy.data.cameras.new('cd_%s' % cid)
         cam = bpy.data.objects.new('cam_%s' % cid, cam_data)
         coll.objects.link(cam)
-        cam.location = c['location']
+        cam.location = CAM_OVERRIDES.get(cid, {}).get('location', c['location'])
         cam_data.sensor_fit = 'HORIZONTAL'
         cam_data.sensor_width = c.get('sensor_width_mm', 36)
         cam_data.clip_start = 0.02
