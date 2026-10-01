@@ -10,6 +10,8 @@ import config
 import util
 import architecture
 import cameras
+import materials
+import lighting
 
 builtins_mod = util.load_module('builtins')  # 与 Python 内置 builtins 同名，走文件加载
 furniture_mod = util.load_module('furniture')
@@ -94,6 +96,16 @@ def main():
     furniture_mod.build_all(mats, colls)
     furniture_mod.build_extras(mats, colls)
     cameras.build_all(colls['cameras'])
+
+    # M4：正式材质 + 灯光 + AgX（规格 6/8 章）
+    mats4 = materials.build_all_materials()
+    materials.apply_all(mats4, colls)
+    lighting.build_all(mats4, colls)
+    try:
+        scene.view_settings.view_transform = 'AgX'
+        scene.view_settings.look = 'Medium High Contrast'
+    except Exception:
+        pass
 
     # MCP Poly Haven 开关是场景级属性（decisions_log D-004）
     try:

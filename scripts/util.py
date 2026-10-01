@@ -34,8 +34,9 @@ def load_cameras():
 
 
 def srgb_to_linear(hexstr):
-    """'#RRGGBB' -> (r,g,b) linear。规格 6.3 的转换公式。"""
-    c = [int(hexstr[i:i + 2], 16) / 255.0 for i in (0, 2, 4)]
+    """'#RRGGBB' 或 'RRGGBB' -> (r,g,b) linear。规格 6.3 的转换公式。"""
+    h = hexstr.lstrip('#')
+    c = [int(h[i:i + 2], 16) / 255.0 for i in (0, 2, 4)]
     return tuple(v / 12.92 if v <= 0.04045 else ((v + 0.055) / 1.055) ** 2.4
                  for v in c)
 
