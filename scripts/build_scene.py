@@ -12,6 +12,7 @@ import architecture
 import cameras
 
 builtins_mod = util.load_module('builtins')  # 与 Python 内置 builtins 同名，走文件加载
+furniture_mod = util.load_module('furniture')
 
 
 def make_white_materials():
@@ -90,6 +91,8 @@ def main():
 
     warns = architecture.build_all(mats, colls)
     builtins_mod.build_all(mats, colls)
+    furniture_mod.build_all(mats, colls)
+    furniture_mod.build_extras(mats, colls)
     cameras.build_all(colls['cameras'])
 
     # MCP Poly Haven 开关是场景级属性（decisions_log D-004）

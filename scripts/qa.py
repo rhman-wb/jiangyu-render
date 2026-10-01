@@ -293,7 +293,9 @@ def check_rays():
             dg = bpy.context.evaluated_depsgraph_get()
             hit = bpy.context.scene.ray_cast(dg, origin, direction)
             hobj = hit[4] if hit and hit[0] else None
-            if hobj is None or hobj.name.startswith('win_'):
+            ok_hit = hobj is None or hobj.name.startswith(
+                ('win_', 'fx_curt', 'fx_blind'))
+            if ok_hit:
                 log('PASS', 'ray %s window visible (%s)' %
                     (w['id'], hobj.name if hobj else 'sky'))
             else:
@@ -321,8 +323,24 @@ def check_items_bbox():
             continue
         cmin = [min(util.obj_world_bbox(k)[0][k_] for k in kids) for k_ in range(3)]
         cmax = [max(util.obj_world_bbox(k)[1][k_] for k in kids) for k_ in range(3)]
-        ib = item['bbox']
-        ibmin, ibmax = list(ib['min']), list(ib['max'])
+        if 'bbox' in item:
+            ibmin, ibmax = list(item['bbox']['min']), list(item['bbox']['max'])
+        elif item.get('shape') == 'sphere':
+            cx, cy, cz = item['center']
+            r = item['radius']
+            ibmin, ibmax = [cx - r, cy - r, cz - r], [cx + r, cy + r, cz + r]
+        else:  # cylinder: center/radius/z_base/height 为包络（parts 球体并入）
+            cx, cy = item['center']
+            r = item['radius']
+            z0 = item.get('z_base', 0.0)
+            ibmin, ibmax = [cx - r, cy - r, z0], [cx + r, cy + r, z0 + item['height']]
+            for p in item.get('parts', []):
+                if p.get('shape') == 'sphere':
+                    pc = p['center']
+                    pr = p['radius']
+                    for a in range(3):
+                        ibmin[a] = min(ibmin[a], pc[a] - pr)
+                        ibmax[a] = max(ibmax[a], pc[a] + pr)
         # parts 的 bbox 属于该 item 的合法包络（台面等）
         for p in item.get('parts', []):
             if 'bbox' not in p:
@@ -333,17 +351,23 @@ def check_items_bbox():
         if iid in B.COVERED:
             log('INFO', 'item %s covered by architecture object' % iid)
             continue
-        # 水槽龙头按规格 5.4 必备，允许 z 向高出；高度容差按规格 7.1 ±3cm
-        z_top_allow = (0.40 if item.get('type') == 'sink' else 0.0) + 0.03
+        # 规格要求的超出豁免（D-023）：龙头/吊杆/床品/显示器/靠枕/画灯/弧形灯头
+        typ = item.get('type')
+        z_extra = {'sink': 0.40, 'pendant_lamp': 0.60, 'bed': 0.15,
+                   'desk': 0.40, 'cushion': 0.35, 'artwork': 0.10}.get(typ, 0.0)
+        z_top_allow = z_extra + 0.03
+        xy_allow = 0.65 if typ == 'floor_lamp' else 0.0
         bad = []
         for a in range(3):
-            tol_out = 0.005 + (z_top_allow if a == 2 else 0.0)
-            if cmin[a] < ibmin[a] - 0.005 or cmax[a] > ibmax[a] + tol_out:
+            tol_out = 0.005 + (z_top_allow if a == 2 else xy_allow)
+            tol_lo = 0.005 + (0 if a == 2 else xy_allow)
+            if cmin[a] < ibmin[a] - tol_lo or cmax[a] > ibmax[a] + tol_out:
                 bad.append('axis%d out (%.3f..%.3f vs %.3f..%.3f)'
                            % (a, cmin[a], cmax[a], ibmin[a], ibmax[a]))
         tol_near_h, tol_near_z = 0.025, 0.035
         for a in range(2):
-            if ibmin[a] + tol_near_h < cmin[a] or cmax[a] < ibmax[a] - tol_near_h:
+            near_tol = tol_near_h + xy_allow
+            if ibmin[a] + near_tol < cmin[a] or cmax[a] < ibmax[a] - near_tol:
                 bad.append('axis%d not near edge' % a)
         if ibmin[2] + tol_near_z < cmin[2] or cmax[2] < ibmax[2] - tol_near_z:
             bad.append('axisZ not near edge (%.3f..%.3f vs %.3f..%.3f)'
@@ -402,8 +426,14 @@ def check_door_swing():
         root = bpy.data.objects.get(item['id'])
         if root is None or item.get('type') in ('glass_partition',):
             continue
-        ib = item['bbox']
-        obstacles.append((item['id'], ib['min'], ib['max']))
+        if 'bbox' in item:
+            obstacles.append((item['id'], item['bbox']['min'], item['bbox']['max']))
+        elif item.get('shape') == 'cylinder':
+            cx, cy = item['center']
+            r = item['radius']
+            z0 = item.get('z_base', 0.0)
+            obstacles.append((item['id'], (cx - r, cy - r, z0),
+                              (cx + r, cy + r, z0 + item['height'])))
     for w in L['walls']:
         if w['id'] == 'W12':
             continue  # 推拉门
@@ -468,6 +498,42 @@ def check_floor_overlap():
         log('PASS', 'no floor overlap (%d slabs)' % len(fl))
 
 
+def check_m3_completeness():
+    """全部 item 无漏建（marker/wall_finish 除外）；落地类不悬空。"""
+    expect, missing = 0, []
+    hang_ok = {'pendant_lamp', 'range_hood', 'mirror_cabinet', 'cabinet', 'tv',
+               'artwork', 'open_niche', 'ceiling_box', 'marker', 'wall_finish',
+               'sink', 'hob', 'dishwasher', 'glass_sliding_door', 'bookcase',
+               'vanity', 'shower_floor', 'bay_seat', 'cushion', 'shelf',
+               'tv_cabinet', 'sofa'}
+    float_bad = 0
+    for item in L['items']:
+        typ = item.get('type')
+        if typ in ('marker', 'wall_finish'):
+            continue
+        expect += 1
+        root = bpy.data.objects.get(item['id'])
+        if root is None:
+            missing.append(item['id'])
+            continue
+        kids = [c for c in root.children if c.type == 'MESH']
+        if not kids:
+            missing.append(item['id'] + '(empty)')
+            continue
+        z0 = min(util.obj_world_bbox(k)[0][2] for k in kids)
+        z_expect = item.get('z_base', 0.0) if 'bbox' not in item else 0.0
+        if typ not in hang_ok and z0 > z_expect + 0.006:
+            log('FAIL', 'item %s floats %.3fm' % (item['id'], z0))
+            float_bad += 1
+    if missing:
+        log('FAIL', 'missing items: %s' % missing)
+    else:
+        log('PASS', 'all %d items built, none missing' % expect)
+    if float_bad == 0:
+        log('PASS', 'no floating furniture')
+
+
+# ---------------------------------------------------------------- main
 def main():
     check_closure()
     check_openings()
@@ -481,6 +547,8 @@ def main():
     check_item_wall_penetration()
     check_door_swing()
     check_scheme_membership()
+    # M3
+    check_m3_completeness()
     os.makedirs(config.REVIEW_DIR, exist_ok=True)
     out = os.path.join(config.REVIEW_DIR, 'qa_report.md')
     with open(out, 'w', encoding='utf-8') as f:

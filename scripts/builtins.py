@@ -14,7 +14,8 @@ M2_TYPES = {
     'tv_cabinet', 'glass_sliding_door', 'shower_floor', 'island',
 }
 M2_WARDROBE_ROOMS = {'master_bedroom', 'parents_room'}
-COVERED = {'bay_seat': 'bay_platform', 'ceiling_box': 'ceil_parents_room_ac'}
+COVERED = {'common_parents_room_bay_seat_01': 'bay_platform',
+           'common_parents_room_ceiling_box_01': 'ceil_parents_room_ac'}
 ROOM_CENTER = {}  # room -> (cx, cy)，build_all 时从 floors 填
 
 
