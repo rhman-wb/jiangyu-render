@@ -1,0 +1,114 @@
+# QA 报告 · M1 硬装白模
+
+blend: D:\ClaudeCodeProject2026\jiangyu-render\blend\jiangyu.blend
+
+汇总: PASS 108 / FAIL 0 / WARN 0 / INFO 0
+
+- **PASS** closure living_dining_balcony W
+- **PASS** closure living_dining_balcony E
+- **PASS** closure living_dining_balcony S
+- **PASS** closure living_dining_balcony N
+- **PASS** closure kitchen W
+- **PASS** closure kitchen E
+- **PASS** closure kitchen S
+- **PASS** closure kitchen N
+- **PASS** closure daughter_room W
+- **PASS** closure daughter_room E
+- **PASS** closure daughter_room S
+- **PASS** closure daughter_room N
+- **PASS** closure public_bath_wet W
+- **PASS** closure public_bath_wet E
+- **PASS** closure public_bath_wet S
+- **PASS** closure public_bath_wet N
+- **PASS** closure corridor W
+- **PASS** closure corridor E
+- **PASS** closure corridor S
+- **PASS** closure corridor N
+- **PASS** closure son_room W
+- **PASS** closure son_room E
+- **PASS** closure son_room S
+- **PASS** closure son_room N
+- **PASS** closure master_bath W
+- **PASS** closure master_bath E
+- **PASS** closure master_bath S
+- **PASS** closure master_bath N
+- **PASS** closure master_bedroom W
+- **PASS** closure master_bedroom E
+- **PASS** closure master_bedroom S
+- **PASS** closure master_bedroom N
+- **PASS** closure terrace W
+- **PASS** closure terrace E
+- **PASS** closure terrace S
+- **PASS** closure terrace N
+- **PASS** closure parents_room W
+- **PASS** closure parents_room E
+- **PASS** closure parents_room S
+- **PASS** closure parents_room N
+- **PASS** closure foyer W
+- **PASS** closure foyer E
+- **PASS** closure foyer S
+- **PASS** closure foyer N
+- **PASS** closure elevator_hall W
+- **PASS** closure elevator_hall E
+- **PASS** closure elevator_hall S
+- **PASS** closure elevator_hall N
+- **PASS** closure parents_bay_window W
+- **PASS** closure parents_bay_window E
+- **PASS** closure parents_bay_window S
+- **PASS** closure parents_bay_window N
+- **PASS** opening W01 window clear
+- **PASS** lintel/over W01 window
+- **PASS** sill wall W01
+- **PASS** opening W02 window clear
+- **PASS** lintel/over W02 window
+- **PASS** sill wall W02
+- **PASS** opening W05 window clear
+- **PASS** lintel/over W05 window
+- **PASS** sill wall W05
+- **PASS** opening W06 window clear
+- **PASS** lintel/over W06 window
+- **PASS** sill wall W06
+- **PASS** opening W07 door clear
+- **PASS** lintel/over W07 door
+- **PASS** opening W08 door clear
+- **PASS** lintel/over W08 door
+- **PASS** opening W10 window clear
+- **PASS** lintel/over W10 window
+- **PASS** sill wall W10
+- **PASS** opening W12 door clear
+- **PASS** lintel/over W12 door
+- **PASS** opening W13 door clear
+- **PASS** lintel/over W13 door
+- **PASS** opening W14 door clear
+- **PASS** lintel/over W14 door
+- **PASS** opening W14 door clear
+- **PASS** lintel/over W14 door
+- **PASS** opening W15 glass_door clear
+- **PASS** lintel/over W15 glass_door
+- **PASS** opening W17 glass_door clear
+- **PASS** lintel/over W17 glass_door
+- **PASS** opening W18 window clear
+- **PASS** lintel/over W18 window
+- **PASS** sill wall W18
+- **PASS** opening W19 door clear
+- **PASS** lintel/over W19 door
+- **PASS** opening W22 full_opening clear
+- **PASS** opening W23 window clear
+- **PASS** lintel/over W23 window
+- **PASS** sill wall W23
+- **PASS** opening W27 door clear
+- **PASS** lintel/over W27 door
+- **PASS** opening counts {'window': 7, 'door': 8, 'glass_door': 2, 'full_opening': 1}
+- **PASS** wall dims all 71 segs (top 2.85, t=0.14/0.20)
+- **PASS** floors 12 built
+- **PASS** cameras 23
+- **PASS** no marker objects
+- **PASS** ceiling_box bbox ((2.3500001430511475, -7.400000095367432, 2.5), (3.299999952316284, -6.62000036239624, 2.8000001907348633))
+- **PASS** ray W01 window visible (win_W01_0mul1)
+- **PASS** ray W02 window visible (win_W02_0glass)
+- **PASS** ray W05 window visible (win_W05_0glass)
+- **PASS** ray W06 window visible (win_W06_0mul1)
+- **PASS** ray W10 window visible (win_W10_0glass)
+- **PASS** ray W18 window visible (win_W18_0mul2)
+- **PASS** ray W23 window visible (win_W23_0mul1)
+- **PASS** no floor overlap (13 slabs)

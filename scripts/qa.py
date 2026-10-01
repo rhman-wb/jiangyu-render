@@ -1,0 +1,340 @@
+# -*- coding: utf-8 -*-
+# qa.py —— M1 自检：墙体闭合 / 门窗洞一致 / 墙体标高与厚度 / 数量 / ceiling_box / 视线抽检 / 地板重叠
+# 用法：blender -b blend\jiangyu.blend --python scripts\qa.py
+# 输出 review/qa_report.md（PASS/FAIL/WARN/INFO），控制台摘要只 ASCII。
+import os
+import re
+import sys
+import bpy
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import config
+import util
+import architecture
+
+L = util.load_layout()
+WALLS = {w['id']: w for w in L['walls']}
+GEO = {w['id']: architecture.wall_geo(w, L['walls']) for w in L['walls']}
+CEIL = config.CEIL_H
+
+lines = []
+counts = {'PASS': 0, 'FAIL': 0, 'WARN': 0, 'INFO': 0}
+
+
+def log(level, msg):
+    counts[level] = counts.get(level, 0) + 1
+    lines.append('- **%s** %s' % (level, msg))
+    if level in ('FAIL', 'WARN'):
+        print('[qa][%s] %s' % (level, msg))
+
+
+# ---------------------------------------------------------------- 工具
+def iv_merge(iv):
+    iv = sorted((a, b) for a, b in iv if b > a + 1e-6)
+    out = []
+    for a, b in iv:
+        if out and a <= out[-1][1] + 1e-6:
+            out[-1] = (out[-1][0], max(out[-1][1], b))
+        else:
+            out.append((a, b))
+    return out
+
+
+def iv_sub(iv, a, b):
+    out = []
+    for x, y in iv:
+        out.append((x, min(y, a)))
+        out.append((max(x, b), y))
+    return [(p, q) for p, q in out if q > p + 1e-6]
+
+
+def bbox_of(name):
+    o = bpy.data.objects.get(name)
+    return util.obj_world_bbox(o) if o else None
+
+
+wall_seg_names = [o.name for o in bpy.data.objects if re.match(r'^W\d+_s\d+$', o.name)]
+SEG_BBOX = {n: bbox_of(n) for n in wall_seg_names}
+
+
+def seg_uvz(name):
+    """墙段对象的 (u0,u1,z0,z1,v0,v1)：按墙轴取向。"""
+    wid = name.split('_')[0]
+    g = GEO[wid]
+    (bx0, by0, bz0), (bx1, by1, bz1) = SEG_BBOX[name]
+    if g['axis'] == 'x':
+        return bx0, bx1, bz0, bz1, by0, by1
+    return by0, by1, bz0, bz1, bx0, bx1
+
+
+# ---------------------------------------------------------------- 1 墙体闭合
+# 手工白名单：规格上有意留开的边界（露台栏杆区 / 公共区），记 decisions_log
+WHITELIST = [
+    ('terrace', 'S', -12.4, 9.25, 12.8),      # 露台南边（栏杆，非墙）
+    ('terrace', 'E', 12.8, -12.4, -10.15),    # 露台东边（栏杆）
+    ('terrace', 'W', 9.25, -12.4, -11.6),     # 露台西边南段（栏杆）
+    ('elevator_hall', 'W', 1.95, -4.8, -3.9), # 门外公共走廊
+    ('elevator_hall', 'N', -3.9, 1.95, 3.4),  # 门外电梯厅
+    ('living_dining_balcony', 'N', -3.95, 9.0, 9.25),  # 开放进过道（corridor L 形北段）
+]
+
+
+def check_closure():
+    for f in L['floors']:
+        fid = f['id']
+        (x0, y0), (x1, y1) = f['rect_min'], f['rect_max']
+        edges = [('W', x0, y0, y1), ('E', x1, y0, y1), ('S', y0, x0, x1), ('N', y1, x0, x1)]
+        for tag, fixed, a, b in edges:
+            open_iv = []  # 允许无墙的区间
+            # 白名单
+            for wf, wt, wfix, wa, wb in WHITELIST:
+                if wf == fid and wt == tag and abs(wfix - fixed) < 0.03:
+                    open_iv.append((max(wa, a), min(wb, b)))
+            # 相邻房间（跨线无墙的开放过渡）
+            for o in L['floors']:
+                if o is f:
+                    continue
+                (ox0, oy0), (ox1, oy1) = o['rect_min'], o['rect_max']
+                if tag in ('W', 'E'):
+                    of = ox1 if tag == 'W' else ox0  # 对方贴过来的那条边
+                    if abs(of - fixed) < 0.08:
+                        open_iv.append((max(oy0, a), min(oy1, b)))
+                    # 对方矩形横跨此线（内部包含）也算开放
+                    if ox0 - 0.08 <= fixed <= ox1 + 0.08 and not (oy1 < a - 0.01 or oy0 > b + 0.01):
+                        open_iv.append((max(oy0, a), min(oy1, b)))
+                else:
+                    of = oy1 if tag == 'S' else oy0
+                    if abs(of - fixed) < 0.08:
+                        open_iv.append((max(ox0, a), min(ox1, b)))
+                    if oy0 - 0.08 <= fixed <= oy1 + 0.08 and not (ox1 < a - 0.01 or ox0 > b + 0.01):
+                        open_iv.append((max(ox0, a), min(ox1, b)))
+            # 需要墙体覆盖的区间 = 边区间 - 白名单/相邻开放区间
+            need = [(a, b)]
+            for p, q in iv_merge(open_iv):
+                need = iv_sub(need, p, q)
+            # 生成墙段的覆盖
+            cov = []
+            for n in wall_seg_names:
+                wid = n.split('_')[0]
+                g = GEO[wid]
+                u0, u1, z0, z1, v0, v1 = seg_uvz(n)
+                if tag in ('W', 'E'):
+                    if g['axis'] != 'y':
+                        continue
+                    if abs((v0 + v1) / 2 - fixed) > 0.12:
+                        continue
+                else:
+                    if g['axis'] != 'x':
+                        continue
+                    if abs((v0 + v1) / 2 - fixed) > 0.12:
+                        continue
+                # full_opening 区间从覆盖里扣除
+                sub = []
+                for op in WALLS[wid].get('openings', []):
+                    if op['type'] == 'full_opening':
+                        sub.append((op['start'], op['end']))
+                c = [(u0, u1)]
+                for p, q in sub:
+                    c = iv_sub(c, p, q)
+                for p, q in c:
+                    cov.append((max(p, a), min(q, b)))
+            gaps = [(a2, b2) for a2, b2 in need]
+            for p, q in iv_merge(cov):
+                gaps = iv_sub(gaps, p, q)
+            gaps = [(p, q) for p, q in gaps if q - p > 0.03]
+            if gaps:
+                log('FAIL', 'closure %s %s edge: gaps %s' %
+                    (fid, tag, ['%.2f~%.2f' % g for g in gaps]))
+            else:
+                log('PASS', 'closure %s %s' % (fid, tag))
+
+
+# ---------------------------------------------------------------- 2 门窗洞一致
+def check_openings():
+    n_by_type = {}
+    for w in L['walls']:
+        wid = w['id']
+        g = GEO[wid]
+        segs = [(n, seg_uvz(n)) for n in wall_seg_names if n.startswith(wid + '_')]
+        for op in architecture.normalize_openings(w):
+            typ = op['type']
+            n_by_type[typ] = n_by_type.get(typ, 0) + 1
+            a, b = op['start'], op['end']
+            head = op.get('head', CEIL)
+            if typ == 'window':
+                void = (a, b, op['sill'], head)
+            elif typ in ('door', 'glass_door'):
+                void = (a, b, 0.0, head)
+            else:
+                void = (a, b, 0.0, CEIL)
+            shrink = 0.015
+            blocked = []
+            for n, (u0, u1, z0, z1, _v0, _v1) in segs:
+                if (u0 < void[1] - shrink and u1 > void[0] + shrink and
+                        z0 < void[3] - shrink and z1 > void[2] + shrink):
+                    blocked.append(n)
+            if blocked:
+                log('FAIL', 'opening %s %s blocked by %s' % (wid, typ, blocked[:3]))
+            else:
+                log('PASS', 'opening %s %s clear' % (wid, typ))
+            # 上方/下方墙带存在性
+            def band_ok(zlo, zhi):
+                for n, (u0, u1, z0, z1, _v0, _v1) in segs:
+                    if (u0 < b - 0.05 and u1 > a + 0.05 and
+                            z0 < zhi - 0.01 and z1 > zlo + 0.01):
+                        return True
+                return False
+            if typ in ('door', 'glass_door', 'window'):
+                if band_ok(head, head + 0.10):
+                    log('PASS', 'lintel/over %s %s' % (wid, typ))
+                else:
+                    log('FAIL', 'lintel/over missing %s %s' % (wid, typ))
+            if typ == 'window':
+                if band_ok(op['sill'] - 0.10, op['sill']):
+                    log('PASS', 'sill wall %s' % wid)
+                else:
+                    log('FAIL', 'sill wall missing %s' % wid)
+    expect = {'window': 7, 'door': 8, 'glass_door': 2, 'full_opening': 1}
+    if n_by_type == expect:
+        log('PASS', 'opening counts %s' % n_by_type)
+    else:
+        log('FAIL', 'opening counts %s != %s' % (n_by_type, expect))
+
+
+# ---------------------------------------------------------------- 3 墙体标高/厚度
+def check_wall_dims():
+    bad = 0
+    for n in wall_seg_names:
+        u0, u1, z0, z1, v0, v1 = seg_uvz(n)
+        wid = n.split('_')[0]
+        g = GEO[wid]
+        # 合法标高：底 ∈ {0, heads}，顶 ∈ {sills, 2.85}（窗台带/过梁带）
+        heads = [op['head'] for op in WALLS[wid].get('openings', []) if 'head' in op]
+        sills = [op['sill'] for op in WALLS[wid].get('openings', []) if 'sill' in op]
+        ok_z = (any(abs(z0 - h) < 0.012 for h in [0.0] + heads) and
+                any(abs(z1 - t) < 0.012 for t in sills + [CEIL]))
+        if not ok_z:
+            log('FAIL', 'wall %s z %.3f..%.3f' % (n, z0, z1))
+            bad += 1
+        t_exp = config.WALL_T_EXT if g['ext'] else config.WALL_T
+        if abs((v1 - v0) - t_exp) > 0.005:
+            log('FAIL', 'wall %s thickness %.3f != %.3f' % (n, v1 - v0, t_exp))
+            bad += 1
+    if bad == 0:
+        log('PASS', 'wall dims all %d segs (top %.2f, t=%.2f/%.2f)' %
+            (len(wall_seg_names), CEIL, config.WALL_T, config.WALL_T_EXT))
+
+
+# ---------------------------------------------------------------- 4 数量
+def check_counts():
+    floor_ids = set()
+    for o in bpy.data.objects:
+        if not o.name.startswith('floor_'):
+            continue
+        fid = o.name[6:]
+        if fid.endswith(('_0', '_1')) and fid[:-2] in {'corridor'}:
+            fid = fid[:-2]
+        floor_ids.add(fid)
+    expect_floors = {f['id'] for f in L['floors']} - architecture.SKIP_FLOORS
+    if floor_ids == expect_floors:
+        log('PASS', 'floors %d built' % len(expect_floors))
+    else:
+        log('FAIL', 'floors mismatch missing=%s extra=%s' %
+            (expect_floors - floor_ids, floor_ids - expect_floors))
+    ncam = len([o for o in bpy.data.objects if o.type == 'CAMERA'])
+    if ncam == 23:
+        log('PASS', 'cameras %d' % ncam)
+    else:
+        log('FAIL', 'cameras %d != 23' % ncam)
+    markers = [o.name for o in bpy.data.objects if 'marker' in o.name.lower()]
+    if markers:
+        log('FAIL', 'marker objects built: %s' % markers[:3])
+    else:
+        log('PASS', 'no marker objects')
+
+
+# ---------------------------------------------------------------- 5 ceiling_box
+def check_ceiling_box():
+    items = L.get('items', [])
+    cb = next((i for i in items if i.get('type') == 'ceiling_box'), None)
+    if not cb:
+        log('WARN', 'no ceiling_box item in layout')
+        return
+    bb = bbox_of('ceil_parents_room_ac')
+    if bb is None:
+        log('FAIL', 'ceil_parents_room_ac not found')
+        return
+    exp_min, exp_max = tuple(cb['bbox']['min']), tuple(cb['bbox']['max'])
+    ok = all(abs(bb[0][k] - exp_min[k]) < 0.02 and abs(bb[1][k] - exp_max[k]) < 0.02
+             for k in range(3))
+    log('PASS' if ok else 'FAIL', 'ceiling_box bbox %s' % (bb,))
+
+
+# ---------------------------------------------------------------- 6 视线抽检
+def check_rays():
+    centroid = (7.0, -6.2)
+    for w in L['walls']:
+        g = GEO[w['id']]
+        for op in architecture.normalize_openings(w):
+            if op['type'] != 'window':
+                continue
+            um = (op['start'] + op['end']) / 2
+            zm = (op['sill'] + op['head']) / 2
+            if g['axis'] == 'x':
+                # 墙沿 X：法向在 Y
+                pos = (um, g['v_center'], zm)
+                inward = (0, 1, 0) if centroid[1] > g['v'] else (0, -1, 0)
+            else:
+                # 墙沿 Y：法向在 X
+                pos = (g['v_center'], um, zm)
+                inward = (1, 0, 0) if centroid[0] > g['v'] else (-1, 0, 0)
+            origin = (pos[0] + inward[0] * 0.5, pos[1] + inward[1] * 0.5, pos[2])
+            direction = (-inward[0] * 2, -inward[1] * 2, 0)
+            dg = bpy.context.evaluated_depsgraph_get()
+            hit = bpy.context.scene.ray_cast(dg, origin, direction)
+            hobj = hit[4] if hit and hit[0] else None
+            if hobj is None or hobj.name.startswith('win_'):
+                log('PASS', 'ray %s window visible (%s)' %
+                    (w['id'], hobj.name if hobj else 'sky'))
+            else:
+                log('FAIL', 'ray %s blocked by %s' % (w['id'], hobj.name))
+
+
+# ---------------------------------------------------------------- 7 地板重叠
+def check_floor_overlap():
+    fl = [(o.name, bbox_of(o.name)) for o in bpy.data.objects
+           if o.name.startswith('floor_')]
+    bad = 0
+    for i in range(len(fl)):
+        for j in range(i + 1, len(fl)):
+            (n1, (a0, a1)), (n2, (b0, b1)) = fl[i], fl[j]
+            ox = min(a1[0], b1[0]) - max(a0[0], b0[0])
+            oy = min(a1[1], b1[1]) - max(a0[1], b0[1])
+            if ox > 0.001 and oy > 0.001:
+                log('FAIL', 'floor overlap %s x %s %.3fx%.3f' % (n1, n2, ox, oy))
+                bad += 1
+    if bad == 0:
+        log('PASS', 'no floor overlap (%d slabs)' % len(fl))
+
+
+def main():
+    check_closure()
+    check_openings()
+    check_wall_dims()
+    check_counts()
+    check_ceiling_box()
+    check_rays()
+    check_floor_overlap()
+    os.makedirs(config.REVIEW_DIR, exist_ok=True)
+    out = os.path.join(config.REVIEW_DIR, 'qa_report.md')
+    with open(out, 'w', encoding='utf-8') as f:
+        f.write('# QA 报告 · M1 硬装白模\n\n')
+        f.write('blend: %s\n\n' % config.BLEND_FILE)
+        f.write('汇总: PASS %d / FAIL %d / WARN %d / INFO %d\n\n' %
+                (counts['PASS'], counts['FAIL'], counts['WARN'], counts['INFO']))
+        f.write('\n'.join(lines) + '\n')
+    print('[qa] summary PASS=%d FAIL=%d WARN=%d -> %s' %
+          (counts['PASS'], counts['FAIL'], counts['WARN'], out))
+
+
+main()
