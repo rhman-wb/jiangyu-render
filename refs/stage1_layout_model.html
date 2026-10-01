@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>江语云庭 143㎡ · 全屋布局核对</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@600&display=swap" rel="stylesheet">
+<style>
+:root{
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  --board:#D9DED4; --panel:#FBF8F2; --ink:#3E2C21; --muted:#7A6A5C;
+  --line:#D8CEC0; --accent:#5F6B45; --accent-ink:#FBF8F2; --chip:#EFE9DF;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --board:#1F221E; --panel:#2A2622; --ink:#EDE6DA; --muted:#B3A695;
+    --line:#433C35; --accent:#A3B07F; --accent-ink:#1F221E; --chip:#35302B;
+  }
+}
+:root[data-theme="dark"]{
+  --board:#1F221E; --panel:#2A2622; --ink:#EDE6DA; --muted:#B3A695;
+  --line:#433C35; --accent:#A3B07F; --accent-ink:#1F221E; --chip:#35302B;
+}
+*,*::before,*::after{box-sizing:inherit}
+html,body{height:100%;margin:0}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{background:var(--board);color:var(--ink);font-family:"Noto Sans SC","PingFang SC","Microsoft YaHei",system-ui,sans-serif;overflow:hidden}
+#app{position:relative;height:100%;width:100%}
+canvas{display:block}
+#stage{position:absolute;inset:0}
+#labels{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.room-label{position:absolute;transform:translate(-50%,-50%);font-size:12px;font-weight:500;color:#3E2C21;background:rgba(251,248,242,.86);padding:2px 8px;border-radius:3px;white-space:nowrap;border:1px solid rgba(62,44,33,.18)}
+header{position:absolute;top:12px;left:12px;right:12px;display:flex;gap:10px;align-items:flex-start;justify-content:space-between;pointer-events:none}
+.title{pointer-events:auto;background:var(--panel);border:1px solid var(--line);padding:10px 14px;border-radius:6px;max-width:420px}
+.title h1{font-family:"Noto Serif SC",serif;font-weight:600;font-size:18px;margin:0 0 2px;letter-spacing:.02em}
+.title p{margin:0;font-size:12px;color:var(--muted)}
+.controls{pointer-events:auto;display:flex;flex-direction:column;gap:8px;align-items:flex-end}
+.seg{display:flex;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:3px}
+.seg button{border:0;background:transparent;color:var(--ink);font:inherit;font-size:13px;padding:7px 12px;border-radius:4px;cursor:pointer;white-space:nowrap}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);font-weight:500}
+.seg button:focus-visible,.chips button:focus-visible,#closeInfo:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.views{position:absolute;left:12px;right:12px;bottom:12px;display:flex;gap:10px;align-items:flex-end;pointer-events:none}
+.chips{pointer-events:auto;display:flex;gap:6px;overflow-x:auto;padding:4px;background:var(--panel);border:1px solid var(--line);border-radius:6px;max-width:100%;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chips button{flex:none;border:1px solid transparent;background:var(--chip);color:var(--ink);font:inherit;font-size:13px;padding:7px 12px;border-radius:4px;cursor:pointer}
+.chips button[aria-pressed="true"]{border-color:var(--accent);box-shadow:inset 0 -2px 0 var(--accent)}
+#notes{position:absolute;right:12px;bottom:70px;width:340px;max-width:calc(100% - 24px);max-height:48vh;overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:12px 14px;font-size:13px;line-height:1.7}
+#notes h2{font-family:"Noto Serif SC",serif;font-weight:600;font-size:15px;margin:0 0 6px}
+#notes ul{margin:0;padding-left:1.1em}
+#notes li{margin:2px 0}
+#notes .check{margin-top:8px;padding-top:8px;border-top:1px dashed var(--line);color:var(--muted);font-size:12px}
+#pick{position:absolute;left:12px;top:92px;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:10px 12px;font-size:13px;min-width:180px;display:none}
+#pick strong{display:block;font-weight:700;margin-bottom:2px}
+#pick span{color:var(--muted);font-size:12px}
+#closeInfo{position:absolute;top:6px;right:6px;border:0;background:transparent;color:var(--muted);cursor:pointer;font-size:14px}
+.swatches{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.sw{display:flex;align-items:center;gap:4px;font-size:12px;color:var(--muted)}
+.sw i{width:12px;height:12px;border-radius:2px;display:inline-block;border:1px solid rgba(0,0,0,.15)}
+#loading{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--muted)}
+@media (max-width:720px){
+  .title{max-width:none}
+  .title h1{font-size:16px}
+  header{flex-direction:column;align-items:stretch}
+  .controls{flex-direction:row;justify-content:space-between;align-items:center}
+  #notes{bottom:66px;max-height:34vh;width:auto;left:12px}
+  #pick{top:auto;bottom:calc(66px + 34vh + 8px)}
+  .room-label{font-size:11px;padding:1px 6px}
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="stage"></div>
+  <div id="labels"></div>
+  <div id="loading">正在加载 3D 模型…</div>
+  <header>
+    <div class="title">
+      <h1>江语云庭 01 户型 · 布局核对</h1>
+      <p>拖动旋转，双指或滚轮缩放，点家具看尺寸。尺寸按户型图估算，交房实测后修正。</p>
+    </div>
+    <div class="controls">
+      <div class="seg" role="group" aria-label="客餐厅方案">
+        <button id="btnA" aria-pressed="true">方案 A · 常规客厅</button>
+        <button id="btnB" aria-pressed="false">方案 B · 去客厅化</button>
+      </div>
+      <div class="seg" role="group" aria-label="墙体显示">
+        <button id="btnCut" aria-pressed="true">剖切墙体</button>
+        <button id="btnFull" aria-pressed="false">完整墙体</button>
+      </div>
+    </div>
+  </header>
+  <div id="pick" role="status" aria-live="polite"><button id="closeInfo" aria-label="关闭">✕</button><strong id="pickName"></strong><span id="pickDims"></span></div>
+  <aside id="notes" aria-live="polite"></aside>
+  <nav class="views"><div class="chips" id="chips" role="group" aria-label="视角"></div></nav>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+(function(){
+if(!window.THREE){document.getElementById('loading').textContent='3D 库加载失败，请检查网络后刷新。';return;}
+document.getElementById('loading').remove();
+
+/* ---------- palette (与设计决策一致) ---------- */
+const C={
+  wall:0xF3EFE7, floor:0xE3D5C0, bathFloor:0xCFC6B8, deck:0xB49A7A, hall:0xBDB8B0,
+  walnut:0x6B4A33, walnutLight:0x86603F, white:0xEFE9DF, top:0xF4F1EC,
+  caramel:0x9A5B32, oat:0xD8CBB3, olive:0x6E7A52, brick:0xA5533F,
+  steel:0xC9C6C0, dark:0x3A3532, green:0x5E7F4E, rug:0xB9A48A,
+  kBlue:0x8FB7CF, kYellow:0xF0CF7E, kGreen:0x9DBE8C, kPink:0xE3AFA8, kLilac:0xC6B6DA,
+  toilet:0xFAFAFA, mirror:0xD9DEE2, cushion:0xCDBA98
+};
+
+/* ---------- scene ---------- */
+const stage=document.getElementById('stage');
+const renderer=new THREE.WebGLRenderer({antialias:true});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+renderer.shadowMap.enabled=true;
+renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+stage.appendChild(renderer.domElement);
+
+const scene=new THREE.Scene();
+function syncBg(){scene.background=new THREE.Color(getComputedStyle(document.documentElement).getPropertyValue('--board').trim()||'#D9DED4');}
+syncBg();
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change',syncBg);
+
+const camera=new THREE.PerspectiveCamera(42,1,0.1,200);
+const controls=new THREE.OrbitControls(camera,renderer.domElement);
+controls.enableDamping=true;controls.dampingFactor=0.08;
+controls.maxPolarAngle=Math.PI*0.49;controls.minDistance=2;controls.maxDistance=45;
+
+scene.add(new THREE.HemisphereLight(0xfff8ee,0x7a6f60,0.55));
+const sun=new THREE.DirectionalLight(0xfff1dc,0.62);
+sun.position.set(2,16,20);sun.castShadow=true;
+sun.shadow.mapSize.set(2048,2048);
+Object.assign(sun.shadow.camera,{left:-12,right:12,top:12,bottom:-12,near:1,far:60});
+sun.target.position.set(7,0,6);scene.add(sun);scene.add(sun.target);
+
+const ground=new THREE.Mesh(new THREE.PlaneGeometry(80,80),new THREE.ShadowMaterial({opacity:0.12}));
+ground.rotation.x=-Math.PI/2;ground.position.y=-0.06;ground.receiveShadow=true;scene.add(ground);
+
+const mats={};
+function mat(color,opts){const k=color+JSON.stringify(opts||{});if(!mats[k])mats[k]=new THREE.MeshStandardMaterial(Object.assign({color,roughness:0.85,metalness:0},opts||{}));return mats[k];}
+const glass=new THREE.MeshStandardMaterial({color:0xBFD8DE,transparent:true,opacity:0.32,roughness:0.1,depthWrite:false});
+
+const groups={common:new THREE.Group(),A:new THREE.Group(),B:new THREE.Group(),walls:new THREE.Group()};
+Object.values(groups).forEach(g=>scene.add(g));
+const pickables=[];
+
+/* box: x1..x2 (东西), z1..z2 (南北, z 向南增大), y 起点, h 高度 */
+function box(g,name,x1,z1,x2,z2,y,h,color,opts){
+  const w=Math.abs(x2-x1),d=Math.abs(z2-z1);
+  const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),opts&&opts.material?opts.material:mat(color,opts&&opts.m));
+  m.position.set((x1+x2)/2,y+h/2,(z1+z2)/2);
+  m.castShadow=!(opts&&opts.noShadow);m.receiveShadow=true;
+  if(name){m.userData={name,dims:(opts&&opts.dims)||`${fmt(w)} × ${fmt(d)} × 高 ${fmt(h+(opts&&opts.addH||0))}`};pickables.push(m);}
+  g.add(m);return m;
+}
+function fmt(v){return (Math.round(v*100)/100).toFixed(2).replace(/\.?0+$/,'')+'m';}
+function cyl(g,name,x,z,r,y,h,color){const m=new THREE.Mesh(new THREE.CylinderGeometry(r,r,h,24),mat(color));m.position.set(x,y+h/2,z);m.castShadow=true;m.receiveShadow=true;if(name){m.userData={name,dims:`直径 ${fmt(r*2)} × 高 ${fmt(h)}`};pickables.push(m);}g.add(m);return m;}
+function sphere(g,x,y,z,r,color,opts){const m=new THREE.Mesh(new THREE.SphereGeometry(r,24,16),mat(color,opts));m.position.set(x,y,z);m.castShadow=true;g.add(m);return m;}
+
+/* ---------- floors ---------- */
+const F=groups.common;
+function floor(name,x1,z1,x2,z2,color){box(F,null,x1,z1,x2,z2,-0.05,0.05,color,{noShadow:true});}
+floor('客餐厅+阳台',3.35,3.95,9.25,11.6,C.floor);
+floor('厨房',3.95,1.15,6.35,3.95,C.floor);
+floor('女儿房',6.35,0.15,8.95,3.95,C.floor);
+floor('公卫',9.0,0.15,10.75,2.35,C.bathFloor);
+floor('过道',9.0,2.35,10.75,5.25,C.floor);
+floor('儿子房',10.75,0.15,13.65,3.45,C.floor);
+floor('主卫',10.75,3.45,13.65,5.25,C.bathFloor);
+floor('主卧',9.25,5.25,12.75,10.15,C.floor);
+floor('露台',9.25,10.15,12.8,12.4,C.deck);
+floor('父母房',0.15,6.6,3.35,10.05,C.floor);
+floor('玄关',1.95,4.8,3.4,6.6,C.floor);
+floor('电梯厅',1.95,3.9,3.4,4.8,C.hall);
+// 原北阳台分界提示线
+box(F,null,6.4,1.18,8.9,1.22,0,0.005,0xA8997F,{noShadow:true});
+
+/* ---------- walls ---------- */
+const T=0.14;let WALL_H=1.2;
+const WALLS=[
+  [6.35,0.15,8.95,0.15,[{f:6.5,t:8.8,k:'win',s:0.9,h:2.4}]],
+  [3.95,1.15,6.35,1.15,[{f:4.7,t:5.6,k:'win',s:1.0,h:2.2}]],
+  [6.35,0.15,6.35,3.95],
+  [8.95,0.15,8.95,3.95],
+  [8.95,0.15,10.75,0.15,[{f:9.6,t:10.2,k:'win',s:1.4,h:2.2}]],
+  [10.75,0.15,13.65,0.15,[{f:11.4,t:13.0,k:'win',s:0.9,h:2.3}]],
+  [10.75,0.15,10.75,5.25,[{f:2.5,t:3.3,k:'door'}]],
+  [9.0,2.35,10.75,2.35,[{f:9.9,t:10.6,k:'door'}]],
+  [10.75,3.45,13.65,3.45],
+  [13.65,0.15,13.65,5.25,[{f:3.8,t:4.9,k:'win',s:1.2,h:2.2}]],
+  [3.95,1.15,3.95,3.95],
+  [3.95,3.95,6.35,3.95,[{f:4.05,t:5.7,k:'door'}]],
+  [6.35,3.95,8.95,3.95,[{f:8.0,t:8.8,k:'door'}]],
+  [9.1,5.25,13.65,5.25,[{f:9.4,t:10.3,k:'door'},{f:10.9,t:11.7,k:'door'}]],
+  [9.25,5.25,9.25,11.6,[{f:10.35,t:11.35,k:'win',s:0.0,h:2.3}]],
+  [12.75,5.25,12.75,10.15],
+  [9.25,10.15,12.75,10.15,[{f:9.6,t:12.4,k:'win',s:0.0,h:2.4}]],
+  [3.35,11.6,9.25,11.6,[{f:3.5,t:9.1,k:'win',s:0.5,h:2.5}]],
+  [3.35,6.6,3.35,11.6,[{f:7.75,t:8.6,k:'door'}]],
+  [0.15,6.6,3.85,6.6],
+  [0.15,6.6,0.15,10.05],
+  [0.15,10.05,3.35,10.05,[{f:0.45,t:3.05,k:'open'}]],
+  [0.45,10.55,3.05,10.55,[{f:0.55,t:2.95,k:'win',s:0.45,h:2.3}]],
+  [0.45,10.05,0.45,10.55],[3.05,10.05,3.05,10.55],
+  [1.95,4.8,1.95,6.6],
+  [1.95,4.8,3.4,4.8,[{f:2.3,t:3.25,k:'door'}]],
+  [3.4,3.95,3.4,4.8],
+  [3.4,3.95,3.95,3.95]
+];
+function buildWalls(){
+  const g=groups.walls;while(g.children.length){const c=g.children.pop();c.geometry.dispose();}
+  const H=WALL_H;
+  WALLS.forEach(([x1,z1,x2,z2,gaps])=>{
+    const horiz=Math.abs(z1-z2)<1e-6;
+    const a=horiz?Math.min(x1,x2):Math.min(z1,z2), b=horiz?Math.max(x1,x2):Math.max(z1,z2), fixed=horiz?z1:x1;
+    const piece=(u1,u2,y1,y2,m)=>{
+      y2=Math.min(y2,H);if(y2-y1<0.01||u2-u1<0.01)return;
+      const mesh=new THREE.Mesh(new THREE.BoxGeometry(horiz?u2-u1:T,y2-y1,horiz?T:u2-u1),m);
+      mesh.position.set(horiz?(u1+u2)/2:fixed,(y1+y2)/2,horiz?fixed:(u1+u2)/2);
+      if(m!==glass){mesh.castShadow=true;mesh.receiveShadow=true;}
+      g.add(mesh);
+    };
+    const wm=mat(C.wall);let cur=a-T/2;
+    (gaps||[]).slice().sort((p,q)=>p.f-q.f).forEach(gp=>{
+      piece(cur,gp.f,0,2.8,wm);
+      if(gp.k==='door')piece(gp.f,gp.t,2.1,2.8,wm);
+      if(gp.k==='win'){piece(gp.f,gp.t,0,gp.s,wm);piece(gp.f,gp.t,gp.s,gp.h,glass);piece(gp.f,gp.t,gp.h,2.8,wm);}
+      cur=gp.t;
+    });
+    piece(cur,b+T/2,0,2.8,wm);
+  });
+  // 露台栏杆
+  [[9.25,12.4,12.8,12.4],[12.8,10.15,12.8,12.4],[9.25,11.6,9.25,12.4]].forEach(([x1,z1,x2,z2])=>{
+    const horiz=Math.abs(z1-z2)<1e-6;
+    const m=new THREE.Mesh(new THREE.BoxGeometry(horiz?x2-x1:0.05,Math.min(1.1,H),horiz?0.05:z2-z1),glass);
+    m.position.set((x1+x2)/2,Math.min(1.1,H)/2,(z1+z2)/2);g.add(m);
+  });
+}
+buildWalls();
+
+/* ---------- 公共家具 ---------- */
+const G=groups.common;
+// 厨房 L型：水槽在北窗下，灶台靠东墙烟道
+box(G,'厨房北台面（水槽+洗碗机）',3.95,1.2,6.35,1.8,0,0.86,C.walnut,{addH:0.04});
+box(G,null,3.95,1.2,6.35,1.8,0.86,0.04,C.top);
+box(G,'单槽水槽',4.75,1.3,5.55,1.7,0.9,0.02,C.dark);
+box(G,'洗碗机（0.6m，紧挨水槽）',4.1,1.78,4.7,1.8,0.1,0.7,C.steel,{noShadow:true});
+box(G,'厨房东台面（灶台）',5.7,1.8,6.3,3.9,0,0.86,C.walnut,{addH:0.04});
+box(G,null,5.7,1.8,6.3,3.9,0.86,0.04,C.top);
+box(G,'燃气灶（靠东侧烟道）',5.8,2.6,6.2,3.3,0.9,0.02,C.dark);
+box(G,'油烟机',5.85,2.55,6.3,3.35,1.6,0.5,C.dark);
+box(G,'东墙吊柜（奶白）',5.95,1.2,6.3,2.5,1.5,0.8,C.white);
+box(G,'西墙浅吊柜（0.35m）',3.95,1.8,4.3,3.3,1.4,0.9,C.white);
+[[4.05,3.91],[4.46,3.97],[4.88,3.97],[5.29,3.91]].forEach(([x,z])=>{box(G,'四联动对开玻璃门（门洞约1.65m，推开后两侧各叠两扇）',x,z-0.015,x+0.41,z+0.015,0,2.1,0,{material:glass,noShadow:true,dims:'门洞约 1.65m，四扇各约 0.41m，从中间对开'});box(G,null,x,z-0.02,x+0.03,z+0.02,0,2.1,C.walnut);box(G,null,x+0.38,z-0.02,x+0.41,z+0.02,0,2.1,C.walnut);});
+// 冰箱角
+box(G,'平嵌冰箱（按冰箱角尺寸新购）',3.45,4.05,4.2,4.72,0,1.85,C.steel);
+box(G,'冰箱上方奶白收口柜',3.42,4.0,4.23,4.75,1.9,0.7,C.white);
+// 玄关
+box(G,'玄关端景柜（下部）',1.95,6.2,3.4,6.6,0.2,0.7,C.white,{dims:'长 1.4m × 深 0.4m，离地悬空 0.2m'});
+box(G,'端景开放格（胡桃木内衬+灯带）',1.95,6.4,3.4,6.6,0.9,0.4,C.walnut);
+box(G,'玄关端景柜（上部）',1.95,6.2,3.4,6.6,1.3,1.4,C.white);
+box(G,'通高镜面门（遮挡强弱电箱）',1.95,5.0,2.03,5.5,0,2.1,C.mirror,{m:{metalness:0.6,roughness:0.15}});
+box(G,'可移动换鞋小凳',2.25,5.85,2.6,6.15,0,0.45,C.walnutLight);
+box(G,'门外鞋柜（电梯厅，待物业同意）',2.3,4.0,3.25,4.35,0,2.3,C.dark);
+// 西墙实木组合柜 + 洗衣机柜
+box(G,'西墙胡桃木实木组合柜（底座）',3.42,8.75,3.85,10.4,0,0.45,C.walnut);
+box(G,'西墙胡桃木实木组合柜（柜体）',3.42,8.75,3.82,10.4,0.45,1.8,C.walnut,{dims:'约 1.65m 长 × 0.43m 深 × 2.25m 高，南端与洗衣机柜相连（成品，按实测选单元）'});
+box(G,null,3.8,9.2,3.84,9.95,0.9,1.2,C.walnutLight);
+// 父母房门北侧的端景角：大型绿植 + 胡桃木圆凳摆件 + 挂画
+cyl(G,'端景角：天堂鸟（约 1.6m 高）',3.68,7.3,0.24,0.45,1.3,C.green);
+cyl(G,'端景角：砖红釉陶盆',3.68,7.3,0.24,0,0.45,C.brick);
+cyl(G,'端景角：胡桃木小圆凳（放陶罐摆件）',3.65,6.92,0.17,0,0.45,C.walnut);
+sphere(G,3.65,0.56,6.92,0.1,0xE8DCC8);
+box(G,'端景角：挂画 + 画灯',3.4,6.75,3.43,7.55,1.35,0.7,0x8E7A5E);
+box(G,'洗烘叠放洗衣机柜（胡桃木色门板）',3.4,10.4,4.05,11.5,0,2.2,C.walnutLight);
+// 主卧
+box(G,'主卧衣柜（0.55m 深，窄平开门）',9.3,6.25,9.85,9.1,0,2.7,C.white);
+box(G,'一体梳妆台',9.3,9.1,9.8,10.1,0,0.75,C.walnut);
+box(G,null,9.3,9.1,9.65,10.1,1.4,1.2,C.white);
+box(G,'梳妆凳',9.95,9.4,10.3,9.75,0,0.45,C.oat);
+box(G,'1.8m 床（薄床头，总长≤2.1m）',10.6,7.2,12.7,9.0,0,0.5,C.cushion);
+box(G,'焦糖色软包床头',12.62,7.2,12.72,9.0,0,1.1,C.caramel);
+box(G,'床头柜',12.25,6.75,12.7,7.2,0,0.5,C.walnut);
+box(G,'床头柜',12.25,9.0,12.7,9.45,0,0.5,C.walnut);
+box(G,'电脑桌（胡桃木+奶白，参考02）',12.15,5.3,12.72,6.55,0,0.75,C.walnut);
+box(G,'书桌上方开放格',12.4,5.3,12.72,6.55,1.3,0.9,C.walnutLight);
+box(G,'书桌椅',11.55,5.7,12.0,6.15,0,0.9,C.oat);
+for(let x=11.25;x<=12.66;x+=0.075){box(G,x>11.24&&x<11.3?'半高胡桃木格栅屏风（1.5m 高）':null,x,6.58,x+0.03,6.66,0,1.5,C.walnut,x>11.24&&x<11.3?{dims:'长约 1.45m × 高 1.5m，通透格栅'}:null);}
+box(G,'床边地毯',10.2,7.0,11.0,9.3,0,0.01,C.rug,{noShadow:true});
+// 主卫：洗手台-马桶-淋浴 一字三段
+box(G,'主卫洗手台（单盆，悬挂柜）',10.85,3.5,11.75,4.02,0.25,0.6,C.walnut);
+box(G,'主卫镜柜',10.85,3.5,11.75,3.62,1.2,0.75,C.white);
+box(G,'马桶',11.95,3.52,12.35,4.2,0,0.45,C.toilet);
+box(G,'淋浴固定玻璃',12.5,3.5,12.54,4.5,0,2.0,0,{material:glass,noShadow:true});
+box(G,'淋浴区（约1.1×1.7m，窗下）',12.55,3.5,13.6,5.2,0,0.02,0xB8AE9F,{noShadow:true});
+// 过道双盆
+box(G,'双盆洗漱台（1.5m，实测）',9.05,2.42,9.55,3.92,0.25,0.6,C.walnut);
+box(G,null,9.05,2.42,9.55,3.92,0.85,0.04,C.top);
+box(G,'并排双镜柜',9.05,2.47,9.17,3.87,1.15,0.8,C.white);
+// 公卫湿区
+box(G,'公卫淋浴区（整宽约0.9m）',9.05,0.2,10.7,1.1,0,0.02,0xB8AE9F,{noShadow:true});
+box(G,'淋浴固定玻璃',9.05,1.08,10.1,1.12,0,2.0,0,{material:glass,noShadow:true});
+box(G,'马桶',9.1,1.55,9.5,2.25,0,0.45,C.toilet);
+// 露台
+cyl(G,'小茶几',10.9,11.3,0.35,0,0.5,C.walnutLight);
+cyl(G,'藤编单椅',10.2,11.3,0.28,0,0.45,C.cushion);
+cyl(G,'藤编单椅',11.6,11.3,0.28,0,0.45,C.cushion);
+[[9.6,10.5],[12.4,10.5],[12.4,12.0],[9.6,12.0]].forEach(([x,z])=>cyl(G,'露台绿植',x,z,0.22,0,0.8,C.green));
+// 父母房
+box(G,'推拉门衣柜（0.55m 深）',0.2,6.65,2.35,7.2,0,2.7,C.white);
+box(G,'1.8m 床（床头靠西墙）',0.2,7.75,2.3,9.55,0,0.5,C.cushion);
+box(G,null,0.15,7.75,0.25,9.55,0,1.0,C.oat);
+box(G,'唯一的床头柜',0.2,9.55,0.65,10.0,0,0.5,C.walnut);
+box(G,'飘窗坐榻（保温台面+胡桃木饰面）',0.5,10.05,3.0,10.5,0,0.45,C.walnut);
+box(G,'燕麦色软垫',0.95,10.08,2.55,10.48,0.45,0.08,C.oat);
+box(G,'飘窗矮书格',0.5,10.1,0.9,10.5,0.45,0.5,C.walnutLight);
+box(G,'飘窗矮书格',2.6,10.1,3.0,10.5,0.45,0.5,C.walnutLight);
+box(G,'父母房进门凹位上方：空调内机吊顶',2.35,6.62,3.3,7.4,2.5,0.3,C.wall,{noShadow:true});
+// 女儿房（成品家具，仅示意）
+box(G,'L型衣柜·南段（成品转角系列，仅示意）',6.4,3.35,8.0,3.9,0,2.2,C.kPink);
+box(G,'L型衣柜·西段（成品，仅示意）',6.4,1.8,6.95,3.35,0,2.2,C.kPink);
+box(G,'1.5m 高箱床（床头朝西，仅示意）',6.45,0.3,8.55,1.8,0,0.45,C.kLilac);
+box(G,null,6.4,0.3,6.5,1.8,0,1.0,C.kPink);
+box(G,'窄书架',8.6,0.3,8.9,1.7,0,0.9,C.white);
+box(G,'书桌（东墙，仅示意）',8.35,1.9,8.9,2.95,0,0.75,C.white);
+box(G,'书桌椅',7.75,2.2,8.2,2.65,0,0.85,C.kPink);
+// 儿子房（成品家具，仅示意）
+box(G,'衣柜 2m（南墙，仅示意）',11.6,2.85,13.6,3.4,0,2.2,C.kBlue);
+box(G,'1.5m 床（床头朝西，仅示意）',10.8,0.25,12.9,1.75,0,0.45,C.kYellow);
+box(G,null,10.8,0.25,10.9,1.75,0,1.0,C.kBlue);
+box(G,'东墙书桌段',13.05,1.75,13.6,2.85,0,0.75,C.kGreen);
+box(G,'床尾矮书架（绘本、乐高）',13.05,0.2,13.6,1.75,0,0.7,C.white);
+box(G,'书桌椅',12.4,2.05,12.85,2.5,0,0.85,C.kBlue);
+box(G,'游戏地毯',11.2,1.95,12.3,2.8,0,0.01,C.kGreen,{noShadow:true});
+
+/* ---------- 方案 A：常规客厅 ---------- */
+const A=groups.A;
+box(A,'岛台（1.4×0.9×0.9m，嵌蒸烤箱）',4.2,4.95,5.6,5.85,0,0.86,C.walnut,{addH:0.04});
+box(A,null,4.2,4.95,5.6,5.85,0.86,0.04,C.top);
+sphere(A,4.9,2.05,5.4,0.2,0xFFF6E6,{emissive:0xFFE9C4,emissiveIntensity:0.5});
+box(A,'实木餐桌 1.6m（东西向，接在岛台东侧）',5.75,4.95,7.35,5.85,0,0.75,C.walnutLight);
+sphere(A,6.55,2.0,5.4,0.18,0xFFF6E6,{emissive:0xFFE9C4,emissiveIntensity:0.5});
+[6.15,6.95].forEach(x=>{box(A,'中古弧形扶手餐椅',x-0.2,4.55,x+0.2,4.95,0,0.8,C.walnut);box(A,'中古弧形扶手餐椅',x-0.2,5.9,x+0.2,6.3,0,0.8,C.walnut);});
+box(A,'中古弧形扶手餐椅',7.4,5.2,7.8,5.6,0,0.8,C.walnut);
+box(A,'东墙整面电视背景墙（奶白艺术涂料）',9.15,5.35,9.18,10.1,0,2.6,0xE9E1D3,{noShadow:true});
+box(A,'焦糖色皮沙发（三人位）',4.75,7.4,5.7,9.8,0,0.42,C.caramel,{addH:0.38});
+box(A,null,4.75,7.4,5.0,9.8,0.42,0.38,C.caramel);
+box(A,'脚踏',5.9,9.1,6.5,9.7,0,0.42,C.caramel);
+cyl(A,'胡桃木圆茶几',6.9,8.6,0.45,0,0.4,C.walnut);
+box(A,'几何纹短毛地毯',5.5,7.4,8.3,9.8,0,0.01,C.rug,{noShadow:true});
+box(A,'悬空电视柜（3m，胡桃木）',8.8,7.1,9.15,10.1,0.25,0.35,C.walnut);
+box(A,'85 寸电视',9.08,7.65,9.14,9.55,1.0,1.1,C.dark);
+cyl(A,'中古弧形落地灯',4.45,10.2,0.12,0,1.8,C.dark);
+box(A,'中古单椅（墨绿）',6.9,10.5,7.6,11.2,0,0.75,C.olive);
+
+/* ---------- 方案 B：去客厅化 ---------- */
+const B=groups.B;
+box(B,'岛台（1.4×0.9×0.9m，嵌蒸烤箱）',4.2,4.95,5.6,5.85,0,0.86,C.walnut,{addH:0.04});
+box(B,null,4.2,4.95,5.6,5.85,0.86,0.04,C.top);
+box(B,'2.4m 实木长桌（高低台接岛台，0.75m 高）',5.6,5.0,8.0,5.85,0,0.75,C.walnutLight);
+sphere(B,4.9,2.05,5.4,0.2,0xFFF6E6,{emissive:0xFFE9C4,emissiveIntensity:0.5});
+sphere(B,6.8,2.0,5.42,0.18,0xFFF6E6,{emissive:0xFFE9C4,emissiveIntensity:0.5});
+[6.1,6.9,7.6].forEach(x=>{box(B,'混搭餐椅',x-0.2,4.55,x+0.2,4.95,0,0.8,x===6.9?C.olive:C.walnut);box(B,'混搭餐椅',x-0.2,5.9,x+0.2,6.3,0,0.8,x===6.1?C.brick:C.walnut);});
+box(B,'燕麦色布艺模块沙发（可拆洗）',4.75,7.4,5.7,10.1,0,0.42,C.oat,{addH:0.38});
+box(B,null,4.75,7.4,5.0,10.1,0.42,0.38,C.oat);
+box(B,'模块沙发转角',5.7,9.3,6.7,10.1,0,0.42,C.oat);
+cyl(B,'边几',6.0,7.1,0.22,0,0.5,C.walnut);
+box(B,'游戏/活动地毯',5.9,7.3,8.4,9.2,0,0.01,C.rug,{noShadow:true});
+box(B,'东墙通顶整墙柜（下段）',8.75,5.35,9.2,10.15,0,0.9,C.white,{dims:'整面东墙约 4.8m 长 × 0.45m 深 × 通顶'});
+box(B,'整墙柜开放格（胡桃木内衬+灯带）',8.95,5.35,9.2,10.15,0.9,0.6,C.walnut);
+box(B,'东墙通顶整墙柜（上段）',8.75,5.35,9.2,10.15,1.5,1.25,C.white);
+box(B,'移动电视（支架可推）',7.35,8.4,7.45,9.4,0.6,0.7,C.dark);
+box(B,null,7.2,8.7,7.6,9.1,0,0.6,C.dark);
+cyl(B,'中古弧形落地灯',4.45,10.4,0.12,0,1.8,C.dark);
+
+/* ---------- room labels ---------- */
+const LABELS=[['厨房',5.0,2.6],['女儿房',7.4,1.1],['公卫',9.9,1.6],['双盆干区',10.05,3.2],['儿子房',12.0,1.0],['主卫',11.9,4.7],['主卧',11.2,8.1],['露台',10.9,12.0],['客餐厅',7.0,7.3],['阳台·洗衣区',5.4,11.2],['玄关',2.7,5.4],['父母房',1.4,8.6],['门外电梯厅',2.7,3.7]];
+const labelWrap=document.getElementById('labels');
+const labelEls=LABELS.map(([t,x,z])=>{const el=document.createElement('div');el.className='room-label';el.textContent=t;labelWrap.appendChild(el);return {el,v:new THREE.Vector3(x,0.4,z)};});
+
+/* ---------- views & notes ---------- */
+const VIEWS=[
+ {id:'all',name:'全屋鸟瞰',pos:[7,19,19],tgt:[7,0,6],
+  notes:{title:'全屋鸟瞰',items:['方案 A / B 只影响客餐厅，其余房间两个方案相同。','阳台东端（电视墙最南侧）有开发商装好的玻璃门通往露台，门前保持通畅。','墙面奶白、全屋暖米色柔光 80×80 砖通铺、室内门中等胡桃木色。','全屋木色以西墙实木组合柜为准，门、岛台、开放格都向它对色。'],
+  check:'需要交房实测：玄关柜墙向东延伸的长度、冰箱角宽度、过道宽度、父母房门到阳台的书柜段长度。'}},
+ {id:'living',name:'客餐厅',pos:[6.6,11,16],tgt:[6.4,0,7.2],
+  notes:null},
+ {id:'kitchen',name:'厨房·岛台',pos:[5.4,8.5,10],tgt:[5.3,0.3,3.6],
+  notes:{title:'厨房 · 冰箱角 · 岛台',items:['L 型：水槽在北窗下并配洗碗机，灶台和油烟机靠东墙烟道，西墙 0.35m 浅吊柜。','南墙四联动对开玻璃门，门洞约 1.65m，推开后两侧各叠两扇，收进门洞两侧。','门外西侧拐角放平嵌冰箱，外包奶白收口柜。','岛台离厨房门 1.0m：朝厨房一侧嵌蒸烤箱加抽屉，朝餐厅一侧做胡桃木开放格。'],
+  check:'岛台的地面线管要在铺地暖之前定位。'}},
+ {id:'master',name:'主卧',pos:[11,10.5,14.5],tgt:[11,0,7.6],
+  notes:{title:'主卧',items:['门在北墙靠西，从过道进入；进门就看到西墙一排衣柜（0.55m 深、窄平开门），南端接一体梳妆台。','床头靠东墙，薄床头总长 ≤2.1m，床尾到衣柜门约 0.75m。','出主卫后，东墙北段是电脑桌，转角接 1.5m 高的胡桃木格栅屏风。','屏风西端到衣柜之间留约 1.35m 通道。'],
+  check:'模型中 1.8m 床与两侧床头柜合计 2.7m，屏风到南窗之间刚好放下。'}},
+ {id:'kids',name:'孩子房',pos:[10,12,7.2],tgt:[10,0,1.3],
+  notes:{title:'女儿房 · 儿子房 · 公卫',items:['女儿房：南墙加西墙的 L 型衣柜，床靠北侧东西向摆、床头朝西，书桌放东墙。','儿子房：南墙 2m 衣柜，床靠北窗东西向摆，东墙一条通长台面，分为书桌段和矮书架段。','两个孩子房的家具都是去家居广场挑的成品，模型里只是示意颜色。','公卫：最里端整宽淋浴，马桶靠门；门外紧挨公卫、靠女儿房一侧墙面做 1.5m 双盆台，过道剩约 1.2m。'],
+  check:'床贴北窗时留 10cm，窗户加限位器。女儿房原北阳台的墙垛要拆干净。'}},
+ {id:'parents',name:'玄关·父母房',pos:[-3,10,11.5],tgt:[2,0,7.2],
+  notes:{title:'玄关 · 父母房',items:['进门正对 1.4m 端景柜：底部悬空 0.2m，中段是胡桃木开放格加灯带。','右手西墙做通高镜面门，把强弱电箱藏在后面。','玄关柜所在的墙向东延伸，和父母房东墙形成直角。这个直角做成端景角：砖红釉陶盆配天堂鸟、胡桃木小圆凳放陶罐、墙上挂画配画灯。','父母房门南移约 1m；门南侧到阳台是实木书柜，和洗衣机柜连成一整面西墙。','父母房北墙是推拉门衣柜，1.8m 床头靠西墙，只放一个床头柜，靠南侧。','飘窗做成坐榻，两端配矮书格；进门凹位上方是空调内机吊顶。'],
+  check:'衣柜到床之间约 0.6m，推拉门可以正常使用。'}},
+ {id:'bath',name:'卫生间',pos:[8.4,9,9],tgt:[11.2,0,3.8],
+  notes:{title:'主卫 · 双盆干区',items:['主卫一字三段：门在南墙西侧，洗手台靠门，马桶在中间，淋浴在东端窗下。','主卫墙砖比公卫深一档（燕麦或浅咖色 80×40），配深灰五金。','双盆台 1.5m，位于公卫门外、靠女儿房一侧墙面，并排两扇镜柜，给儿子配一只踏凳。'],
+  check:'马桶坑位以开发商预留为准，不对的话用移位器调整或对调位置。'}}
+];
+const LIVING_NOTES={
+ A:{title:'客餐厅 · 方案 A 常规客厅',items:['岛台东侧接 1.6m 实木餐桌，东西向摆放，坐 5～6 人。','东墙是一整面电视背景墙，奶白艺术涂料，配悬空 3m 胡桃木电视柜和 85 寸电视；沙发到电视约 3.4m。','焦糖色皮沙发面朝东墙，背后是西墙实木书柜加洗衣机柜，书柜底座到沙发留约 0.9m 通道。','胡桃木圆茶几，弧形落地灯，窗边一把墨绿中古单椅。'],
+    check:'核对：餐桌改为东西向后，餐区和客厅区之间有约 1.1m 通道，比之前宽松；北侧椅背到厨房墙约 0.6m，只够坐人。'},
+ B:{title:'客餐厅 · 方案 B 去客厅化',items:['岛台一字接 2.4m 长桌，做高低台，吃饭、写作业、办公都在这里。','燕麦色可拆洗模块沙发，不放茶几只放边几，中间地面留给孩子活动。','东墙整面通顶柜（约 4.8m），中段是胡桃木开放格加灯带，电视用移动支架。','长桌两侧混搭墨绿、砖红餐椅。'],
+    check:'核对：长桌北侧椅背到厨房墙约 0.6m，只够坐人不够走；去女儿房要从长桌东端绕，那里约 1.2m 宽，足够。'}
+};
+let scheme='A',currentView='all';
+function setScheme(s){
+  scheme=s;groups.A.visible=s==='A';groups.B.visible=s==='B';
+  btnA.setAttribute('aria-pressed',s==='A');btnB.setAttribute('aria-pressed',s==='B');
+  hidePick();if(currentView==='living'||currentView==='all')renderNotes(currentView);
+}
+function renderNotes(id){
+  const v=VIEWS.find(x=>x.id===id);const n=id==='living'?LIVING_NOTES[scheme]:v.notes;
+  const pal=id==='all'?`<div class="swatches">${[['奶白墙',C.wall],['暖米地砖',C.floor],['胡桃木',C.walnut],['焦糖',C.caramel],['燕麦',C.oat],['墨绿',C.olive],['砖红',C.brick]].map(([t,c])=>`<span class="sw"><i style="background:#${c.toString(16).padStart(6,'0')}"></i>${t}</span>`).join('')}</div>`:'';
+  document.getElementById('notes').innerHTML=`<h2>${n.title}</h2><ul>${n.items.map(i=>`<li>${i}</li>`).join('')}</ul>${pal}<div class="check">${n.check}</div>`;
+}
+const chips=document.getElementById('chips');
+VIEWS.forEach(v=>{const b=document.createElement('button');b.textContent=v.name;b.dataset.id=v.id;b.setAttribute('aria-pressed',v.id==='all');b.onclick=()=>goView(v.id);chips.appendChild(b);});
+
+const reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+let tween=null;
+function goView(id){
+  currentView=id;const v=VIEWS.find(x=>x.id===id);
+  chips.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.id===id));
+  renderNotes(id);hidePick();
+  const to={p:new THREE.Vector3(...v.pos),t:new THREE.Vector3(...v.tgt)};
+  if(reduce){camera.position.copy(to.p);controls.target.copy(to.t);return;}
+  tween={fp:camera.position.clone(),ft:controls.target.clone(),to,start:performance.now(),dur:900};
+}
+
+/* ---------- walls toggle ---------- */
+const btnA=document.getElementById('btnA'),btnB=document.getElementById('btnB');
+btnA.onclick=()=>setScheme('A');btnB.onclick=()=>setScheme('B');
+const btnCut=document.getElementById('btnCut'),btnFull=document.getElementById('btnFull');
+function setWalls(h){WALL_H=h;buildWalls();btnCut.setAttribute('aria-pressed',h<2);btnFull.setAttribute('aria-pressed',h>2);}
+btnCut.onclick=()=>setWalls(1.2);btnFull.onclick=()=>setWalls(2.8);
+
+/* ---------- picking ---------- */
+const ray=new THREE.Raycaster(),mouse=new THREE.Vector2();
+const pick=document.getElementById('pick');let hl=null,down=null;
+function hidePick(){pick.style.display='none';if(hl){hl.m.material=hl.orig;hl=null;}}
+document.getElementById('closeInfo').onclick=hidePick;
+renderer.domElement.addEventListener('pointerdown',e=>{down=[e.clientX,e.clientY];});
+renderer.domElement.addEventListener('pointerup',e=>{
+  if(!down||Math.hypot(e.clientX-down[0],e.clientY-down[1])>5)return;
+  const r=renderer.domElement.getBoundingClientRect();
+  mouse.set(((e.clientX-r.left)/r.width)*2-1,-((e.clientY-r.top)/r.height)*2+1);
+  ray.setFromCamera(mouse,camera);
+  const hits=ray.intersectObjects(pickables.filter(m=>{let o=m;while(o){if(!o.visible)return false;o=o.parent;}return true;}));
+  hidePick();if(!hits.length)return;
+  const m=hits[0].object;
+  hl={m,orig:m.material};
+  if(m.material!==glass){const c=m.material.clone();c.emissive=new THREE.Color(0x6b5a2a);c.emissiveIntensity=0.35;m.material=c;}
+  document.getElementById('pickName').textContent=m.userData.name;
+  document.getElementById('pickDims').textContent=m.userData.dims;
+  pick.style.display='block';
+});
+
+/* ---------- loop ---------- */
+function resize(){const w=stage.clientWidth,h=stage.clientHeight;renderer.setSize(w,h);camera.aspect=w/h;camera.updateProjectionMatrix();}
+window.addEventListener('resize',resize);resize();
+const v0=VIEWS[0];camera.position.set(...v0.pos);controls.target.set(...v0.tgt);
+renderNotes('all');setScheme('A');
+const tmp=new THREE.Vector3();
+function loop(now){
+  requestAnimationFrame(loop);
+  if(tween){const k=Math.min(1,(now-tween.start)/tween.dur),e=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2;
+    camera.position.lerpVectors(tween.fp,tween.to.p,e);controls.target.lerpVectors(tween.ft,tween.to.t,e);if(k>=1)tween=null;}
+  controls.update();renderer.render(scene,camera);
+  const w=stage.clientWidth,h=stage.clientHeight;
+  labelEls.forEach(({el,v})=>{tmp.copy(v).project(camera);
+    if(tmp.z>1||tmp.x<-1.1||tmp.x>1.1||tmp.y<-1.1||tmp.y>1.1){el.style.display='none';return;}
+    el.style.display='block';el.style.left=((tmp.x+1)/2*w)+'px';el.style.top=((1-tmp.y)/2*h)+'px';});
+}
+requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>

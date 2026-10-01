@@ -1,0 +1,3342 @@
+{
+ "meta": {
+  "project": "江语云庭 143㎡ 01户型（实际为户型图镜像）",
+  "units": "meters",
+  "coordinate_system": "Blender world: +X=东, +Y=北, +Z=上; 原点在户型西北角外侧附近，所有 Y 为负值",
+  "source": "第1阶段 Three.js 布局模型（业主已逐项确认）",
+  "wall_thickness": 0.14,
+  "default_ceiling_height_raw": 2.85,
+  "door_head": 2.1,
+  "schemes": {
+   "common": "两方案共用",
+   "A": "方案A 常规客厅（只在方案A场景显示）",
+   "B": "方案B 去客厅化（只在方案B场景显示）"
+  },
+  "bbox_rule": "家具 bbox 是包络盒：精细建模后的家具外轮廓必须落在 bbox 内且尽量贴满（误差≤2cm），朝向按 note/设计说明。stage1_color 只是第1阶段示意色，正式材质以 CLAUDE.md 材质表为准。"
+ },
+ "floors": [
+  {
+   "id": "living_dining_balcony",
+   "name": "客餐厅+南阳台（已打通）",
+   "rect_min": [
+    3.35,
+    -11.6
+   ],
+   "rect_max": [
+    9.25,
+    -3.95
+   ],
+   "floor_finish": "tile_800",
+   "stage1_color": "#E3D5C0"
+  },
+  {
+   "id": "kitchen",
+   "name": "厨房",
+   "rect_min": [
+    3.95,
+    -3.95
+   ],
+   "rect_max": [
+    6.35,
+    -1.15
+   ],
+   "floor_finish": "tile_800",
+   "stage1_color": "#E3D5C0"
+  },
+  {
+   "id": "daughter_room",
+   "name": "女儿房（含并入的北阳台）",
+   "rect_min": [
+    6.35,
+    -3.95
+   ],
+   "rect_max": [
+    8.95,
+    -0.15
+   ],
+   "floor_finish": "tile_800",
+   "stage1_color": "#E3D5C0"
+  },
+  {
+   "id": "public_bath_wet",
+   "name": "公卫湿区",
+   "rect_min": [
+    9.0,
+    -2.35
+   ],
+   "rect_max": [
+    10.75,
+    -0.15
+   ],
+   "floor_finish": "bath_tile",
+   "stage1_color": "#CFC6B8"
+  },
+  {
+   "id": "corridor",
+   "name": "过道（含双盆干区）",
+   "rect_min": [
+    9.0,
+    -5.25
+   ],
+   "rect_max": [
+    10.75,
+    -2.35
+   ],
+   "floor_finish": "tile_800",
+   "stage1_color": "#E3D5C0"
+  },
+  {
+   "id": "son_room",
+   "name": "儿子房",
+   "rect_min": [
+    10.75,
+    -3.45
+   ],
+   "rect_max": [
+    13.65,
+    -0.15
+   ],
+   "floor_finish": "tile_800",
+   "stage1_color": "#E3D5C0"
+  },
+  {
+   "id": "master_bath",
+   "name": "主卫",
+   "rect_min": [
+    10.75,
+    -5.25
+   ],
+   "rect_max": [
+    13.65,
+    -3.45
+   ],
+   "floor_finish": "bath_tile",
+   "stage1_color": "#CFC6B8"
+  },
+  {
+   "id": "master_bedroom",
+   "name": "主卧",
+   "rect_min": [
+    9.25,
+    -10.15
+   ],
+   "rect_max": [
+    12.75,
+    -5.25
+   ],
+   "floor_finish": "tile_800",
+   "stage1_color": "#E3D5C0"
+  },
+  {
+   "id": "terrace",
+   "name": "露台（开发商不允许改造）",
+   "rect_min": [
+    9.25,
+    -12.4
+   ],
+   "rect_max": [
+    12.8,
+    -10.15
+   ],
+   "floor_finish": "wood_deck",
+   "stage1_color": "#B49A7A"
+  },
+  {
+   "id": "parents_room",
+   "name": "父母房/次卧",
+   "rect_min": [
+    0.15,
+    -10.05
+   ],
+   "rect_max": [
+    3.35,
+    -6.6
+   ],
+   "floor_finish": "tile_800",
+   "stage1_color": "#E3D5C0"
+  },
+  {
+   "id": "foyer",
+   "name": "玄关",
+   "rect_min": [
+    1.95,
+    -6.6
+   ],
+   "rect_max": [
+    3.4,
+    -4.8
+   ],
+   "floor_finish": "tile_800",
+   "stage1_color": "#E3D5C0"
+  },
+  {
+   "id": "elevator_hall",
+   "name": "门外电梯厅（公共区域）",
+   "rect_min": [
+    1.95,
+    -4.8
+   ],
+   "rect_max": [
+    3.4,
+    -3.9
+   ],
+   "floor_finish": "public_stone",
+   "stage1_color": "#BDB8B0"
+  },
+  {
+   "id": "parents_bay_window",
+   "name": "父母房飘窗台（高0.45m，做坐榻）",
+   "rect_min": [
+    0.45,
+    -10.55
+   ],
+   "rect_max": [
+    3.05,
+    -10.05
+   ],
+   "floor_finish": "bay_platform"
+  }
+ ],
+ "walls": [
+  {
+   "id": "W01",
+   "axis": "x",
+   "y": -0.15,
+   "start": 6.35,
+   "end": 8.95,
+   "openings": [
+    {
+     "type": "window",
+     "start": 6.5,
+     "end": 8.8,
+     "sill": 0.9,
+     "head": 2.4
+    }
+   ]
+  },
+  {
+   "id": "W02",
+   "axis": "x",
+   "y": -1.15,
+   "start": 3.95,
+   "end": 6.35,
+   "openings": [
+    {
+     "type": "window",
+     "start": 4.7,
+     "end": 5.6,
+     "sill": 1,
+     "head": 2.2
+    }
+   ]
+  },
+  {
+   "id": "W03",
+   "axis": "y",
+   "x": 6.35,
+   "start": -3.95,
+   "end": -0.15,
+   "openings": []
+  },
+  {
+   "id": "W04",
+   "axis": "y",
+   "x": 8.95,
+   "start": -3.95,
+   "end": -0.15,
+   "openings": []
+  },
+  {
+   "id": "W05",
+   "axis": "x",
+   "y": -0.15,
+   "start": 8.95,
+   "end": 10.75,
+   "openings": [
+    {
+     "type": "window",
+     "start": 9.6,
+     "end": 10.2,
+     "sill": 1.4,
+     "head": 2.2
+    }
+   ]
+  },
+  {
+   "id": "W06",
+   "axis": "x",
+   "y": -0.15,
+   "start": 10.75,
+   "end": 13.65,
+   "openings": [
+    {
+     "type": "window",
+     "start": 11.4,
+     "end": 13.0,
+     "sill": 0.9,
+     "head": 2.3
+    }
+   ]
+  },
+  {
+   "id": "W07",
+   "axis": "y",
+   "x": 10.75,
+   "start": -5.25,
+   "end": -0.15,
+   "openings": [
+    {
+     "type": "door",
+     "start": -3.3,
+     "end": -2.5,
+     "head": 2.1
+    }
+   ],
+   "note": "儿子房西墙/过道东墙：儿子房门"
+  },
+  {
+   "id": "W08",
+   "axis": "x",
+   "y": -2.35,
+   "start": 9.0,
+   "end": 10.75,
+   "openings": [
+    {
+     "type": "door",
+     "start": 9.9,
+     "end": 10.6,
+     "head": 2.1
+    }
+   ],
+   "note": "公卫南墙：公卫门"
+  },
+  {
+   "id": "W09",
+   "axis": "x",
+   "y": -3.45,
+   "start": 10.75,
+   "end": 13.65,
+   "openings": []
+  },
+  {
+   "id": "W10",
+   "axis": "y",
+   "x": 13.65,
+   "start": -5.25,
+   "end": -0.15,
+   "openings": [
+    {
+     "type": "window",
+     "start": -4.9,
+     "end": -3.8,
+     "sill": 1.2,
+     "head": 2.2
+    }
+   ],
+   "note": "东外墙：主卫窗在此"
+  },
+  {
+   "id": "W11",
+   "axis": "y",
+   "x": 3.95,
+   "start": -3.95,
+   "end": -1.15,
+   "openings": []
+  },
+  {
+   "id": "W12",
+   "axis": "x",
+   "y": -3.95,
+   "start": 3.95,
+   "end": 6.35,
+   "openings": [
+    {
+     "type": "door",
+     "start": 4.05,
+     "end": 5.7,
+     "head": 2.1
+    }
+   ],
+   "note": "厨房南墙：门洞为四联动对开玻璃门"
+  },
+  {
+   "id": "W13",
+   "axis": "x",
+   "y": -3.95,
+   "start": 6.35,
+   "end": 8.95,
+   "openings": [
+    {
+     "type": "door",
+     "start": 8.0,
+     "end": 8.8,
+     "head": 2.1
+    }
+   ],
+   "note": "女儿房南墙：门在东端"
+  },
+  {
+   "id": "W14",
+   "axis": "x",
+   "y": -5.25,
+   "start": 9.1,
+   "end": 13.65,
+   "openings": [
+    {
+     "type": "door",
+     "start": 9.4,
+     "end": 10.3,
+     "head": 2.1
+    },
+    {
+     "type": "door",
+     "start": 10.9,
+     "end": 11.7,
+     "head": 2.1
+    }
+   ],
+   "note": "主卧北墙：西侧为主卧门（从过道进入），东侧为主卫门"
+  },
+  {
+   "id": "W15",
+   "axis": "y",
+   "x": 9.25,
+   "start": -11.6,
+   "end": -5.25,
+   "openings": [
+    {
+     "type": "glass_door",
+     "start": -11.35,
+     "end": -10.35,
+     "head": 2.3
+    }
+   ],
+   "note": "客厅东墙=主卧西墙：整面电视墙，南端阳台段有开发商玻璃门通露台"
+  },
+  {
+   "id": "W16",
+   "axis": "y",
+   "x": 12.75,
+   "start": -10.15,
+   "end": -5.25,
+   "openings": []
+  },
+  {
+   "id": "W17",
+   "axis": "x",
+   "y": -10.15,
+   "start": 9.25,
+   "end": 12.75,
+   "openings": [
+    {
+     "type": "glass_door",
+     "start": 9.6,
+     "end": 12.4,
+     "head": 2.4
+    }
+   ],
+   "note": "主卧南墙：通露台的落地玻璃门窗"
+  },
+  {
+   "id": "W18",
+   "axis": "x",
+   "y": -11.6,
+   "start": 3.35,
+   "end": 9.25,
+   "openings": [
+    {
+     "type": "window",
+     "start": 3.5,
+     "end": 9.1,
+     "sill": 0.5,
+     "head": 2.5
+    }
+   ],
+   "note": "南阳台外窗（自封断桥铝+中空玻璃）"
+  },
+  {
+   "id": "W19",
+   "axis": "y",
+   "x": 3.35,
+   "start": -11.6,
+   "end": -6.6,
+   "openings": [
+    {
+     "type": "door",
+     "start": -8.6,
+     "end": -7.75,
+     "head": 2.1
+    }
+   ],
+   "note": "客厅西墙：父母房门；门南侧为实木书柜+洗衣机柜"
+  },
+  {
+   "id": "W20",
+   "axis": "x",
+   "y": -6.6,
+   "start": 0.15,
+   "end": 3.85,
+   "openings": [],
+   "note": "父母房北墙=玄关柜墙，向东延伸至 x=3.85 与父母房东墙成直角（端景角）"
+  },
+  {
+   "id": "W21",
+   "axis": "y",
+   "x": 0.15,
+   "start": -10.05,
+   "end": -6.6,
+   "openings": []
+  },
+  {
+   "id": "W22",
+   "axis": "x",
+   "y": -10.05,
+   "start": 0.15,
+   "end": 3.35,
+   "openings": [
+    {
+     "type": "full_opening",
+     "start": 0.45,
+     "end": 3.05
+    }
+   ]
+  },
+  {
+   "id": "W23",
+   "axis": "x",
+   "y": -10.55,
+   "start": 0.45,
+   "end": 3.05,
+   "openings": [
+    {
+     "type": "window",
+     "start": 0.55,
+     "end": 2.95,
+     "sill": 0.45,
+     "head": 2.3
+    }
+   ],
+   "note": "父母房飘窗外窗"
+  },
+  {
+   "id": "W24",
+   "axis": "y",
+   "x": 0.45,
+   "start": -10.55,
+   "end": -10.05,
+   "openings": []
+  },
+  {
+   "id": "W25",
+   "axis": "y",
+   "x": 3.05,
+   "start": -10.55,
+   "end": -10.05,
+   "openings": [],
+   "note": "玄关西墙：强弱电箱位置（通高镜面门遮挡）"
+  },
+  {
+   "id": "W26",
+   "axis": "y",
+   "x": 1.95,
+   "start": -6.6,
+   "end": -4.8,
+   "openings": [],
+   "note": "玄关北墙：入户门"
+  },
+  {
+   "id": "W27",
+   "axis": "x",
+   "y": -4.8,
+   "start": 1.95,
+   "end": 3.4,
+   "openings": [
+    {
+     "type": "door",
+     "start": 2.3,
+     "end": 3.25,
+     "head": 2.1
+    }
+   ]
+  },
+  {
+   "id": "W28",
+   "axis": "y",
+   "x": 3.4,
+   "start": -4.8,
+   "end": -3.95,
+   "openings": []
+  },
+  {
+   "id": "W29",
+   "axis": "x",
+   "y": -3.95,
+   "start": 3.4,
+   "end": 3.95,
+   "openings": []
+  }
+ ],
+ "items": [
+  {
+   "id": "common_daughter_room_marker_01",
+   "name": "原北阳台分界（仅标记，无实体，地面需找平）",
+   "type": "marker",
+   "group": "common",
+   "room": "daughter_room",
+   "bbox": {
+    "min": [
+     6.4,
+     -1.22,
+     0.0
+    ],
+    "max": [
+     8.9,
+     -1.18,
+     0.001
+    ]
+   }
+  },
+  {
+   "id": "common_kitchen_dishwasher_01",
+   "name": "厨房北台面（水槽+洗碗机）",
+   "type": "dishwasher",
+   "group": "common",
+   "room": "kitchen",
+   "shape": "box",
+   "bbox": {
+    "min": [
+     3.95,
+     -1.8,
+     0.0
+    ],
+    "max": [
+     6.35,
+     -1.2,
+     0.86
+    ]
+   },
+   "stage1_color": "#6B4A33",
+   "parts": [
+    {
+     "bbox": {
+      "min": [
+       3.95,
+       -1.8,
+       0.86
+      ],
+      "max": [
+       6.35,
+       -1.2,
+       0.9
+      ]
+     },
+     "stage1_color": "#F4F1EC"
+    }
+   ]
+  },
+  {
+   "id": "common_kitchen_sink_01",
+   "name": "单槽水槽",
+   "type": "sink",
+   "group": "common",
+   "room": "kitchen",
+   "shape": "box",
+   "bbox": {
+    "min": [
+     4.75,
+     -1.7,
+     0.9
+    ],
+    "max": [
+     5.55,
+     -1.3,
+     0.92
+    ]
+   },
+   "stage1_color": "#3A3532"
+  },
+  {
+   "id": "common_kitchen_dishwasher_02",
+   "name": "洗碗机（0.6m，紧挨水槽）",
+   "type": "dishwasher",
+   "group": "common",
+   "room": "kitchen",
+   "shape": "box",
+   "bbox": {
+    "min": [
+     4.1,
+     -1.8,
+     0.1
+    ],
+    "max": [
+     4.7,
+     -1.78,
+     0.8
+    ]
+   },
+   "stage1_color": "#C9C6C0"
+  },
+  {
+   "id": "common_kitchen_kitchen_counter_01",
+   "name": "厨房东台面（灶台）",
+   "type": "kitchen_counter",
+   "group": "common",
+   "room": "kitchen",
+   "shape": "box",
+   "bbox": {
+    "min": [
+     5.7,
+     -3.9,
+     0.0
+    ],
+    "max": [
+     6.3,
+     -1.8,
+     0.86
+    ]
+   },
+   "stage1_color": "#6B4A33",
+   "parts": [
+    {
+     "bbox": {
+      "min": [
+       5.7,
+       -3.9,
+       0.86
+      ],
+      "max": [
+       6.3,
+       -1.8,
+       0.9
+      ]
+     },
+     "stage1_color": "#F4F1EC"
+    }
+   ]
+  },
+  {
+   "id": "common_kitchen_hob_01",
+   "name": "燃气灶（靠东侧烟道）",
+   "type": "hob",
+   "group": "common",
+   "room": "kitchen",
+   "shape": "box",
+   "bbox": {
+    "min": [
+     5.8,
+     -3.3,
+     0.9
+    ],
+    "max": [
+     6.2,
+     -2.6,
+     0.92
+    ]
+   },
+   "stage1_color": "#3A3532"
+  },
+  {
+   "id": "common_kitchen_range_hood_01",
+   "name": "油烟机",
+   "type": "range_hood",
+   "group": "common",
+   "room": "kitchen",
+   "shape": "box",
+   "bbox": {
+    "min": [
+     5.85,
+     -3.35,
+     1.6
+    ],
+    "max": [
+     6.3,
+     -2.55,
+     2.1
+    ]
+   },
+   "stage1_color": "#3A3532"
+  },
+  {
+   "id": "common_kitchen_cabinet_01",
+   "name": "东墙吊柜（奶白）",
+   "type": "cabinet",
+   "group": "common",
+   "room": "kitchen",
+   "shape": "box",
+   "bbox": {
+    "min": [
+     5.95,
+     -2.5,
+     1.5
+    ],
+    "max": [
+     6.3,
+     -1.2,
+     2.3
+    ]
+   },
+   "stage1_color": "#EFE9DF"
+  },
+  {
+   "id": "common_kitchen_cabinet_02",
+   "name": "西墙浅吊柜（0.35m）",
+   "type": "cabinet",
+   "group": "common",
+   "room": "kitchen",
+   "shape": "box",
+   "bbox": {
+    "min": [
+     3.95,
+     -3.3,
+     1.4
+    ],
+    "max": [
+     4.3,
+     -1.8,
+     2.3
+    ]
+   },
+   "stage1_color": "#EFE9DF"
+  },
+  {
+   "id": "common_kitchen_glass_sliding_door_01",
+   "name": "四联动对开玻璃门（门洞约1.65m，推开后两侧各叠两扇）",
+   "type": "glass_sliding_door",
+   "group": "common",
+   "room": "kitchen",
+   "shape": "box",
+   "bbox": {
+    "min": [
+     4.05,
+     -3.925,
+     0.0
+    ],
+    "max": [
+     4.46,
+     -3.895,
+     2.1
+    ]
+   },
+   "stage1_color": null,
+   "material_hint": "glass",
+   "note": "门洞约 1.65m，四扇各约 0.41m，从中间对开",
+   "parts": [
+    {
+     "bbox": {
+      "min": [
+       4.05,
+       -3.93,
+       0.0
+      ],
+      "max": [
+       4.08,
+       -3.89,
+       2.1
+      ]
+     },
+     "stage1_color": "#6B4A33"
+    },
+    {
+     "bbox": {
+      "min": [
+       4.43,
+       -3.93,
+       0.0
+      ],
+      "max": [
+       4.46,
+       -3.89,
+       2.1
+      ]
+     },
+     "stage1_color": "#6B4A33"
+    }
+   ]
+  },
+  {
+   "id": "common_living_dining_balcony_glass_sliding_door_01",
+   "name": "四联动对开玻璃门（门洞约1.65m，推开后两侧各叠两扇）",
+   "type": "glass_sliding_door",
+   "group": "common",
+   "room": "living_dining_balcony",
+   "shape": "box",
+   "bbox": {
+    "min": [
+     4.46,
+     -3.985,
+     0.0
+    ],
+    "max": [
+     4.87,
+     -3.955,
+     2.1
+    ]
+   },
+   "stage1_color": null,
+   "material_hint": "glass",
+   "note": "门洞约 1.65m，四扇各约 0.41m，从中间对开",
+   "parts": [
+    {
+     "bbox": {
+      "min": [
+       4.46,
+       -3.99,
+       0.0
+      ],
+      "max": [
+       4.49,
+       -3.95,
+       2.1
+      ]
+     },
+     "stage1_color": "#6B4A33"
+    },
+    {
+     "bbox": {
+      "min": [
+       4.84,
+       -3.99,
+       0.0
+      ],
+      "max": [
+       4.87,
+       -3.95,
+       2.1
+      ]
+     },
+     "stage1_color": "#6B4A33"
+    }
+   ]
+  },
+  {
+   "id": "common_living_dining_balcony_glass_sliding_door_02",
+   "name": "四联动对开玻璃门（门洞约1.65m，推开后两侧各叠两扇）",
+   "type": "glass_sliding_door",
+   "group": "common",
+   "room": "living_dining_balcony",
+   "shape": "box",
+   "bbox": {
+    "min": [
+     4.88,
+     -3.985,
+     0.0
+    ],
+    "max": [
+     5.29,
+     -3.955,
+     2.1
+    ]
+   },
+   "stage1_color": null,
+   "material_hint": "glass",
+   "note": "门洞约 1.65m，四扇各约 0.41m，从中间对开",
+   "parts": [
+    {
+     "bbox": {
+      "min": [
+       4.88,
+       -3.99,
+       0.0
+      ],
+      "max": [
+       4.91,
+       -3.95,
+       2.1
+      ]
+     },
+     "stage1_color": "#6B4A33"
+    },
+    {
+     "bbox": {
+      "min": [
+       5.26,
+       -3.99,
+       0.0
+      ],
+      "max": [
+       5.29,
+       -3.95,
+       2.1
+      ]
+     },
+     "stage1_color": "#6B4A33"
+    }
+   ]
+  },
+  {
+   "id": "common_kitchen_glass_sliding_door_02",
+   "name": "四联动对开玻璃门（门洞约1.65m，推开后两侧各叠两扇）",
+   "type": "glass_sliding_door",
+   "group": "common",
+   "room": "kitchen",
+   "shape": "box",
+   "bbox": {
+    "min": [
+     5.29,
+     -3.925,
+     0.0
+    ],
+    "max": [
+     5.7,
+     -3.895,
+     2.1
+    ]
+   },
+   "stage1_color": null,
+   "material_hint": "glass",
+   "note": "门洞约 1.65m，四扇各约 0.41m，从中间对开",
+   "parts": [
+    {
+     "bbox": {
+      "min": [
+       5.29,
+       -3.93,
+       0.0
+      ],
+      "max": [
+       5.32,
+       -3.89,
+       2.1
+      ]
+     },
+     "stage1_color": "#6B4A33"
+    },
+    {
+     "bbox": {
+      "min": [
+       5.67,
+       -3.93,
+       0.0
+      ],
+      "max": [
+       5.7,
+       -3.89,
+       2.1
+      ]
+     },
+     "stage1_color": "#6B4A33"
+    }
+   ]
+  },
+  {
+   "id": "common_living_dining_balcony_fridge_01",
+   "name": "平嵌冰箱（按冰箱角尺寸新购）",
+   "type": "fridge",
+   "group": "common",
+   "room": "living_dining_balcony",
+   "shape": "box",
+   "bbox": {
+    "min": [
+     3.45,
+     -4.72,
+     0.0
+    ],
+    "max": [
+     4.2,
+     -4.05,
+     1.85
+    ]
+   },
+   "stage1_color": "#C9C6C0"
+  },
+  {
+   "id": "common_living_dining_balcony_cabinet_01",
+   "name": "冰箱上方奶白收口柜",
+   "type": "cabinet",
+   "group": "common",
+   "room": "living_dining_balcony",
+   "shape": "box",
+   "bbox": {
+    "min": [
+     3.42,
+     -4.75,
+     1.9
+    ],
+    "max": [
+     4.23,
+     -4.0,
+     2.6
+    ]
+   },
+   "stage1_color": "#EFE9DF"
+  },
+  {
+   "id": "common_foyer_cabinet_01",
+   "name": "玄关端景柜（下部）",
+   "type": "cabinet",
+   "group": "common",
+   "room": "foyer",
+   "shape": "box",
+   "bbox": {
+    "min": [
+     1.95,
+     -6.6,
+     0.2
+    ],
+    "max": [
+     3.4,
+     -6.2,
+     0.9
+    ]
+   },
+   "stage1_color": "#EFE9DF",
+   "note": "长 1.4m × 深 0.4m，离地悬空 0.2m"
+  },
+  {
+   "id": "common_foyer_open_niche_01",
+   "name": "端景开放格（胡桃木内衬+灯带）",
+   "type": "open_niche",
+   "group": "common",
+   "room": "foyer",
+   "shape": "box",
+   "bbox": {
+    "min": [
+     1.95,
+     -6.6,
+     0.9
+    ],
+    "max": [
+     3.4,
+     -6.4,
+     1.3
+    ]
+   },
+   "stage1_color": "#6B4A33"
+  },
+  {
+   "id": "common_foyer_cabinet_02",
+   "name": "玄关端景柜（上部）",
+   "type": "cabinet",
+   "group": "common",
+   "room": "foyer",
+   "shape": "box",
+   "bbox": {
+    "min": [
+     1.95,
+     -6.6,
+     1.3
+    ],
+    "max": [
+     3.4,
+     -6.2,
+     2.7
+    ]
+   },
+   "stage1_color": "#EFE9DF"
+  },
+  {
+   "id": "common_foyer_mirror_door_01",
+   "name": "通高镜面门（遮挡强弱电箱）",
+   "type": "mirror_door",
+   "group": "common",
+   "room": "foyer",
+   "shape": "box",
+   "bbox": {
+    "min": [
+     1.95,
+     -5.5,
+     0.0
+    ],
+    "max": [
+     2.03,
+     -5.0,
+     2.1
+    ]
+   },
+   "stage1_color": "#D9DEE2"
+  },
+  {
+   "id": "common_foyer_stool_01",
+   "name": "可移动换鞋小凳",
+   "type": "stool",
+   "group": "common",
+   "room": "foyer",
+   "shape": "box",
+   "bbox": {
+    "min": [
+     2.25,
+     -6.15,
+     0.0
+    ],
+    "max": [
+     2.6,
+     -5.85,
+     0.45
+    ]
+   },
+   "stage1_color": "#86603F"
+  },
+  {
+   "id": "common_elevator_hall_cabinet_01",
+   "name": "门外鞋柜（电梯厅，待物业同意）",
+   "type": "cabinet",
+   "group": "common",
+   "room": "elevator_hall",
+   "shape": "box",
+   "bbox": {
+    "min": [
+     2.3,
+     -4.35,
+     0.0
+    ],
+    "max": [
+     3.25,
+     -4.0,
+     2.3
+    ]
+   },
+   "stage1_color": "#3A3532"
+  },
+  {
+   "id": "common_living_dining_balcony_bookcase_01",
+   "name": "西墙胡桃木实木组合柜（底座）",
+   "type": "bookcase",
+   "group": "common",
+   "room": "living_dining_balcony",
+   "shape": "box",
+   "bbox": {
+    "min": [
+     3.42,
+     -10.4,
+     0.0
+    ],
+    "max": [
+     3.85,
+     -8.75,
+     0.45
+    ]
+   },
+   "stage1_color": "#6B4A33"
+  },
+  {
+   "id": "common_living_dining_balcony_bookcase_02",
+   "name": "西墙胡桃木实木组合柜（柜体）",
+   "type": "bookcase",
+   "group": "common",
+   "room": "living_dining_balcony",
+   "shape": "box",
+   "bbox": {
+    "min": [
+     3.42,
+     -10.4,
+     0.45
+    ],
+    "max": [
+     3.82,
+     -8.75,
+     2.25
+    ]
+   },
+   "stage1_color": "#6B4A33",
+   "note": "约 1.65m 长 × 0.43m 深 × 2.25m 高，南端与洗衣机柜相连（成品，按实测选单元）",
+   "parts": [
+    {
+     "bbox": {
+      "min": [
+       3.8,
+       -9.95,
+       0.9
+      ],
+      "max": [
+       3.84,
+       -9.2,
+       2.1
+      ]
+     },
+     "stage1_color": "#86603F"
+    }
+   ]
+  },
+  {
+   "id": "common_living_dining_balcony_plant_01",
+   "name": "端景角：天堂鸟（约 1.6m 高）",
+   "type": "plant",
+   "group": "common",
+   "room": "living_dining_balcony",
+   "shape": "cylinder",
+   "center": [
+    3.68,
+    -7.3
+   ],
+   "radius": 0.24,
+   "z_base": 0.45,
+   "height": 1.3,
+   "stage1_color": "#5E7F4E"
+  },
+  {
+   "id": "common_living_dining_balcony_planter_01",
+   "name": "端景角：砖红釉陶盆",
+   "type": "planter",
+   "group": "common",
+   "room": "living_dining_balcony",
+   "shape": "cylinder",
+   "center": [
+    3.68,
+    -7.3
+   ],
+   "radius": 0.24,
+   "z_base": 0.0,
+   "height": 0.45,
+   "stage1_color": "#A5533F"
+  },
+  {
+   "id": "common_living_dining_balcony_stool_01",
+   "name": "端景角：胡桃木小圆凳（放陶罐摆件）",
+   "type": "stool",
+   "group": "common",
+   "room": "living_dining_balcony",
+   "shape": "cylinder",
+   "center": [
+    3.65,
+    -6.92
+   ],
+   "radius": 0.17,
+   "z_base": 0.0,
+   "height": 0.45,
+   "stage1_color": "#6B4A33",
+   "parts": [
+    {
+     "shape": "sphere",
+     "name": "陶罐摆件",
+     "center": [
+      3.65,
+      -6.92,
+      0.56
+     ],
+     "radius": 0.1
+    }
+   ]
+  },
+  {
+   "id": "common_living_dining_balcony_artwork_01",
+   "name": "端景角：挂画 + 画灯",
+   "type": "artwork",
+   "group": "common",
+   "room": "living_dining_balcony",
+   "shape": "box",
+   "bbox": {
+    "min": [
+     3.4,
+     -7.55,
+     1.35
+    ],
+    "max": [
+     3.43,
+     -6.75,
+     2.05
+    ]
+   },
+   "stage1_color": "#8E7A5E"
+  },
+  {
+   "id": "common_living_dining_balcony_laundry_cabinet_01",
+   "name": "洗烘叠放洗衣机柜（胡桃木色门板）",
+   "type": "laundry_cabinet",
+   "group": "common",
+   "room": "living_dining_balcony",
+   "shape": "box",
+   "bbox": {
+    "min": [
+     3.4,
+     -11.5,
+     0.0
+    ],
+    "max": [
+     4.05,
+     -10.4,
+     2.2
+    ]
+   },
+   "stage1_color": "#86603F"
+  },
+  {
+   "id": "common_master_bedroom_wardrobe_01",
+   "name": "主卧衣柜（0.55m 深，窄平开门）",
+   "type": "wardrobe",
+   "group": "common",
+   "room": "master_bedroom",
+   "shape": "box",
+   "bbox": {
+    "min": [
+     9.3,
+     -9.1,
+     0.0
+    ],
+    "max": [
+     9.85,
+     -6.25,
+     2.7
+    ]
+   },
+   "stage1_color": "#EFE9DF"
+  },
+  {
+   "id": "common_master_bedroom_dressing_table_01",
+   "name": "一体梳妆台",
+   "type": "dressing_table",
+   "group": "common",
+   "room": "master_bedroom",
+   "shape": "box",
+   "bbox": {
+    "min": [
+     9.3,
+     -10.1,
+     0.0
+    ],
+    "max": [
+     9.8,
+     -9.1,
+     0.75
+    ]
+   },
+   "stage1_color": "#6B4A33",
+   "parts": [
+    {
+     "bbox": {
+      "min": [
+       9.3,
+       -10.1,
+       1.4
+      ],
+      "max": [
+       9.65,
+       -9.1,
+       2.6
+      ]
+     },
+     "stage1_color": "#EFE9DF"
+    }
+   ]
+  },
+  {
+   "id": "common_master_bedroom_stool_01",
+   "name": "梳妆凳",
+   "type": "stool",
+   "group": "common",
+   "room": "master_bedroom",
+   "shape": "box",
+   "bbox": {
+    "min": [
+     9.95,
+     -9.75,
+     0.0
+    ],
+    "max": [
+     10.3,
+     -9.4,
+     0.45
+    ]
+   },
+   "stage1_color": "#D8CBB3"
+  },
+  {
+   "id": "common_master_bedroom_bed_01",
+   "name": "1.8m 床（薄床头，总长≤2.1m）",
+   "type": "bed",
+   "group": "common",
+   "room": "master_bedroom",
+   "shape": "box",
+   "bbox": {
+    "min": [
+     10.6,
+     -9.0,
+     0.0
+    ],
+    "max": [
+     12.7,
+     -7.2,
+     0.5
+    ]
+   },
+   "stage1_color": "#CDBA98"
+  },
+  {
+   "id": "common_master_bedroom_headboard_01",
+   "name": "焦糖色软包床头",
+   "type": "headboard",
+   "group": "common",
+   "room": "master_bedroom",
+   "shape": "box",
+   "bbox": {
+    "min": [
+     12.62,
+     -9.0,
+     0.0
+    ],
+    "max": [
+     12.72,
+     -7.2,
+     1.1
+    ]
+   },
+   "stage1_color": "#9A5B32"
+  },
+  {
+   "id": "common_master_bedroom_nightstand_01",
+   "name": "床头柜",
+   "type": "nightstand",
+   "group": "common",
+   "room": "master_bedroom",
+   "shape": "box",
+   "bbox": {
+    "min": [
+     12.25,
+     -7.2,
+     0.0
+    ],
+    "max": [
+     12.7,
+     -6.75,
+     0.5
+    ]
+   },
+   "stage1_color": "#6B4A33"
+  },
+  {
+   "id": "common_master_bedroom_nightstand_02",
+   "name": "床头柜",
+   "type": "nightstand",
+   "group": "common",
+   "room": "master_bedroom",
+   "shape": "box",
+   "bbox": {
+    "min": [
+     12.25,
+     -9.45,
+     0.0
+    ],
+    "max": [
+     12.7,
+     -9.0,
+     0.5
+    ]
+   },
+   "stage1_color": "#6B4A33"
+  },
+  {
+   "id": "common_master_bedroom_desk_01",
+   "name": "电脑桌（胡桃木+奶白，参考02）",
+   "type": "desk",
+   "group": "common",
+   "room": "master_bedroom",
+   "shape": "box",
+   "bbox": {
+    "min": [
+     12.15,
+     -6.55,
+     0.0
+    ],
+    "max": [
+     12.72,
+     -5.3,
+     0.75
+    ]
+   },
+   "stage1_color": "#6B4A33"
+  },
+  {
+   "id": "common_master_bedroom_open_niche_01",
+   "name": "书桌上方开放格",
+   "type": "open_niche",
+   "group": "common",
+   "room": "master_bedroom",
+   "shape": "box",
+   "bbox": {
+    "min": [
+     12.4,
+     -6.55,
+     1.3
+    ],
+    "max": [
+     12.72,
+     -5.3,
+     2.2
+    ]
+   },
+   "stage1_color": "#86603F"
+  },
+  {
+   "id": "common_master_bedroom_chair_01",
+   "name": "书桌椅",
+   "type": "chair",
+   "group": "common",
+   "room": "master_bedroom",
+   "shape": "box",
+   "bbox": {
+    "min": [
+     11.55,
+     -6.15,
+     0.0
+    ],
+    "max": [
+     12.0,
+     -5.7,
+     0.9
+    ]
+   },
+   "stage1_color": "#D8CBB3"
+  },
+  {
+   "id": "common_master_bedroom_rug_01",
+   "name": "床边地毯",
+   "type": "rug",
+   "group": "common",
+   "room": "master_bedroom",
+   "shape": "box",
+   "bbox": {
+    "min": [
+     10.2,
+     -9.3,
+     0.0
+    ],
+    "max": [
+     11.0,
+     -7.0,
+     0.01
+    ]
+   },
+   "stage1_color": "#B9A48A"
+  },
+  {
+   "id": "common_master_bath_vanity_01",
+   "name": "主卫洗手台（单盆，悬挂柜）",
+   "type": "vanity",
+   "group": "common",
+   "room": "master_bath",
+   "shape": "box",
+   "bbox": {
+    "min": [
+     10.85,
+     -4.02,
+     0.25
+    ],
+    "max": [
+     11.75,
+     -3.5,
+     0.85
+    ]
+   },
+   "stage1_color": "#6B4A33"
+  },
+  {
+   "id": "common_master_bath_mirror_cabinet_01",
+   "name": "主卫镜柜",
+   "type": "mirror_cabinet",
+   "group": "common",
+   "room": "master_bath",
+   "shape": "box",
+   "bbox": {
+    "min": [
+     10.85,
+     -3.62,
+     1.2
+    ],
+    "max": [
+     11.75,
+     -3.5,
+     1.95
+    ]
+   },
+   "stage1_color": "#EFE9DF"
+  },
+  {
+   "id": "common_master_bath_toilet_01",
+   "name": "马桶",
+   "type": "toilet",
+   "group": "common",
+   "room": "master_bath",
+   "shape": "box",
+   "bbox": {
+    "min": [
+     11.95,
+     -4.2,
+     0.0
+    ],
+    "max": [
+     12.35,
+     -3.52,
+     0.45
+    ]
+   },
+   "stage1_color": "#FAFAFA"
+  },
+  {
+   "id": "common_master_bath_glass_partition_01",
+   "name": "淋浴固定玻璃",
+   "type": "glass_partition",
+   "group": "common",
+   "room": "master_bath",
+   "shape": "box",
+   "bbox": {
+    "min": [
+     12.5,
+     -4.5,
+     0.0
+    ],
+    "max": [
+     12.54,
+     -3.5,
+     2.0
+    ]
+   },
+   "stage1_color": null,
+   "material_hint": "glass"
+  },
+  {
+   "id": "common_master_bath_shower_floor_01",
+   "name": "淋浴区（约1.1×1.7m，窗下）",
+   "type": "shower_floor",
+   "group": "common",
+   "room": "master_bath",
+   "shape": "box",
+   "bbox": {
+    "min": [
+     12.55,
+     -5.2,
+     0.0
+    ],
+    "max": [
+     13.6,
+     -3.5,
+     0.02
+    ]
+   },
+   "stage1_color": "#B8AE9F"
+  },
+  {
+   "id": "common_corridor_vanity_01",
+   "name": "双盆洗漱台（1.5m，实测）",
+   "type": "vanity",
+   "group": "common",
+   "room": "corridor",
+   "shape": "box",
+   "bbox": {
+    "min": [
+     9.05,
+     -3.92,
+     0.25
+    ],
+    "max": [
+     9.55,
+     -2.42,
+     0.85
+    ]
+   },
+   "stage1_color": "#6B4A33",
+   "parts": [
+    {
+     "bbox": {
+      "min": [
+       9.05,
+       -3.92,
+       0.85
+      ],
+      "max": [
+       9.55,
+       -2.42,
+       0.89
+      ]
+     },
+     "stage1_color": "#F4F1EC"
+    }
+   ]
+  },
+  {
+   "id": "common_corridor_mirror_cabinet_01",
+   "name": "并排双镜柜",
+   "type": "mirror_cabinet",
+   "group": "common",
+   "room": "corridor",
+   "shape": "box",
+   "bbox": {
+    "min": [
+     9.05,
+     -3.87,
+     1.15
+    ],
+    "max": [
+     9.17,
+     -2.47,
+     1.95
+    ]
+   },
+   "stage1_color": "#EFE9DF"
+  },
+  {
+   "id": "common_public_bath_wet_shower_floor_01",
+   "name": "公卫淋浴区（整宽约0.9m）",
+   "type": "shower_floor",
+   "group": "common",
+   "room": "public_bath_wet",
+   "shape": "box",
+   "bbox": {
+    "min": [
+     9.05,
+     -1.1,
+     0.0
+    ],
+    "max": [
+     10.7,
+     -0.2,
+     0.02
+    ]
+   },
+   "stage1_color": "#B8AE9F"
+  },
+  {
+   "id": "common_public_bath_wet_glass_partition_01",
+   "name": "淋浴固定玻璃",
+   "type": "glass_partition",
+   "group": "common",
+   "room": "public_bath_wet",
+   "shape": "box",
+   "bbox": {
+    "min": [
+     9.05,
+     -1.12,
+     0.0
+    ],
+    "max": [
+     10.1,
+     -1.08,
+     2.0
+    ]
+   },
+   "stage1_color": null,
+   "material_hint": "glass"
+  },
+  {
+   "id": "common_public_bath_wet_toilet_01",
+   "name": "马桶",
+   "type": "toilet",
+   "group": "common",
+   "room": "public_bath_wet",
+   "shape": "box",
+   "bbox": {
+    "min": [
+     9.1,
+     -2.25,
+     0.0
+    ],
+    "max": [
+     9.5,
+     -1.55,
+     0.45
+    ]
+   },
+   "stage1_color": "#FAFAFA"
+  },
+  {
+   "id": "common_terrace_coffee_table_01",
+   "name": "小茶几",
+   "type": "coffee_table",
+   "group": "common",
+   "room": "terrace",
+   "shape": "cylinder",
+   "center": [
+    10.9,
+    -11.3
+   ],
+   "radius": 0.35,
+   "z_base": 0.0,
+   "height": 0.5,
+   "stage1_color": "#86603F"
+  },
+  {
+   "id": "common_terrace_lounge_chair_01",
+   "name": "藤编单椅",
+   "type": "lounge_chair",
+   "group": "common",
+   "room": "terrace",
+   "shape": "cylinder",
+   "center": [
+    10.2,
+    -11.3
+   ],
+   "radius": 0.28,
+   "z_base": 0.0,
+   "height": 0.45,
+   "stage1_color": "#CDBA98"
+  },
+  {
+   "id": "common_terrace_lounge_chair_02",
+   "name": "藤编单椅",
+   "type": "lounge_chair",
+   "group": "common",
+   "room": "terrace",
+   "shape": "cylinder",
+   "center": [
+    11.6,
+    -11.3
+   ],
+   "radius": 0.28,
+   "z_base": 0.0,
+   "height": 0.45,
+   "stage1_color": "#CDBA98"
+  },
+  {
+   "id": "common_terrace_plant_01",
+   "name": "露台绿植",
+   "type": "plant",
+   "group": "common",
+   "room": "terrace",
+   "shape": "cylinder",
+   "center": [
+    9.6,
+    -10.5
+   ],
+   "radius": 0.22,
+   "z_base": 0.0,
+   "height": 0.8,
+   "stage1_color": "#5E7F4E"
+  },
+  {
+   "id": "common_terrace_plant_02",
+   "name": "露台绿植",
+   "type": "plant",
+   "group": "common",
+   "room": "terrace",
+   "shape": "cylinder",
+   "center": [
+    12.4,
+    -10.5
+   ],
+   "radius": 0.22,
+   "z_base": 0.0,
+   "height": 0.8,
+   "stage1_color": "#5E7F4E"
+  },
+  {
+   "id": "common_terrace_plant_03",
+   "name": "露台绿植",
+   "type": "plant",
+   "group": "common",
+   "room": "terrace",
+   "shape": "cylinder",
+   "center": [
+    12.4,
+    -12.0
+   ],
+   "radius": 0.22,
+   "z_base": 0.0,
+   "height": 0.8,
+   "stage1_color": "#5E7F4E"
+  },
+  {
+   "id": "common_terrace_plant_04",
+   "name": "露台绿植",
+   "type": "plant",
+   "group": "common",
+   "room": "terrace",
+   "shape": "cylinder",
+   "center": [
+    9.6,
+    -12.0
+   ],
+   "radius": 0.22,
+   "z_base": 0.0,
+   "height": 0.8,
+   "stage1_color": "#5E7F4E"
+  },
+  {
+   "id": "common_parents_room_wardrobe_01",
+   "name": "推拉门衣柜（0.55m 深）",
+   "type": "wardrobe",
+   "group": "common",
+   "room": "parents_room",
+   "shape": "box",
+   "bbox": {
+    "min": [
+     0.2,
+     -7.2,
+     0.0
+    ],
+    "max": [
+     2.35,
+     -6.65,
+     2.7
+    ]
+   },
+   "stage1_color": "#EFE9DF"
+  },
+  {
+   "id": "common_parents_room_bed_01",
+   "name": "1.8m 床（床头靠西墙）",
+   "type": "bed",
+   "group": "common",
+   "room": "parents_room",
+   "shape": "box",
+   "bbox": {
+    "min": [
+     0.2,
+     -9.55,
+     0.0
+    ],
+    "max": [
+     2.3,
+     -7.75,
+     0.5
+    ]
+   },
+   "stage1_color": "#CDBA98",
+   "parts": [
+    {
+     "bbox": {
+      "min": [
+       0.15,
+       -9.55,
+       0.0
+      ],
+      "max": [
+       0.25,
+       -7.75,
+       1.0
+      ]
+     },
+     "stage1_color": "#D8CBB3"
+    }
+   ]
+  },
+  {
+   "id": "common_parents_room_nightstand_01",
+   "name": "唯一的床头柜",
+   "type": "nightstand",
+   "group": "common",
+   "room": "parents_room",
+   "shape": "box",
+   "bbox": {
+    "min": [
+     0.2,
+     -10.0,
+     0.0
+    ],
+    "max": [
+     0.65,
+     -9.55,
+     0.5
+    ]
+   },
+   "stage1_color": "#6B4A33"
+  },
+  {
+   "id": "common_parents_room_bay_seat_01",
+   "name": "飘窗坐榻（保温台面+胡桃木饰面）",
+   "type": "bay_seat",
+   "group": "common",
+   "room": "parents_room",
+   "shape": "box",
+   "bbox": {
+    "min": [
+     0.5,
+     -10.5,
+     0.0
+    ],
+    "max": [
+     3.0,
+     -10.05,
+     0.45
+    ]
+   },
+   "stage1_color": "#6B4A33"
+  },
+  {
+   "id": "common_parents_room_cushion_01",
+   "name": "燕麦色软垫",
+   "type": "cushion",
+   "group": "common",
+   "room": "parents_room",
+   "shape": "box",
+   "bbox": {
+    "min": [
+     0.95,
+     -10.48,
+     0.45
+    ],
+    "max": [
+     2.55,
+     -10.08,
+     0.53
+    ]
+   },
+   "stage1_color": "#D8CBB3"
+  },
+  {
+   "id": "common_parents_room_shelf_01",
+   "name": "飘窗矮书格",
+   "type": "shelf",
+   "group": "common",
+   "room": "parents_room",
+   "shape": "box",
+   "bbox": {
+    "min": [
+     0.5,
+     -10.5,
+     0.45
+    ],
+    "max": [
+     0.9,
+     -10.1,
+     0.95
+    ]
+   },
+   "stage1_color": "#86603F"
+  },
+  {
+   "id": "common_parents_room_shelf_02",
+   "name": "飘窗矮书格",
+   "type": "shelf",
+   "group": "common",
+   "room": "parents_room",
+   "shape": "box",
+   "bbox": {
+    "min": [
+     2.6,
+     -10.5,
+     0.45
+    ],
+    "max": [
+     3.0,
+     -10.1,
+     0.95
+    ]
+   },
+   "stage1_color": "#86603F"
+  },
+  {
+   "id": "common_parents_room_ceiling_box_01",
+   "name": "父母房进门凹位上方：空调内机吊顶",
+   "type": "ceiling_box",
+   "group": "common",
+   "room": "parents_room",
+   "shape": "box",
+   "bbox": {
+    "min": [
+     2.35,
+     -7.4,
+     2.5
+    ],
+    "max": [
+     3.3,
+     -6.62,
+     2.8
+    ]
+   },
+   "stage1_color": "#F3EFE7"
+  },
+  {
+   "id": "common_daughter_room_wardrobe_01",
+   "name": "L型衣柜·南段（成品转角系列，仅示意）",
+   "type": "wardrobe",
+   "group": "common",
+   "room": "daughter_room",
+   "shape": "box",
+   "bbox": {
+    "min": [
+     6.4,
+     -3.9,
+     0.0
+    ],
+    "max": [
+     8.0,
+     -3.35,
+     2.2
+    ]
+   },
+   "stage1_color": "#E3AFA8"
+  },
+  {
+   "id": "common_daughter_room_wardrobe_02",
+   "name": "L型衣柜·西段（成品，仅示意）",
+   "type": "wardrobe",
+   "group": "common",
+   "room": "daughter_room",
+   "shape": "box",
+   "bbox": {
+    "min": [
+     6.4,
+     -3.35,
+     0.0
+    ],
+    "max": [
+     6.95,
+     -1.8,
+     2.2
+    ]
+   },
+   "stage1_color": "#E3AFA8"
+  },
+  {
+   "id": "common_daughter_room_bed_01",
+   "name": "1.5m 高箱床（床头朝西，仅示意）",
+   "type": "bed",
+   "group": "common",
+   "room": "daughter_room",
+   "shape": "box",
+   "bbox": {
+    "min": [
+     6.45,
+     -1.8,
+     0.0
+    ],
+    "max": [
+     8.55,
+     -0.3,
+     0.45
+    ]
+   },
+   "stage1_color": "#C6B6DA",
+   "parts": [
+    {
+     "bbox": {
+      "min": [
+       6.4,
+       -1.8,
+       0.0
+      ],
+      "max": [
+       6.5,
+       -0.3,
+       1.0
+      ]
+     },
+     "stage1_color": "#E3AFA8"
+    }
+   ]
+  },
+  {
+   "id": "common_daughter_room_shelf_01",
+   "name": "窄书架",
+   "type": "shelf",
+   "group": "common",
+   "room": "daughter_room",
+   "shape": "box",
+   "bbox": {
+    "min": [
+     8.6,
+     -1.7,
+     0.0
+    ],
+    "max": [
+     8.9,
+     -0.3,
+     0.9
+    ]
+   },
+   "stage1_color": "#EFE9DF"
+  },
+  {
+   "id": "common_daughter_room_desk_01",
+   "name": "书桌（东墙，仅示意）",
+   "type": "desk",
+   "group": "common",
+   "room": "daughter_room",
+   "shape": "box",
+   "bbox": {
+    "min": [
+     8.35,
+     -2.95,
+     0.0
+    ],
+    "max": [
+     8.9,
+     -1.9,
+     0.75
+    ]
+   },
+   "stage1_color": "#EFE9DF"
+  },
+  {
+   "id": "common_daughter_room_chair_01",
+   "name": "书桌椅",
+   "type": "chair",
+   "group": "common",
+   "room": "daughter_room",
+   "shape": "box",
+   "bbox": {
+    "min": [
+     7.75,
+     -2.65,
+     0.0
+    ],
+    "max": [
+     8.2,
+     -2.2,
+     0.85
+    ]
+   },
+   "stage1_color": "#E3AFA8"
+  },
+  {
+   "id": "common_son_room_wardrobe_01",
+   "name": "衣柜 2m（南墙，仅示意）",
+   "type": "wardrobe",
+   "group": "common",
+   "room": "son_room",
+   "shape": "box",
+   "bbox": {
+    "min": [
+     11.6,
+     -3.4,
+     0.0
+    ],
+    "max": [
+     13.6,
+     -2.85,
+     2.2
+    ]
+   },
+   "stage1_color": "#8FB7CF"
+  },
+  {
+   "id": "common_son_room_bed_01",
+   "name": "1.5m 床（床头朝西，仅示意）",
+   "type": "bed",
+   "group": "common",
+   "room": "son_room",
+   "shape": "box",
+   "bbox": {
+    "min": [
+     10.8,
+     -1.75,
+     0.0
+    ],
+    "max": [
+     12.9,
+     -0.25,
+     0.45
+    ]
+   },
+   "stage1_color": "#F0CF7E",
+   "parts": [
+    {
+     "bbox": {
+      "min": [
+       10.8,
+       -1.75,
+       0.0
+      ],
+      "max": [
+       10.9,
+       -0.25,
+       1.0
+      ]
+     },
+     "stage1_color": "#8FB7CF"
+    }
+   ]
+  },
+  {
+   "id": "common_son_room_desk_01",
+   "name": "东墙书桌段",
+   "type": "desk",
+   "group": "common",
+   "room": "son_room",
+   "shape": "box",
+   "bbox": {
+    "min": [
+     13.05,
+     -2.85,
+     0.0
+    ],
+    "max": [
+     13.6,
+     -1.75,
+     0.75
+    ]
+   },
+   "stage1_color": "#9DBE8C"
+  },
+  {
+   "id": "common_son_room_shelf_01",
+   "name": "床尾矮书架（绘本、乐高）",
+   "type": "shelf",
+   "group": "common",
+   "room": "son_room",
+   "shape": "box",
+   "bbox": {
+    "min": [
+     13.05,
+     -1.75,
+     0.0
+    ],
+    "max": [
+     13.6,
+     -0.2,
+     0.7
+    ]
+   },
+   "stage1_color": "#EFE9DF"
+  },
+  {
+   "id": "common_son_room_chair_01",
+   "name": "书桌椅",
+   "type": "chair",
+   "group": "common",
+   "room": "son_room",
+   "shape": "box",
+   "bbox": {
+    "min": [
+     12.4,
+     -2.5,
+     0.0
+    ],
+    "max": [
+     12.85,
+     -2.05,
+     0.85
+    ]
+   },
+   "stage1_color": "#8FB7CF"
+  },
+  {
+   "id": "common_son_room_rug_01",
+   "name": "游戏地毯",
+   "type": "rug",
+   "group": "common",
+   "room": "son_room",
+   "shape": "box",
+   "bbox": {
+    "min": [
+     11.2,
+     -2.8,
+     0.0
+    ],
+    "max": [
+     12.3,
+     -1.95,
+     0.01
+    ]
+   },
+   "stage1_color": "#9DBE8C"
+  },
+  {
+   "id": "A_living_dining_balcony_island_01",
+   "name": "岛台（1.4×0.9×0.9m，嵌蒸烤箱）",
+   "type": "island",
+   "group": "A",
+   "room": "living_dining_balcony",
+   "shape": "box",
+   "bbox": {
+    "min": [
+     4.2,
+     -5.85,
+     0.0
+    ],
+    "max": [
+     5.6,
+     -4.95,
+     0.86
+    ]
+   },
+   "stage1_color": "#6B4A33",
+   "parts": [
+    {
+     "bbox": {
+      "min": [
+       4.2,
+       -5.85,
+       0.86
+      ],
+      "max": [
+       5.6,
+       -4.95,
+       0.9
+      ]
+     },
+     "stage1_color": "#F4F1EC"
+    }
+   ]
+  },
+  {
+   "id": "A_living_dining_balcony_pendant_lamp_01",
+   "name": "岛台/餐桌上方中古吊灯（乳白玻璃球）",
+   "type": "pendant_lamp",
+   "group": "A",
+   "room": "living_dining_balcony",
+   "shape": "sphere",
+   "center": [
+    4.9,
+    -5.4,
+    2.05
+   ],
+   "radius": 0.2
+  },
+  {
+   "id": "A_living_dining_balcony_island_02",
+   "name": "实木餐桌 1.6m（东西向，接在岛台东侧）",
+   "type": "island",
+   "group": "A",
+   "room": "living_dining_balcony",
+   "shape": "box",
+   "bbox": {
+    "min": [
+     5.75,
+     -5.85,
+     0.0
+    ],
+    "max": [
+     7.35,
+     -4.95,
+     0.75
+    ]
+   },
+   "stage1_color": "#86603F"
+  },
+  {
+   "id": "A_living_dining_balcony_pendant_lamp_02",
+   "name": "岛台/餐桌上方中古吊灯（乳白玻璃球）",
+   "type": "pendant_lamp",
+   "group": "A",
+   "room": "living_dining_balcony",
+   "shape": "sphere",
+   "center": [
+    6.55,
+    -5.4,
+    2.0
+   ],
+   "radius": 0.18
+  },
+  {
+   "id": "A_living_dining_balcony_dining_chair_01",
+   "name": "中古弧形扶手餐椅",
+   "type": "dining_chair",
+   "group": "A",
+   "room": "living_dining_balcony",
+   "shape": "box",
+   "bbox": {
+    "min": [
+     5.95,
+     -4.95,
+     0.0
+    ],
+    "max": [
+     6.35,
+     -4.55,
+     0.8
+    ]
+   },
+   "stage1_color": "#6B4A33"
+  },
+  {
+   "id": "A_living_dining_balcony_dining_chair_02",
+   "name": "中古弧形扶手餐椅",
+   "type": "dining_chair",
+   "group": "A",
+   "room": "living_dining_balcony",
+   "shape": "box",
+   "bbox": {
+    "min": [
+     5.95,
+     -6.3,
+     0.0
+    ],
+    "max": [
+     6.35,
+     -5.9,
+     0.8
+    ]
+   },
+   "stage1_color": "#6B4A33"
+  },
+  {
+   "id": "A_living_dining_balcony_dining_chair_03",
+   "name": "中古弧形扶手餐椅",
+   "type": "dining_chair",
+   "group": "A",
+   "room": "living_dining_balcony",
+   "shape": "box",
+   "bbox": {
+    "min": [
+     6.75,
+     -4.95,
+     0.0
+    ],
+    "max": [
+     7.15,
+     -4.55,
+     0.8
+    ]
+   },
+   "stage1_color": "#6B4A33"
+  },
+  {
+   "id": "A_living_dining_balcony_dining_chair_04",
+   "name": "中古弧形扶手餐椅",
+   "type": "dining_chair",
+   "group": "A",
+   "room": "living_dining_balcony",
+   "shape": "box",
+   "bbox": {
+    "min": [
+     6.75,
+     -6.3,
+     0.0
+    ],
+    "max": [
+     7.15,
+     -5.9,
+     0.8
+    ]
+   },
+   "stage1_color": "#6B4A33"
+  },
+  {
+   "id": "A_living_dining_balcony_dining_chair_05",
+   "name": "中古弧形扶手餐椅",
+   "type": "dining_chair",
+   "group": "A",
+   "room": "living_dining_balcony",
+   "shape": "box",
+   "bbox": {
+    "min": [
+     7.4,
+     -5.6,
+     0.0
+    ],
+    "max": [
+     7.8,
+     -5.2,
+     0.8
+    ]
+   },
+   "stage1_color": "#6B4A33"
+  },
+  {
+   "id": "A_living_dining_balcony_wall_finish_01",
+   "name": "东墙整面电视背景墙（奶白艺术涂料）",
+   "type": "wall_finish",
+   "group": "A",
+   "room": "living_dining_balcony",
+   "shape": "box",
+   "bbox": {
+    "min": [
+     9.15,
+     -10.1,
+     0.0
+    ],
+    "max": [
+     9.18,
+     -5.35,
+     2.6
+    ]
+   },
+   "stage1_color": "#E9E1D3"
+  },
+  {
+   "id": "A_living_dining_balcony_sofa_01",
+   "name": "焦糖色皮沙发（三人位）",
+   "type": "sofa",
+   "group": "A",
+   "room": "living_dining_balcony",
+   "shape": "box",
+   "bbox": {
+    "min": [
+     4.75,
+     -9.8,
+     0.0
+    ],
+    "max": [
+     5.7,
+     -7.4,
+     0.42
+    ]
+   },
+   "stage1_color": "#9A5B32",
+   "parts": [
+    {
+     "bbox": {
+      "min": [
+       4.75,
+       -9.8,
+       0.42
+      ],
+      "max": [
+       5.0,
+       -7.4,
+       0.8
+      ]
+     },
+     "stage1_color": "#9A5B32"
+    }
+   ]
+  },
+  {
+   "id": "A_living_dining_balcony_ottoman_01",
+   "name": "脚踏",
+   "type": "ottoman",
+   "group": "A",
+   "room": "living_dining_balcony",
+   "shape": "box",
+   "bbox": {
+    "min": [
+     5.9,
+     -9.7,
+     0.0
+    ],
+    "max": [
+     6.5,
+     -9.1,
+     0.42
+    ]
+   },
+   "stage1_color": "#9A5B32"
+  },
+  {
+   "id": "A_living_dining_balcony_coffee_table_01",
+   "name": "胡桃木圆茶几",
+   "type": "coffee_table",
+   "group": "A",
+   "room": "living_dining_balcony",
+   "shape": "cylinder",
+   "center": [
+    6.9,
+    -8.6
+   ],
+   "radius": 0.45,
+   "z_base": 0.0,
+   "height": 0.4,
+   "stage1_color": "#6B4A33"
+  },
+  {
+   "id": "A_living_dining_balcony_rug_01",
+   "name": "几何纹短毛地毯",
+   "type": "rug",
+   "group": "A",
+   "room": "living_dining_balcony",
+   "shape": "box",
+   "bbox": {
+    "min": [
+     5.5,
+     -9.8,
+     0.0
+    ],
+    "max": [
+     8.3,
+     -7.4,
+     0.01
+    ]
+   },
+   "stage1_color": "#B9A48A"
+  },
+  {
+   "id": "A_living_dining_balcony_tv_cabinet_01",
+   "name": "悬空电视柜（3m，胡桃木）",
+   "type": "tv_cabinet",
+   "group": "A",
+   "room": "living_dining_balcony",
+   "shape": "box",
+   "bbox": {
+    "min": [
+     8.8,
+     -10.1,
+     0.25
+    ],
+    "max": [
+     9.15,
+     -7.1,
+     0.6
+    ]
+   },
+   "stage1_color": "#6B4A33"
+  },
+  {
+   "id": "A_living_dining_balcony_tv_01",
+   "name": "85 寸电视",
+   "type": "tv",
+   "group": "A",
+   "room": "living_dining_balcony",
+   "shape": "box",
+   "bbox": {
+    "min": [
+     9.08,
+     -9.55,
+     1.0
+    ],
+    "max": [
+     9.14,
+     -7.65,
+     2.1
+    ]
+   },
+   "stage1_color": "#3A3532"
+  },
+  {
+   "id": "A_living_dining_balcony_floor_lamp_01",
+   "name": "中古弧形落地灯",
+   "type": "floor_lamp",
+   "group": "A",
+   "room": "living_dining_balcony",
+   "shape": "cylinder",
+   "center": [
+    4.45,
+    -10.2
+   ],
+   "radius": 0.12,
+   "z_base": 0.0,
+   "height": 1.8,
+   "stage1_color": "#3A3532"
+  },
+  {
+   "id": "A_living_dining_balcony_lounge_chair_01",
+   "name": "中古单椅（墨绿）",
+   "type": "lounge_chair",
+   "group": "A",
+   "room": "living_dining_balcony",
+   "shape": "box",
+   "bbox": {
+    "min": [
+     6.9,
+     -11.2,
+     0.0
+    ],
+    "max": [
+     7.6,
+     -10.5,
+     0.75
+    ]
+   },
+   "stage1_color": "#6E7A52"
+  },
+  {
+   "id": "B_living_dining_balcony_island_01",
+   "name": "岛台（1.4×0.9×0.9m，嵌蒸烤箱）",
+   "type": "island",
+   "group": "B",
+   "room": "living_dining_balcony",
+   "shape": "box",
+   "bbox": {
+    "min": [
+     4.2,
+     -5.85,
+     0.0
+    ],
+    "max": [
+     5.6,
+     -4.95,
+     0.86
+    ]
+   },
+   "stage1_color": "#6B4A33",
+   "parts": [
+    {
+     "bbox": {
+      "min": [
+       4.2,
+       -5.85,
+       0.86
+      ],
+      "max": [
+       5.6,
+       -4.95,
+       0.9
+      ]
+     },
+     "stage1_color": "#F4F1EC"
+    }
+   ]
+  },
+  {
+   "id": "B_living_dining_balcony_island_02",
+   "name": "2.4m 实木长桌（高低台接岛台，0.75m 高）",
+   "type": "island",
+   "group": "B",
+   "room": "living_dining_balcony",
+   "shape": "box",
+   "bbox": {
+    "min": [
+     5.6,
+     -5.85,
+     0.0
+    ],
+    "max": [
+     8.0,
+     -5.0,
+     0.75
+    ]
+   },
+   "stage1_color": "#86603F"
+  },
+  {
+   "id": "B_living_dining_balcony_pendant_lamp_01",
+   "name": "岛台/餐桌上方中古吊灯（乳白玻璃球）",
+   "type": "pendant_lamp",
+   "group": "B",
+   "room": "living_dining_balcony",
+   "shape": "sphere",
+   "center": [
+    4.9,
+    -5.4,
+    2.05
+   ],
+   "radius": 0.2
+  },
+  {
+   "id": "B_living_dining_balcony_pendant_lamp_02",
+   "name": "岛台/餐桌上方中古吊灯（乳白玻璃球）",
+   "type": "pendant_lamp",
+   "group": "B",
+   "room": "living_dining_balcony",
+   "shape": "sphere",
+   "center": [
+    6.8,
+    -5.42,
+    2.0
+   ],
+   "radius": 0.18
+  },
+  {
+   "id": "B_living_dining_balcony_dining_chair_01",
+   "name": "混搭餐椅",
+   "type": "dining_chair",
+   "group": "B",
+   "room": "living_dining_balcony",
+   "shape": "box",
+   "bbox": {
+    "min": [
+     5.9,
+     -4.95,
+     0.0
+    ],
+    "max": [
+     6.3,
+     -4.55,
+     0.8
+    ]
+   },
+   "stage1_color": "#6B4A33"
+  },
+  {
+   "id": "B_living_dining_balcony_dining_chair_02",
+   "name": "混搭餐椅",
+   "type": "dining_chair",
+   "group": "B",
+   "room": "living_dining_balcony",
+   "shape": "box",
+   "bbox": {
+    "min": [
+     5.9,
+     -6.3,
+     0.0
+    ],
+    "max": [
+     6.3,
+     -5.9,
+     0.8
+    ]
+   },
+   "stage1_color": "#A5533F"
+  },
+  {
+   "id": "B_living_dining_balcony_dining_chair_03",
+   "name": "混搭餐椅",
+   "type": "dining_chair",
+   "group": "B",
+   "room": "living_dining_balcony",
+   "shape": "box",
+   "bbox": {
+    "min": [
+     6.7,
+     -4.95,
+     0.0
+    ],
+    "max": [
+     7.1,
+     -4.55,
+     0.8
+    ]
+   },
+   "stage1_color": "#6E7A52"
+  },
+  {
+   "id": "B_living_dining_balcony_dining_chair_04",
+   "name": "混搭餐椅",
+   "type": "dining_chair",
+   "group": "B",
+   "room": "living_dining_balcony",
+   "shape": "box",
+   "bbox": {
+    "min": [
+     6.7,
+     -6.3,
+     0.0
+    ],
+    "max": [
+     7.1,
+     -5.9,
+     0.8
+    ]
+   },
+   "stage1_color": "#6B4A33"
+  },
+  {
+   "id": "B_living_dining_balcony_dining_chair_05",
+   "name": "混搭餐椅",
+   "type": "dining_chair",
+   "group": "B",
+   "room": "living_dining_balcony",
+   "shape": "box",
+   "bbox": {
+    "min": [
+     7.4,
+     -4.95,
+     0.0
+    ],
+    "max": [
+     7.8,
+     -4.55,
+     0.8
+    ]
+   },
+   "stage1_color": "#6B4A33"
+  },
+  {
+   "id": "B_living_dining_balcony_dining_chair_06",
+   "name": "混搭餐椅",
+   "type": "dining_chair",
+   "group": "B",
+   "room": "living_dining_balcony",
+   "shape": "box",
+   "bbox": {
+    "min": [
+     7.4,
+     -6.3,
+     0.0
+    ],
+    "max": [
+     7.8,
+     -5.9,
+     0.8
+    ]
+   },
+   "stage1_color": "#6B4A33"
+  },
+  {
+   "id": "B_living_dining_balcony_sofa_01",
+   "name": "燕麦色布艺模块沙发（可拆洗）",
+   "type": "sofa",
+   "group": "B",
+   "room": "living_dining_balcony",
+   "shape": "box",
+   "bbox": {
+    "min": [
+     4.75,
+     -10.1,
+     0.0
+    ],
+    "max": [
+     5.7,
+     -7.4,
+     0.42
+    ]
+   },
+   "stage1_color": "#D8CBB3",
+   "parts": [
+    {
+     "bbox": {
+      "min": [
+       4.75,
+       -10.1,
+       0.42
+      ],
+      "max": [
+       5.0,
+       -7.4,
+       0.8
+      ]
+     },
+     "stage1_color": "#D8CBB3"
+    }
+   ]
+  },
+  {
+   "id": "B_living_dining_balcony_sofa_02",
+   "name": "模块沙发转角",
+   "type": "sofa",
+   "group": "B",
+   "room": "living_dining_balcony",
+   "shape": "box",
+   "bbox": {
+    "min": [
+     5.7,
+     -10.1,
+     0.0
+    ],
+    "max": [
+     6.7,
+     -9.3,
+     0.42
+    ]
+   },
+   "stage1_color": "#D8CBB3"
+  },
+  {
+   "id": "B_living_dining_balcony_side_table_01",
+   "name": "边几",
+   "type": "side_table",
+   "group": "B",
+   "room": "living_dining_balcony",
+   "shape": "cylinder",
+   "center": [
+    6.0,
+    -7.1
+   ],
+   "radius": 0.22,
+   "z_base": 0.0,
+   "height": 0.5,
+   "stage1_color": "#6B4A33"
+  },
+  {
+   "id": "B_living_dining_balcony_rug_01",
+   "name": "游戏/活动地毯",
+   "type": "rug",
+   "group": "B",
+   "room": "living_dining_balcony",
+   "shape": "box",
+   "bbox": {
+    "min": [
+     5.9,
+     -9.2,
+     0.0
+    ],
+    "max": [
+     8.4,
+     -7.3,
+     0.01
+    ]
+   },
+   "stage1_color": "#B9A48A"
+  },
+  {
+   "id": "B_living_dining_balcony_cabinet_01",
+   "name": "东墙通顶整墙柜（下段）",
+   "type": "cabinet",
+   "group": "B",
+   "room": "living_dining_balcony",
+   "shape": "box",
+   "bbox": {
+    "min": [
+     8.75,
+     -10.15,
+     0.0
+    ],
+    "max": [
+     9.2,
+     -5.35,
+     0.9
+    ]
+   },
+   "stage1_color": "#EFE9DF",
+   "note": "整面东墙约 4.8m 长 × 0.45m 深 × 通顶"
+  },
+  {
+   "id": "B_living_dining_balcony_open_niche_01",
+   "name": "整墙柜开放格（胡桃木内衬+灯带）",
+   "type": "open_niche",
+   "group": "B",
+   "room": "living_dining_balcony",
+   "shape": "box",
+   "bbox": {
+    "min": [
+     8.95,
+     -10.15,
+     0.9
+    ],
+    "max": [
+     9.2,
+     -5.35,
+     1.5
+    ]
+   },
+   "stage1_color": "#6B4A33"
+  },
+  {
+   "id": "B_living_dining_balcony_cabinet_02",
+   "name": "东墙通顶整墙柜（上段）",
+   "type": "cabinet",
+   "group": "B",
+   "room": "living_dining_balcony",
+   "shape": "box",
+   "bbox": {
+    "min": [
+     8.75,
+     -10.15,
+     1.5
+    ],
+    "max": [
+     9.2,
+     -5.35,
+     2.75
+    ]
+   },
+   "stage1_color": "#EFE9DF"
+  },
+  {
+   "id": "B_living_dining_balcony_tv_01",
+   "name": "移动电视（支架可推）",
+   "type": "tv",
+   "group": "B",
+   "room": "living_dining_balcony",
+   "shape": "box",
+   "bbox": {
+    "min": [
+     7.35,
+     -9.4,
+     0.6
+    ],
+    "max": [
+     7.45,
+     -8.4,
+     1.3
+    ]
+   },
+   "stage1_color": "#3A3532",
+   "parts": [
+    {
+     "bbox": {
+      "min": [
+       7.2,
+       -9.1,
+       0.0
+      ],
+      "max": [
+       7.6,
+       -8.7,
+       0.6
+      ]
+     },
+     "stage1_color": "#3A3532"
+    }
+   ]
+  },
+  {
+   "id": "B_living_dining_balcony_floor_lamp_01",
+   "name": "中古弧形落地灯",
+   "type": "floor_lamp",
+   "group": "B",
+   "room": "living_dining_balcony",
+   "shape": "cylinder",
+   "center": [
+    4.45,
+    -10.4
+   ],
+   "radius": 0.12,
+   "z_base": 0.0,
+   "height": 1.8,
+   "stage1_color": "#3A3532"
+  },
+  {
+   "id": "common_master_bedroom_screen_01",
+   "name": "半高胡桃木格栅屏风",
+   "type": "screen",
+   "group": "common",
+   "room": "master_bedroom",
+   "shape": "box",
+   "bbox": {
+    "min": [
+     11.25,
+     -6.66,
+     0.0
+    ],
+    "max": [
+     12.63,
+     -6.58,
+     1.5
+    ]
+   },
+   "note": "竖向格栅：每根 30×80mm 胡桃木方条，中心距 75mm，高 1.5m，落地；顶部可加一根通长压条"
+  }
+ ],
+ "room_labels": [
+  {
+   "name": "厨房",
+   "xy": [
+    5,
+    -2.6
+   ]
+  },
+  {
+   "name": "女儿房",
+   "xy": [
+    7.4,
+    -1.1
+   ]
+  },
+  {
+   "name": "公卫",
+   "xy": [
+    9.9,
+    -1.6
+   ]
+  },
+  {
+   "name": "双盆干区",
+   "xy": [
+    10.05,
+    -3.2
+   ]
+  },
+  {
+   "name": "儿子房",
+   "xy": [
+    12,
+    -1
+   ]
+  },
+  {
+   "name": "主卫",
+   "xy": [
+    11.9,
+    -4.7
+   ]
+  },
+  {
+   "name": "主卧",
+   "xy": [
+    11.2,
+    -8.1
+   ]
+  },
+  {
+   "name": "露台",
+   "xy": [
+    10.9,
+    -12
+   ]
+  },
+  {
+   "name": "客餐厅",
+   "xy": [
+    7,
+    -7.3
+   ]
+  },
+  {
+   "name": "阳台·洗衣区",
+   "xy": [
+    5.4,
+    -11.2
+   ]
+  },
+  {
+   "name": "玄关",
+   "xy": [
+    2.7,
+    -5.4
+   ]
+  },
+  {
+   "name": "父母房",
+   "xy": [
+    1.4,
+    -8.6
+   ]
+  },
+  {
+   "name": "门外电梯厅",
+   "xy": [
+    2.7,
+    -3.7
+   ]
+  }
+ ]
+}

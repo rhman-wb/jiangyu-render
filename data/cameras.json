@@ -1,0 +1,522 @@
+{
+ "meta": {
+  "rules": [
+   "location/look_at 为 Blender 世界坐标（米），与 layout.json 一致",
+   "透视相机必须两点透视：相机保持水平（rotation_euler.x=90°，无俯仰），通过 lens shift_y 调整构图高度；look_at 只用来确定水平朝向(方位角)和 shift_y 的大致需要",
+   "鸟瞰 01/02 例外：允许俯视，用 Track To 约束对准 look_at",
+   "PANO_EQUIRECT：camera.data.type='PANO'，panorama_type='EQUIRECTANGULAR'（Blender 4.0+ 在 camera.data 上），相机水平，look_at 仅决定全景正前方",
+   "若相机落在家具或墙体内部（碰撞检测），在 0.3m 范围内微调位置并在 render_log 中记录"
+  ]
+ },
+ "cameras": [
+  {
+   "id": "01_aerial_A",
+   "scheme": "A",
+   "type": "PERSP",
+   "location": [
+    7.0,
+    -17.5,
+    21
+   ],
+   "look_at": [
+    7.0,
+    -6.2,
+    0
+   ],
+   "lens_mm": 32,
+   "sensor_width_mm": 36,
+   "resolution": [
+    1920,
+    1080
+   ],
+   "description": "全屋鸟瞰剖切图·方案A：去掉所有吊顶/顶板，墙体完整高度，从东南偏南上空俯视",
+   "hide_ceilings": true
+  },
+  {
+   "id": "02_aerial_B",
+   "scheme": "B",
+   "type": "PERSP",
+   "location": [
+    7.0,
+    -17.5,
+    21
+   ],
+   "look_at": [
+    7.0,
+    -6.2,
+    0
+   ],
+   "lens_mm": 32,
+   "sensor_width_mm": 36,
+   "resolution": [
+    1920,
+    1080
+   ],
+   "description": "全屋鸟瞰剖切图·方案B：同01机位，仅客餐厅家具不同",
+   "hide_ceilings": true
+  },
+  {
+   "id": "03_living_A_from_foyer",
+   "scheme": "A",
+   "type": "PERSP",
+   "location": [
+    3.25,
+    -5.6,
+    1.35
+   ],
+   "look_at": [
+    7.2,
+    -10.6,
+    1.1
+   ],
+   "lens_mm": 20,
+   "sensor_width_mm": 36,
+   "resolution": [
+    1920,
+    1080
+   ],
+   "description": "方案A：从玄关出口看向客厅和南阳台，画面含岛台餐桌、沙发、电视墙南段、阳台窗"
+  },
+  {
+   "id": "04_living_A_from_balcony",
+   "scheme": "A",
+   "type": "PERSP",
+   "location": [
+    8.2,
+    -11.3,
+    1.4
+   ],
+   "look_at": [
+    5.2,
+    -4.0,
+    1.2
+   ],
+   "lens_mm": 20,
+   "sensor_width_mm": 36,
+   "resolution": [
+    1920,
+    1080
+   ],
+   "description": "方案A：站在阳台东段回看餐厨区，画面含沙发背面、西墙书柜+洗衣柜、岛台、四联动厨房门、端景角"
+  },
+  {
+   "id": "05_living_A_tv_wall",
+   "scheme": "A",
+   "type": "PERSP",
+   "location": [
+    4.2,
+    -8.0,
+    1.45
+   ],
+   "look_at": [
+    9.25,
+    -8.6,
+    1.2
+   ],
+   "lens_mm": 22,
+   "sensor_width_mm": 36,
+   "resolution": [
+    1920,
+    1080
+   ],
+   "description": "方案A：沙发后方看整面电视墙（奶白艺术涂料+悬空胡桃木电视柜），右侧可见阳台通露台玻璃门"
+  },
+  {
+   "id": "06_living_B_from_foyer",
+   "scheme": "B",
+   "type": "PERSP",
+   "location": [
+    3.25,
+    -5.6,
+    1.35
+   ],
+   "look_at": [
+    7.2,
+    -10.6,
+    1.1
+   ],
+   "lens_mm": 20,
+   "sensor_width_mm": 36,
+   "resolution": [
+    1920,
+    1080
+   ],
+   "description": "方案B：与03同机位"
+  },
+  {
+   "id": "07_living_B_from_balcony",
+   "scheme": "B",
+   "type": "PERSP",
+   "location": [
+    8.2,
+    -11.3,
+    1.4
+   ],
+   "look_at": [
+    5.2,
+    -4.0,
+    1.2
+   ],
+   "lens_mm": 20,
+   "sensor_width_mm": 36,
+   "resolution": [
+    1920,
+    1080
+   ],
+   "description": "方案B：与04同机位"
+  },
+  {
+   "id": "08_living_B_tv_wall",
+   "scheme": "B",
+   "type": "PERSP",
+   "location": [
+    4.2,
+    -8.0,
+    1.45
+   ],
+   "look_at": [
+    9.25,
+    -8.6,
+    1.2
+   ],
+   "lens_mm": 22,
+   "sensor_width_mm": 36,
+   "resolution": [
+    1920,
+    1080
+   ],
+   "description": "方案B：与05同机位，看东墙通顶整墙柜+移动电视"
+  },
+  {
+   "id": "09_kitchen_walnut",
+   "scheme": "A",
+   "type": "PERSP",
+   "location": [
+    4.45,
+    -3.7,
+    1.5
+   ],
+   "look_at": [
+    5.9,
+    -1.5,
+    1.1
+   ],
+   "lens_mm": 18,
+   "sensor_width_mm": 36,
+   "resolution": [
+    1920,
+    1080
+   ],
+   "description": "厨房：从西南角看北窗水槽与东墙灶台，下柜胡桃木木纹版"
+  },
+  {
+   "id": "10_kitchen_olive",
+   "scheme": "A",
+   "type": "PERSP",
+   "location": [
+    4.45,
+    -3.7,
+    1.5
+   ],
+   "look_at": [
+    5.9,
+    -1.5,
+    1.1
+   ],
+   "lens_mm": 18,
+   "sensor_width_mm": 36,
+   "resolution": [
+    1920,
+    1080
+   ],
+   "description": "厨房：同09机位，下柜换橄榄绿（#6E7A52 哑光）对比版",
+   "variant": "kitchen_lower_olive"
+  },
+  {
+   "id": "11_foyer",
+   "scheme": "A",
+   "type": "PERSP",
+   "location": [
+    2.7,
+    -4.95,
+    1.5
+   ],
+   "look_at": [
+    2.7,
+    -6.6,
+    1.1
+   ],
+   "lens_mm": 16,
+   "sensor_width_mm": 36,
+   "resolution": [
+    1920,
+    1080
+   ],
+   "description": "玄关：进门正对1.4m端景柜，右侧（西墙）通高镜面门"
+  },
+  {
+   "id": "12_master_bed_screen",
+   "scheme": "A",
+   "type": "PERSP",
+   "location": [
+    9.95,
+    -9.85,
+    1.4
+   ],
+   "look_at": [
+    12.5,
+    -7.4,
+    1.0
+   ],
+   "lens_mm": 18,
+   "sensor_width_mm": 36,
+   "resolution": [
+    1920,
+    1080
+   ],
+   "description": "主卧：从西南角看床、焦糖床头、北侧格栅屏风与电脑桌"
+  },
+  {
+   "id": "13_master_wardrobe_vanity",
+   "scheme": "A",
+   "type": "PERSP",
+   "location": [
+    11.9,
+    -9.75,
+    1.45
+   ],
+   "look_at": [
+    9.4,
+    -7.8,
+    1.2
+   ],
+   "lens_mm": 18,
+   "sensor_width_mm": 36,
+   "resolution": [
+    1920,
+    1080
+   ],
+   "description": "主卧：从床尾东南侧看西墙衣柜与一体梳妆台"
+  },
+  {
+   "id": "14_parents_room",
+   "scheme": "A",
+   "type": "PERSP",
+   "location": [
+    3.05,
+    -8.0,
+    1.45
+   ],
+   "look_at": [
+    1.0,
+    -9.9,
+    0.9
+   ],
+   "lens_mm": 18,
+   "sensor_width_mm": 36,
+   "resolution": [
+    1920,
+    1080
+   ],
+   "description": "父母房：从门口看床与飘窗坐榻"
+  },
+  {
+   "id": "15_daughter_room",
+   "scheme": "A",
+   "type": "PERSP",
+   "location": [
+    8.55,
+    -3.55,
+    1.45
+   ],
+   "look_at": [
+    6.9,
+    -1.0,
+    1.0
+   ],
+   "lens_mm": 18,
+   "sensor_width_mm": 36,
+   "resolution": [
+    1920,
+    1080
+   ],
+   "description": "女儿房：从门口看L型衣柜、北窗下的床（家具为成品示意）"
+  },
+  {
+   "id": "16_son_room",
+   "scheme": "A",
+   "type": "PERSP",
+   "location": [
+    11.05,
+    -3.1,
+    1.45
+   ],
+   "look_at": [
+    13.0,
+    -0.9,
+    1.0
+   ],
+   "lens_mm": 18,
+   "sensor_width_mm": 36,
+   "resolution": [
+    1920,
+    1080
+   ],
+   "description": "儿子房：从门口看东墙通长书桌+矮书架、北窗下的床（家具为成品示意）"
+  },
+  {
+   "id": "17_public_bath_dry",
+   "scheme": "A",
+   "type": "PERSP",
+   "location": [
+    10.55,
+    -4.9,
+    1.5
+   ],
+   "look_at": [
+    9.1,
+    -3.1,
+    1.2
+   ],
+   "lens_mm": 18,
+   "sensor_width_mm": 36,
+   "resolution": [
+    1920,
+    1080
+   ],
+   "description": "公卫干区：过道里看紧挨公卫、靠女儿房墙面的1.5m双盆台"
+  },
+  {
+   "id": "18_public_bath_wet",
+   "scheme": "A",
+   "type": "PERSP",
+   "location": [
+    10.3,
+    -2.3,
+    1.5
+   ],
+   "look_at": [
+    9.8,
+    -0.4,
+    1.1
+   ],
+   "lens_mm": 16,
+   "sensor_width_mm": 36,
+   "resolution": [
+    1920,
+    1080
+   ],
+   "description": "公卫湿区：门口看马桶与最里端整宽淋浴"
+  },
+  {
+   "id": "19_master_bath",
+   "scheme": "A",
+   "type": "PERSP",
+   "location": [
+    11.25,
+    -5.1,
+    1.5
+   ],
+   "look_at": [
+    13.4,
+    -4.0,
+    1.2
+   ],
+   "lens_mm": 16,
+   "sensor_width_mm": 36,
+   "resolution": [
+    1920,
+    1080
+   ],
+   "description": "主卫：门口看一字三段（洗手台-马桶-窗下淋浴）"
+  },
+  {
+   "id": "20_terrace",
+   "scheme": "A",
+   "type": "PERSP",
+   "location": [
+    9.7,
+    -10.45,
+    1.5
+   ],
+   "look_at": [
+    12.3,
+    -12.1,
+    0.8
+   ],
+   "lens_mm": 20,
+   "sensor_width_mm": 36,
+   "resolution": [
+    1920,
+    1080
+   ],
+   "description": "露台：从主卧落地门外看绿植与藤编桌椅（露台不改造）"
+  },
+  {
+   "id": "P1_living_A_pano",
+   "scheme": "A",
+   "type": "PANO_EQUIRECT",
+   "location": [
+    6.3,
+    -7.0,
+    1.5
+   ],
+   "look_at": [
+    6.3,
+    -9.0,
+    1.5
+   ],
+   "lens_mm": 0,
+   "sensor_width_mm": 36,
+   "resolution": [
+    4096,
+    2048
+   ],
+   "description": "方案A 客餐厅 720° 全景"
+  },
+  {
+   "id": "P2_living_B_pano",
+   "scheme": "B",
+   "type": "PANO_EQUIRECT",
+   "location": [
+    6.3,
+    -7.0,
+    1.5
+   ],
+   "look_at": [
+    6.3,
+    -9.0,
+    1.5
+   ],
+   "lens_mm": 0,
+   "sensor_width_mm": 36,
+   "resolution": [
+    4096,
+    2048
+   ],
+   "description": "方案B 客餐厅 720° 全景"
+  },
+  {
+   "id": "P3_master_pano",
+   "scheme": "A",
+   "type": "PANO_EQUIRECT",
+   "location": [
+    10.2,
+    -8.1,
+    1.5
+   ],
+   "look_at": [
+    12.0,
+    -8.1,
+    1.5
+   ],
+   "lens_mm": 0,
+   "sensor_width_mm": 36,
+   "resolution": [
+    4096,
+    2048
+   ],
+   "description": "主卧 720° 全景"
+  }
+ ]
+}
