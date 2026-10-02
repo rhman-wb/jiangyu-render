@@ -86,11 +86,48 @@ def set_scheme_visibility(scene, scheme):
         coll_b.hide_viewport = (scheme != 'B')
 
 
+def collection_parent_map():
+    """Blender 4.5：Collection 没有 .parent 属性（D-014 坑），用 children 反查父集。"""
+    par = {}
+    for c in bpy.data.collections:
+        for ch in c.children:
+            par[ch.name] = c
+    return par
+
+
+def root_side(coll):
+    """沿集合树向上找到 COMMON/SCHEME_A/SCHEME_B 之一；返回其名或 None。
+    qa.check_scheme_full 与 build_scene 收尾校验共用（REWORK 4.2）。"""
+    par = collection_parent_map()
+    seen = set()
+    while coll is not None and coll.name not in (config.COL_COMMON,
+                                                 config.COL_SCHEME_A,
+                                                 config.COL_SCHEME_B):
+        if coll.name in seen:          # 防环（正常不会出现）
+            return None
+        seen.add(coll.name)
+        coll = par.get(coll.name)
+    return coll.name if coll else None
+
+
+def set_agx_look(scene, look=None):
+    """设置 AgX look，兼容 'Base Contrast' / 'AgX - Base Contrast' 两种枚举拼写。"""
+    look = look or config.AGX_LOOK
+    for t in (look, 'AgX - ' + look, look.replace('AgX - ', '')):
+        try:
+            scene.view_settings.look = t
+            return t
+        except Exception:
+            continue
+    return None
+
+
 # ---------------------------------------------------------------- 几何
-def make_box(name, bmin, bmax, coll=None, mat=None, bevel=None, origin_at=None):
+def make_box(name, bmin, bmax, coll=None, mat=None, bevel=None, origin_at=None, role=None):
     """轴对齐盒体。bmin/bmax 为世界坐标 3 元组。
     origin_at: 指定对象原点的世界坐标（默认盒中心）；旋转门扇等用。
     bevel: 修改器宽度（米），不 apply。
+    role: 语义角色（REWORK 4.1）——写入 custom property，materials.apply_all 据此上正式材质。
     """
     # create_cube(size=1) 立方体范围为 ±0.5，所以缩放用全尺寸
     sx, sy, sz = (bmax[0] - bmin[0], bmax[1] - bmin[1], bmax[2] - bmin[2])
@@ -119,6 +156,8 @@ def make_box(name, bmin, bmax, coll=None, mat=None, bevel=None, origin_at=None):
         bv.segments = 2
     if mat is not None:
         obj.data.materials.append(mat)
+    if role is not None:
+        obj['role'] = role
     target = coll if coll is not None else bpy.context.scene.collection
     target.objects.link(obj)
     return obj

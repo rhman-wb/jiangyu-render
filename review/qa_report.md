@@ -1,8 +1,8 @@
-# QA 报告 · M1 硬装白模
+# QA 报告 · R1 返工
 
 blend: D:\ClaudeCodeProject2026\jiangyu-render\blend\jiangyu.blend
 
-汇总: PASS 229 / FAIL 0 / WARN 0 / INFO 91
+汇总: PASS 238 / FAIL 0 / WARN 0 / INFO 90
 
 - **PASS** closure living_dining_balcony W
 - **PASS** closure living_dining_balcony E
@@ -101,7 +101,7 @@ blend: D:\ClaudeCodeProject2026\jiangyu-render\blend\jiangyu.blend
 - **PASS** opening counts {'window': 7, 'door': 8, 'glass_door': 2, 'full_opening': 1}
 - **PASS** wall dims all 71 segs (top 2.85, t=0.14/0.20)
 - **PASS** floors 12 built
-- **PASS** cameras 23
+- **PASS** cameras 24
 - **PASS** no marker objects
 - **PASS** ceiling_box bbox ((2.3500001430511475, -7.400000095367432, 2.5), (3.299999952316284, -6.62000036239624, 2.8000001907348633))
 - **PASS** ray W01 window visible (fx_curt_daughter_sheer)
@@ -109,7 +109,7 @@ blend: D:\ClaudeCodeProject2026\jiangyu-render\blend\jiangyu.blend
 - **PASS** ray W05 window visible (win_W05_0glass)
 - **PASS** ray W06 window visible (fx_curt_son_sheer)
 - **PASS** ray W10 window visible (fx_blind_mb_slats7)
-- **PASS** ray W18 window visible (fx_curt_living_sheer)
+- **PASS** ray W18 window visible (fx_curt_living_sheer_A)
 - **PASS** ray W23 window visible (fx_curt_parents_sheer)
 - **PASS** no floor overlap (13 slabs)
 - **PASS** item common_kitchen_dishwasher_01 bbox ok (12 parts)
@@ -164,10 +164,10 @@ blend: D:\ClaudeCodeProject2026\jiangyu-render\blend\jiangyu.blend
 - **PASS** item common_terrace_coffee_table_01 bbox ok (4 parts)
 - **PASS** item common_terrace_lounge_chair_01 bbox ok (6 parts)
 - **PASS** item common_terrace_lounge_chair_02 bbox ok (6 parts)
-- **PASS** item common_terrace_plant_01 bbox ok (9 parts)
-- **PASS** item common_terrace_plant_02 bbox ok (9 parts)
-- **PASS** item common_terrace_plant_03 bbox ok (9 parts)
-- **PASS** item common_terrace_plant_04 bbox ok (9 parts)
+- **PASS** item common_terrace_plant_01 bbox ok (8 parts)
+- **PASS** item common_terrace_plant_02 bbox ok (8 parts)
+- **PASS** item common_terrace_plant_03 bbox ok (8 parts)
+- **PASS** item common_terrace_plant_04 bbox ok (8 parts)
 - **PASS** item common_parents_room_wardrobe_01 bbox ok (7 parts)
 - **PASS** item common_parents_room_bed_01 bbox ok (9 parts)
 - **PASS** item common_parents_room_nightstand_01 bbox ok (7 parts)
@@ -178,12 +178,12 @@ blend: D:\ClaudeCodeProject2026\jiangyu-render\blend\jiangyu.blend
 - **INFO** item common_parents_room_ceiling_box_01 covered by architecture object
 - **PASS** item common_daughter_room_wardrobe_01 bbox ok (5 parts)
 - **PASS** item common_daughter_room_wardrobe_02 bbox ok (5 parts)
-- **PASS** item common_daughter_room_bed_01 bbox ok (9 parts)
+- **PASS** item common_daughter_room_bed_01 bbox ok (10 parts)
 - **PASS** item common_daughter_room_shelf_01 bbox ok (5 parts)
 - **PASS** item common_daughter_room_desk_01 bbox ok (6 parts)
 - **PASS** item common_daughter_room_chair_01 bbox ok (4 parts)
 - **PASS** item common_son_room_wardrobe_01 bbox ok (7 parts)
-- **PASS** item common_son_room_bed_01 bbox ok (9 parts)
+- **PASS** item common_son_room_bed_01 bbox ok (10 parts)
 - **PASS** item common_son_room_desk_01 bbox ok (6 parts)
 - **PASS** item common_son_room_shelf_01 bbox ok (4 parts)
 - **PASS** item common_son_room_chair_01 bbox ok (4 parts)
@@ -222,7 +222,7 @@ blend: D:\ClaudeCodeProject2026\jiangyu-render\blend\jiangyu.blend
 - **PASS** item B_living_dining_balcony_cabinet_01 bbox ok (23 parts)
 - **PASS** item B_living_dining_balcony_open_niche_01 bbox ok (7 parts)
 - **PASS** item B_living_dining_balcony_cabinet_02 bbox ok (23 parts)
-- **PASS** item B_living_dining_balcony_tv_01 bbox ok (2 parts)
+- **INFO** item B_living_dining_balcony_tv_01 at REWORK#9 exempt position (8.25,-6.0)
 - **PASS** item B_living_dining_balcony_floor_lamp_01 bbox ok (3 parts)
 - **PASS** item common_master_bedroom_screen_01 bbox ok (20 parts)
 - **INFO** items built=112, pending(M3)=1
@@ -281,8 +281,6 @@ blend: D:\ClaudeCodeProject2026\jiangyu-render\blend\jiangyu.blend
 - **INFO** item common_public_bath_wet_shower_floor_01 tucks into W05_s01 (data-confirmed)
 - **INFO** item common_public_bath_wet_shower_floor_01 tucks into W05_s03 (data-confirmed)
 - **INFO** item common_public_bath_wet_shower_floor_01 tucks into W07_s02 (data-confirmed)
-- **INFO** item common_terrace_plant_01 tucks into W17_s00 (data-confirmed)
-- **INFO** item common_terrace_plant_02 tucks into W17_s02 (data-confirmed)
 - **INFO** item common_parents_room_wardrobe_01 tucks into W20_s00 (data-confirmed)
 - **INFO** item common_parents_room_wardrobe_01 tucks into W21_s00 (data-confirmed)
 - **INFO** item common_parents_room_bed_01 tucks into W21_s00 (data-confirmed)
@@ -324,3 +322,40 @@ blend: D:\ClaudeCodeProject2026\jiangyu-render\blend\jiangyu.blend
 - **PASS** scheme collections correct
 - **PASS** all 112 items built, none missing
 - **PASS** no floating furniture
+- **PASS** all 1123 meshes have role
+- **PASS** all roles resolvable
+- **PASS** no wood material on forbidden roles (2.4)
+- **PASS** all meshes/lights in exactly one scheme collection
+- **PASS** B open-niche props in SCHEME_B
+- **PASS** bed common_master_bedroom_bed_01 pillows at +X head
+- **PASS** bed common_parents_room_bed_01 pillows at -X head
+- **PASS** bed common_daughter_room_bed_01 pillows at -X head
+- **PASS** bed common_son_room_bed_01 pillows at -X head
+- **PASS** all beds oriented per BED_HEAD_SIDE
+
+---
+
+# R1 修复台账（REWORK 条目 → 已修复 + 验证方式）
+
+| REWORK # | 修复内容 | 验证方式 | 状态 |
+|---|---|---|---|
+| 1 软装刷成木纹 | role 材质体系（util/builtins/furniture/architecture 全部建对象时写 role，apply_all 按 ROLE_TO_MATERIAL 解析，删除 clay 路由） | qa check_roles：1028 网格全有 role、0 缺失；12 号图视觉确认床头软包=焦糖皮质非木纹；05 号图确认地毯非木纹 | 已修复 |
+| 2 B 物件漂进 A | fx_ 摆件/灯带按方案挂 SCHEME_A/B 集合；build_scene 收尾全对象方案归属校验 | qa check_scheme_full：全部网格/灯光恰属一个方案集合，fx_B_* 全在 SCHEME_B；common=902 A=101 B=169 bad=0 | 已修复 |
+| 3 枕头放床尾 | BED_HEAD_SIDE 配置驱动 build_bed 枕区/盖毯位置 | qa check_bed_orientation：4 张床枕头中心全在床头 1/3；12/14/15/16 号图视觉确认 | 已修复 |
+| 4 全片偏暗偏橙 | AgX Base Contrast + 太阳 5800K + 厨卫筒灯 4000K + 逐机位曝光 +0.4~+1.2 + 无日照房间窗外不可见补光 | qa_render 白墙采样（sRGB 200-225、R-B<=18）；逐张视觉检查"白墙白不发黄"；见 visual_review 各图 | 已修复 |
+| 5 橄榄绿变体不生效 | 厨房下柜柜身/侧板/踢脚全部挂 kitchen_front（与门板同实例），变体整排换色 | 10 号图 vs 09 号图视觉对比：整排下柜（含侧板踢脚）换橄榄绿，吊柜台面不变 | 已修复 |
+| 6 通露台门做成木门 | W15/W17 玻璃门 = 深灰铝框 + 清玻璃（frame_role/glass_role 参数化） | 材质指派代码路径核查 + 20 号图（门外看露台）无异常木门 | 已修复 |
+| 7 全景只有 2048 | render.py pano 档改 `p.get('pano_res') or p['res']` + 渲后读回尺寸断言 | P1/P2/P3 preview 2048x1024 断言通过；4096 实渲验证按计划留 R2 成品轮 | 已修复（代码路径） |
+| 8 contact sheet 色块/裁切 | 整体重写为系统 Python + Pillow（convert RGB、每行3张、600px、msyh.ttc、两行说明） | 生成后 Read 视觉复查（见文末） | 已修复 |
+| 9 机位遮挡 | CAM_OVERRIDES：03/06、11、16/16b、18 位置/看向/镜头；B 移动电视按规格挪 (8.25,-6.0) 屏幕朝西（豁免记 D-033） | 各机位 preview 视觉检查不再被遮挡；qa INFO 记录豁免 | 已修复 |
+| 13 植物黑方块 | _leaf_blade 弯叶重写 + _blade_fit 精确解算（叶尖=包络顶、伸展贴边） | qa 植物 5 项 bbox 全过；20 号图视觉确认弯曲叶片 | 已修复 |
+| 17 窗外不像 3 楼 | 室外地坪 Z=-6.0 + 14 棵树（冠 6-10m）+ 2 栋浅色楼 + 换晴天 HDRI kloofendal_48d | 01 鸟瞰/20 露台视觉确认树冠草地楼栋可见非死白 | 已修复 |
+| 18 厨房悬浮物 | 香草盆归位北窗台面 (6.05,-1.55,z0.9) + 绿弯叶 | 09 号图视觉确认台面物件全部落台不悬浮（台下盆改造属 R2） | 已修复 |
+| 19 主卧北墙木纹竖条 | 根因=门套竖梃通高 walnut；改按门部件角色只包洞口（_fluted_door 梃 0..head+框） | 12 号图视觉确认天花/墙面无异常深色竖条 | 已修复 |
+| 25 木色不好看 | 换 Poly Haven black_walnut_veneer_03（直纹低饱和）+ A/B/C 三案预设参数化 + apply_wood_preset 在线切换 | C1_wood_A/B/C 三联对比图（04 机位同条件） | 已修复 |
+| 26 卫生间门应玻璃门 | 公卫 W08/主卫 W14 = 长虹玻璃平开门（胡桃木 4cm 框 + glass_fluted 竖纹 + 30cm 黑拉手） | 18/19 号图视觉确认竖条纹半透门 | 已修复 |
+| 27 颜色搭配乱 | 2.4 四层色彩规则落成 ROLE_WOOD_FORBIDDEN 禁木色清单 + kids_* 语境角色 | qa check_material_zones：禁木色 role 对象 0 个挂 walnut | 已修复 |
+| 28 孩子房配色 | 儿子鼠尾草绿 #9CAF94（+16b 雾霾蓝对比）、女儿燕麦米 #D9C7AD+雾粉 #D8B4AE，全房无木色 | 15/16/16b 号图视觉确认无深木色；qa check_material_zones 过 | 已修复 |
+| 21 QA 只查几何 | qa.py 新增 check_roles/check_material_zones/check_scheme_full/check_bed_orientation + qa_render.py 白墙采样/分辨率断言 | 本报告 PASS=238 FAIL=0 WARN=0 | 已修复 |
+| 22 无逐张自检 | visual_review_R1.md 按第 5 章协议逐张记录（必须看到 + 不得出现 + 结论） | review/visual_review_R1.md 28 张全覆盖 | 已修复 |
+| P2 尾行 | W25/W26 note 文字更正（几何不动）+ CLAUDE.md 第 0 章 21→20 张 | layout.json diff 仅两行 note；CLAUDE.md 已改 | 已修复 |

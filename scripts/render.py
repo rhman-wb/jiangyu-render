@@ -1,21 +1,33 @@
 # -*- coding: utf-8 -*-
-# render.py —— 后台渲染入口（M1 最小版：--white 白模 Workbench 出图）
+# render.py —— 后台渲染入口
 # 用法：
-#   blender -b blend\jiangyu.blend --python scripts\render.py -- --white --cams 01,03,12,11 [--scheme A]
-# 机位给编号前缀（01 -> cam_01_aerial_A）。输出 review/screenshots/。
+#   blender -b blend\jiangyu.blend --python scripts\render.py -- --cams 01,03 [--scheme A]
+#       [--preset preview|final|pano_final] [--variant kitchen_lower_olive|son_blue]
+#       [--wood A|B|C] [--out NAME] [--white]
+# 机位给编号前缀（01 -> cam_01_aerial_A；16b -> cam_16b_son_room_blue）。
+# REWORK #7：pano_final 必须 4096x2048，渲染后读回尺寸断言。
+# REWORK #25：--wood 在线切换木色预设（对比图 C1_wood_*）。
+# REWORK #28：cameras.json 里带 variant 的机位（10 橄榄绿 / 16b 雾霾蓝）自动套用变体。
 import os
 import sys
+import time
 import bpy
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import config
 import util
 
+# 变体 = (基准材质, 变体材质)；套用/还原按 slot0 材质名互换
+VARIANT_PAIRS = {
+    'kitchen_lower_olive': ('kitchen_front', 'kitchen_lower_olive'),
+    'son_blue': ('kids_son_green', 'kids_son_blue'),
+}
+
 
 def parse_args():
     argv = sys.argv[sys.argv.index('--') + 1:] if '--' in sys.argv else []
     opts = {'white': '--white' in argv, 'cams': [], 'scheme': 'A',
-            'preset': None, 'variant': None}
+            'preset': None, 'variant': None, 'wood': None, 'out': None}
     if '--cams' in argv:
         opts['cams'] = [c.strip() for c in argv[argv.index('--cams') + 1].split(',') if c.strip()]
     if '--scheme' in argv:
@@ -24,6 +36,10 @@ def parse_args():
         opts['preset'] = argv[argv.index('--preset') + 1]
     if '--variant' in argv:
         opts['variant'] = argv[argv.index('--variant') + 1]
+    if '--wood' in argv:
+        opts['wood'] = argv[argv.index('--wood') + 1].upper()
+    if '--out' in argv:
+        opts['out'] = argv[argv.index('--out') + 1]
     return opts
 
 
@@ -51,8 +67,27 @@ def enable_gpu():
     return 'CPU'
 
 
-def setup_cycles(scene, preset, variant):
-    import materials as M
+def set_variant(name, active):
+    """变体材质互换（active=True 套用 / False 还原）。REWORK #5/#28。"""
+    if name not in VARIANT_PAIRS:
+        return 0
+    base, var = VARIANT_PAIRS[name]
+    src, dst = (var, base) if not active else (base, var)
+    m_dst = bpy.data.materials.get(dst)
+    if m_dst is None:
+        print('[render][warn] variant material missing: %s' % dst)
+        return 0
+    n = 0
+    for o in bpy.data.objects:
+        if o.type == 'MESH' and o.material_slots:
+            slot = o.material_slots[0]
+            if slot.material and slot.material.name == src:
+                slot.material = m_dst
+                n += 1
+    return n
+
+
+def setup_cycles(scene, preset):
     p = config.PRESETS[preset]
     scene.render.engine = 'CYCLES'
     dev = enable_gpu()
@@ -75,17 +110,9 @@ def setup_cycles(scene, preset, variant):
     cy.seed = config.RENDER_SEED
     try:
         scene.view_settings.view_transform = 'AgX'
-        scene.view_settings.look = 'Medium High Contrast'
     except Exception:
         pass
-    if variant == 'kitchen_lower_olive':
-        m_olive = bpy.data.materials.get('kitchen_lower_olive')
-        if m_olive is None:
-            m_olive = M.base_mat('kitchen_lower_olive', '6E7A52', 0.5)
-        for o in bpy.data.objects:
-            if o.type == 'MESH' and o.material_slots:
-                if o.material_slots[0].material and o.material_slots[0].material.name == 'kitchen_front':
-                    o.material_slots[0].material = m_olive
+    util.set_agx_look(scene)   # REWORK 2.5（枚举拼写兼容）
     return dev
 
 
@@ -112,7 +139,6 @@ def setup_workbench(scene):
     scene.render.resolution_x = 1600
     scene.render.resolution_y = 900
     scene.render.resolution_percentage = 100
-    # 白模阶段用 Standard 视图变换（AgX 会压灰，M4 再切）
     try:
         scene.view_settings.view_transform = 'Standard'
     except Exception:
@@ -120,13 +146,24 @@ def setup_workbench(scene):
 
 
 def find_cam(prefix):
-    """机位匹配：相机名 cam_<id>_...，要求 id 首段（下划线前）与 prefix 完全相等。"""
+    """机位匹配：相机名 cam_<id>，要求 id 首段（下划线前）与 prefix 完全相等。"""
     for o in bpy.data.objects:
         if o.type != 'CAMERA' or not o.name.startswith('cam_'):
             continue
         if o.name[4:].split('_')[0] == prefix:
             return o
     return None
+
+
+def assert_output_size(path, res):
+    """REWORK #7：渲染后读回图片尺寸并断言。"""
+    img = bpy.data.images.load(path, check_existing=False)
+    w, h = img.size[0], img.size[1]
+    bpy.data.images.remove(img)
+    if (w, h) != tuple(res):
+        raise RuntimeError('[render] SIZE ASSERT FAIL %s: %dx%d != %dx%d' %
+                           (path, w, h, res[0], res[1]))
+    print('[render] size OK %dx%d %s' % (w, h, os.path.basename(path)))
 
 
 def main():
@@ -142,8 +179,8 @@ def main():
         prefix_out = 'M1_'
     else:
         preset = opts['preset'] or 'preview'
-        dev = setup_cycles(scene, preset, opts['variant'])
-        print('[render] preset=%s device=%s' % (preset, dev))
+        dev = setup_cycles(scene, preset)
+        print('[render] preset=%s device=%s look=%s' % (preset, dev, config.AGX_LOOK))
         outdir = os.path.join(config.RENDER_DIR,
                               'final' if preset == 'final' else
                               ('pano' if preset == 'pano_final' else 'preview'))
@@ -151,17 +188,28 @@ def main():
     os.makedirs(outdir, exist_ok=True)
     util.set_scheme_visibility(scene, opts['scheme'])
 
+    # REWORK #25：木色在线切换（C1_wood_B / C1_wood_C 对比图）
+    if opts['wood']:
+        import materials as M
+        M.apply_wood_preset(opts['wood'])
+
     ceil_coll = bpy.data.collections.get(config.COL_CEILINGS)
     for cam_prefix in opts['cams']:
         cam = find_cam(cam_prefix)
         if cam is None:
             print('[render][warn] camera not found: %s' % cam_prefix)
             continue
+        # REWORK #9 保险：--scheme 与机位 scheme 不一致时告警（不渲染错误组合）
+        cam_scheme = cam.get('scheme', 'A')
+        if cam_scheme != opts['scheme']:
+            print('[render][warn] scheme mismatch: cam %s is scheme %s but --scheme %s' %
+                  (cam_prefix, cam_scheme, opts['scheme']))
         scene.camera = cam
+        res = None
         if not opts['white']:
             p = config.PRESETS[opts['preset'] or 'preview']
             if cam.get('cam_type', '') == 'PANO_EQUIRECT':
-                res = p.get('pano_res') or (2048, 1024)
+                res = p.get('pano_res') or p['res']   # REWORK #7：pano_final 回退 p['res']
             else:
                 res = p['res']
             scene.render.resolution_x, scene.render.resolution_y = res
@@ -169,13 +217,23 @@ def main():
         if ceil_coll is not None:
             ceil_coll.hide_render = bool(cam.get('hide_ceilings', False))
         cid = cam.get('cam_id', cam_prefix)
-        out = os.path.join(outdir, '%s%s.png' % (prefix_out, cid))
+        # 变体：CLI 显式优先，否则用机位自带（10 橄榄绿 / 16b 雾霾蓝）
+        variant = opts['variant'] or cam.get('variant')
+        nv = 0
+        if variant:
+            nv = set_variant(variant, True)
+        base = opts['out'] if opts['out'] else ('%s%s' % (prefix_out, cid))
+        out = os.path.join(outdir, '%s.png' % base)
         scene.render.filepath = out
-        import time
         t0 = time.perf_counter()
         bpy.ops.render.render(write_still=True)
-        print('[render] saved %s (%.1fs, exp=%.2f)' %
-              (out, time.perf_counter() - t0, cam.get('exposure', 0.0)))
+        print('[render] saved %s (%.1fs, exp=%.2f%s)' %
+              (out, time.perf_counter() - t0, cam.get('exposure', 0.0),
+               (' variant=%s(%d objs)' % (variant, nv)) if variant else ''))
+        if variant:
+            set_variant(variant, False)
+        if res is not None:
+            assert_output_size(out, res)
     if ceil_coll is not None:
         ceil_coll.hide_render = False
     scene.view_settings.exposure = 0.0

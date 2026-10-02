@@ -48,3 +48,57 @@ LIGHT_PATHS = dict(
 
 # 采样固定 seed（可复现）
 RENDER_SEED = 42
+
+# ---- REWORK R1 返工配置 ----
+
+# 木色预设（REWORK 2.1）：A 胡桃默认 / B 浅胡桃 / C 橡木；材质切换用，不复制几何
+WOOD_PRESET = 'A'   # 'A' | 'B' | 'C'
+
+# 床头朝向（REWORK 4.3）：枕头/软包/盖毯按此布置
+BED_HEAD_SIDE = {
+    'master_bedroom': '+X',
+    'parents_room':   '-X',
+    'daughter_room':  '-X',
+    'son_room':       '-X',
+}
+
+# 孩子房色板（REWORK 2.3）：儿子鼠尾草绿（对比雾霾蓝）、女儿燕麦米+雾粉、床品奶白
+KIDS_PALETTE = {
+    'son_main':    '9CAF94',   # 鼠尾草绿（主）
+    'son_alt':     '8FA7B8',   # 雾霾蓝（16b 对比版）
+    'daughter_main':   'D9C7AD',  # 燕麦米
+    'daughter_accent': 'D8B4AE',  # 雾粉（点缀：床品/窗帘/地毯/抱枕/小物件）
+    'bedding':     'F3EEE6',   # 奶白（床品底色）
+}
+
+# AgX Look（REWORK 2.5：不用 Medium High Contrast；4.5 枚举名带 "AgX - " 前缀，
+# util.set_agx_look 会做拼写兼容）
+AGX_LOOK = 'AgX - Base Contrast'
+
+# 白墙采样框（REWORK 第 6 章 QA-5）：画面 fractional 坐标 (x0,y0,x1,y1)，y 从顶部起。
+# 初值按各机位构图推定，首轮渲染后按实际画面校准。
+WHITE_WALL_SAMPLES = {
+    '01_aerial_A': [], '02_aerial_B': [], '20_terrace': [],   # 户外/鸟瞰无白墙
+    # 框位经 R1 渲染后逐张视觉校准（初版按几何推测全落在了天花/门框/暖灯区）
+    '03_living_A_from_foyer': [(0.30, 0.10, 0.45, 0.22)],
+    '04_living_A_from_balcony': [(0.72, 0.10, 0.88, 0.22)],
+    '05_living_A_tv_wall': [(0.05, 0.25, 0.15, 0.42), (0.88, 0.28, 0.98, 0.45)],
+    '06_living_B_from_foyer': [(0.30, 0.10, 0.45, 0.22)],
+    '07_living_B_from_balcony': [(0.72, 0.10, 0.88, 0.22)],
+    '08_living_B_tv_wall': [(0.05, 0.08, 0.22, 0.20)],
+    '09_kitchen_walnut': [(0.05, 0.05, 0.20, 0.15)],   # 奶白吊柜门板
+    '10_kitchen_olive': [(0.05, 0.05, 0.20, 0.15)],
+    '11_foyer': [(0.84, 0.20, 0.96, 0.30)],
+    '12_master_bed_screen': [(0.62, 0.18, 0.76, 0.32)],
+    '13_master_wardrobe_vanity': [(0.05, 0.06, 0.30, 0.22), (0.42, 0.10, 0.56, 0.22)],
+    '14_parents_room': [(0.05, 0.05, 0.28, 0.20)],
+    '15_daughter_room': [(0.62, 0.08, 0.75, 0.20)],
+    '16_son_room': [(0.20, 0.64, 0.32, 0.74)],
+    '16b_son_room_blue': [(0.20, 0.64, 0.32, 0.74)],
+    '17_public_bath_dry': [(0.05, 0.10, 0.20, 0.25)],
+    '18_public_bath_wet': [(0.60, 0.10, 0.75, 0.22)],  # 暖米墙砖（无白墙，砖色即规格）
+    '19_master_bath': [(0.60, 0.05, 0.75, 0.18)],      # 燕麦墙砖（同上）
+    'P1_living_A_pano': [(0.40, 0.32, 0.52, 0.42)],
+    'P2_living_B_pano': [(0.40, 0.32, 0.52, 0.42)],
+    'P3_master_pano': [(0.44, 0.40, 0.56, 0.50)],
+}

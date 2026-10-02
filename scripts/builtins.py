@@ -29,8 +29,8 @@ def item_root(item, coll):
     return root
 
 
-def child(root, name, bmin, bmax, coll, mat, bevel=None, glass=False):
-    o = util.make_box(name, bmin, bmax, coll=coll, mat=mat, bevel=bevel)
+def child(root, name, bmin, bmax, coll, mat, bevel=None, glass=False, role=None):
+    o = util.make_box(name, bmin, bmax, coll=coll, mat=mat, bevel=bevel, role=role)
     if o is None:
         return None
     o.parent = root
@@ -120,8 +120,9 @@ def _front_plane(bmin, bmax, room=None):
 
 def add_fronts(root, cid, coll, mat, axis, face, inward, a0, a1, z0, z1, tag,
                max_w=0.45, gap=0.004, t=0.02, pulls=True, pull_mat=None,
-               pull_len=0.30):
-    """门板阵列：沿 a 轴等分；法向 axis；面板外皮在 face、向内伸 t；拉手凸出 ≤4mm。"""
+               pull_len=0.30, role='cabinet_front', pull_role='metal_black'):
+    """门板阵列：沿 a 轴等分；法向 axis；面板外皮在 face、向内伸 t；拉手凸出 ≤4mm。
+    role/pull_role：面板与拉手的语义角色（REWORK 4.1，决定最终材质）。"""
     n = max(1, round((a1 - a0) / max_w))
     w = (a1 - a0) / n
     n_lo, n_hi = (face - t, face) if inward < 0 else (face, face + t)
@@ -135,7 +136,7 @@ def add_fronts(root, cid, coll, mat, axis, face, inward, a0, a1, z0, z1, tag,
         else:
             bmin_, bmax_ = (n_lo, ua, zin), (n_hi, ub, zout)
         child(root, '%s_%s_f%d' % (cid, tag, i), bmin_, bmax_, coll, mat,
-              bevel=0.003)
+              bevel=0.003, role=role)
         if pulls:
             pm = pull_mat if pull_mat else mat
             hl = min(pull_len, (zout - zin) * 0.6)
@@ -144,11 +145,13 @@ def add_fronts(root, cid, coll, mat, axis, face, inward, a0, a1, z0, z1, tag,
             if axis == 'y':
                 child(root, '%s_%s_p%d' % (cid, tag, i),
                       (upos - 0.008, p_lo, zc - hl / 2),
-                      (upos + 0.008, p_hi, zc + hl / 2), coll, pm)
+                      (upos + 0.008, p_hi, zc + hl / 2), coll, pm,
+                      role=pull_role)
             else:
                 child(root, '%s_%s_p%d' % (cid, tag, i),
                       (p_lo, upos - 0.008, zc - hl / 2),
-                      (p_hi, upos + 0.008, zc + hl / 2), coll, pm)
+                      (p_hi, upos + 0.008, zc + hl / 2), coll, pm,
+                      role=pull_role)
 
 
 def _shelf_zs(z0, z1, step):
@@ -160,24 +163,25 @@ def _shelf_zs(z0, z1, step):
 
 
 # ---------------------------------------------------------------- 建模器
-def build_wardrobe(item, mats, coll):
+def build_wardrobe(item, mats, coll, box_role='cabinet_box', front_role='cabinet_front'):
     cid = item['id']
     bmin, bmax = item['bbox']['min'], item['bbox']['max']
     root = item_root(item, coll)
-    child(root, cid + '_body', bmin, bmax, coll, mats['white'])
+    child(root, cid + '_body', bmin, bmax, coll, mats['white'], role=box_role)
     axis, face, inward = _front_plane(bmin, bmax, item.get('room'))
     a0, a1 = (bmin[1], bmax[1]) if axis == 'x' else (bmin[0], bmax[0])
     if item['room'] == 'master_bedroom':
         add_fronts(root, cid, coll, mats['white'], axis, face, inward, a0, a1,
                    0.05, bmax[2] - 0.04, 'door', max_w=0.42,
-                   pull_mat=mats['dark'])
+                   pull_mat=mats['dark'], role=front_role)
     else:  # 父母房推拉门：双轨两排
         f_in = face + 0.023 * inward
         add_fronts(root, cid, coll, mats['white'], axis, face, inward, a0, a1,
-                   0.05, bmax[2] - 0.04, 'slA', max_w=0.70, pulls=False)
+                   0.05, bmax[2] - 0.04, 'slA', max_w=0.70, pulls=False,
+                   role=front_role)
         add_fronts(root, cid, coll, mats['white'], axis, f_in, inward,
                    a0 + 0.05, a1 - 0.05, 0.05, bmax[2] - 0.04, 'slB',
-                   max_w=0.70, pulls=False)
+                   max_w=0.70, pulls=False, role=front_role)
 
 
 def build_cabinet(item, mats, coll, params=None):
@@ -186,13 +190,16 @@ def build_cabinet(item, mats, coll, params=None):
     bmin, bmax = item['bbox']['min'], item['bbox']['max']
     root = item_root(item, coll)
     mat = params.get('mat', mats['white'])
-    child(root, cid + '_body', bmin, bmax, coll, mat)
+    box_role = params.get('box_role', 'cabinet_box')
+    front_role = params.get('front_role', 'cabinet_front')
+    child(root, cid + '_body', bmin, bmax, coll, mat, role=box_role)
     axis, face, inward = _front_plane(bmin, bmax, item.get('room'))
     a0, a1 = (bmin[1], bmax[1]) if axis == 'x' else (bmin[0], bmax[0])
     add_fronts(root, cid, coll, mat, axis, face, inward, a0, a1,
                bmin[2] + 0.02, bmax[2] - 0.02, 'door',
                max_w=params.get('max_w', 0.45),
-               pulls=params.get('pulls', True), pull_mat=mats.get('dark'))
+               pulls=params.get('pulls', True), pull_mat=mats.get('dark'),
+               role=front_role)
 
 
 def build_open_niche(item, mats, coll):
@@ -211,25 +218,25 @@ def build_open_niche(item, mats, coll):
     open_face = n1 if front_at_n1 else n0
     cheek_out = open_face - (0.02 if front_at_n1 else -0.02)  # 颊板外缘内收 2cm
 
-    def box_un(tag, ua, ub, na, nb, z0, z1, mat):
+    def box_un(tag, ua, ub, na, nb, z0, z1, mat, role):
         lo = [None, None]
         hi = [None, None]
         lo[u_k], hi[u_k] = ua, ub
         lo[n_k], hi[n_k] = na, nb
         return child(root, '%s_%s' % (cid, tag), (lo[0], lo[1], z0),
-                     (hi[0], hi[1], z1), coll, mat)
+                     (hi[0], hi[1], z1), coll, mat, role=role)
 
     d0, d1 = sorted((back0, cheek_out))
-    box_un('back', u0, u1, back0, back1, bmin[2], bmax[2], mats['wood'])
-    box_un('cheek0', u0, u0 + t, d0, d1, bmin[2], bmax[2], mats['wood'])
-    box_un('cheek1', u1 - t, u1, d0, d1, bmin[2], bmax[2], mats['wood'])
-    box_un('top', u0 + t, u1 - t, d0, d1, bmax[2] - t, bmax[2], mats['wood'])
-    box_un('bottom', u0 + t, u1 - t, d0, d1, bmin[2], bmin[2] + t, mats['wood'])
+    box_un('back', u0, u1, back0, back1, bmin[2], bmax[2], mats['wood'], 'wood')
+    box_un('cheek0', u0, u0 + t, d0, d1, bmin[2], bmax[2], mats['wood'], 'wood')
+    box_un('cheek1', u1 - t, u1, d0, d1, bmin[2], bmax[2], mats['wood'], 'wood')
+    box_un('top', u0 + t, u1 - t, d0, d1, bmax[2] - t, bmax[2], mats['wood'], 'wood')
+    box_un('bottom', u0 + t, u1 - t, d0, d1, bmin[2], bmin[2] + t, mats['wood'], 'wood')
     s0 = cheek_out - (0.02 if front_at_n1 else -0.02)
     e0, e1 = sorted((back0, s0))
     for i, z in enumerate(_shelf_zs(bmin[2] + t + 0.04, bmax[2] - t - 0.04, 0.35)):
         box_un('sh%d' % i, u0 + t + 0.005, u1 - t - 0.005, e0, e1, z, z + t,
-               mats['wood'])
+               mats['wood'], 'wood')
 
 
 def build_island(item, mats, coll):
@@ -240,43 +247,47 @@ def build_island(item, mats, coll):
     root = item_root(item, coll)
     x0, y0, z0 = bmin
     x1, y1, z1 = bmax
-    child(root, cid + '_sideW', (x0, y0, z0), (x0 + 0.04, y1, z1 - 0.04), coll, mats['wood'])
-    child(root, cid + '_sideE', (x1 - 0.04, y0, z0), (x1, y1, z1 - 0.04), coll, mats['wood'])
-    child(root, cid + '_backN', (x0 + 0.04, y1 - 0.04, z0), (x1 - 0.04, y1, z1 - 0.04), coll, mats['wood'])
-    child(root, cid + '_base', (x0 + 0.04, y0 + 0.04, z0), (x1 - 0.04, y1 - 0.04, z0 + 0.08), coll, mats['wood'])
+    child(root, cid + '_sideW', (x0, y0, z0), (x0 + 0.04, y1, z1 - 0.04), coll, mats['wood'], role='wood')
+    child(root, cid + '_sideE', (x1 - 0.04, y0, z0), (x1, y1, z1 - 0.04), coll, mats['wood'], role='wood')
+    child(root, cid + '_backN', (x0 + 0.04, y1 - 0.04, z0), (x1 - 0.04, y1, z1 - 0.04), coll, mats['wood'], role='wood')
+    child(root, cid + '_base', (x0 + 0.04, y0 + 0.04, z0), (x1 - 0.04, y1 - 0.04, z0 + 0.08), coll, mats['wood'], role='wood')
     # 北面（朝厨房 y1）：西段蒸烤箱黑玻璃 + 东段抽屉
     child(root, cid + '_oven', (x0 + 0.12, y1 - 0.045, 0.32),
-          (x0 + 0.72, y1 - 0.005, 0.77), coll, mats['dark'])
+          (x0 + 0.72, y1 - 0.005, 0.77), coll, mats['dark'], role='black_glass')
     add_fronts(root, cid, coll, mats['wood'], 'y', y1 - 0.005, -1,
                x0 + 0.76, x1 - 0.06, 0.12, 0.72, 'drw', max_w=0.8,
-               pulls=True, pull_mat=mats['dark'])
+               pulls=True, pull_mat=mats['dark'], role='wood')
     # 南面（朝餐厅 y0）：开放格内衬 + 2 层板
     child(root, cid + '_niche', (x0 + 0.06, y0 + 0.02, 0.10),
-          (x1 - 0.06, y0 + 0.30, 0.72), coll, mats['wood'])
+          (x1 - 0.06, y0 + 0.30, 0.72), coll, mats['wood'], role='wood')
     for i, z in enumerate((0.36, 0.54)):
         child(root, '%s_sh%d' % (cid, i), (x0 + 0.06, y0 + 0.02, z),
-              (x1 - 0.06, y0 + 0.30, z + 0.02), coll, mats['wood'])
+              (x1 - 0.06, y0 + 0.30, z + 0.02), coll, mats['wood'], role='wood')
     if top:
         child(root, cid + '_top', tuple(top['min']), tuple(top['max']), coll,
-              mats['white'], bevel=0.004)
+              mats['white'], bevel=0.004, role='quartz_top')
 
 
 def build_kitchen_counter(item, mats, coll):
     cid = item['id']
     bmin, bmax = item['bbox']['min'], item['bbox']['max']
     root = item_root(item, coll)
-    child(root, cid + '_body', bmin, (bmax[0], bmax[1], bmax[2] - 0.04), coll, mats['wood'])
+    # REWORK #5：柜身/侧板/踢脚一并挂 kitchen_front（变体切换整排下柜联动）
+    child(root, cid + '_body', bmin, (bmax[0], bmax[1], bmax[2] - 0.04), coll,
+          mats['wood'], role='kitchen_front')
     for p in item.get('parts', []):
         child(root, cid + '_top', tuple(p['bbox']['min']), tuple(p['bbox']['max']),
-              coll, mats['white'], bevel=0.003)
+              coll, mats['white'], bevel=0.003, role='quartz_top')
     if (bmax[1] - bmin[1]) < (bmax[0] - bmin[0]):  # 北台面，门朝 -Y
         add_fronts(root, cid, coll, mats['kfront'], 'y', bmin[1] + 0.005, +1,
                    bmin[0] + 0.02, bmax[0] - 0.02, 0.12, bmax[2] - 0.06, 'drw',
-                   max_w=0.45, pulls=True, pull_mat=mats['dark'])
+                   max_w=0.45, pulls=True, pull_mat=mats['dark'],
+                   role='kitchen_front')
     else:  # 东台面，门朝 +X
         add_fronts(root, cid, coll, mats['kfront'], 'x', bmax[0] - 0.005, -1,
                    bmin[1] + 0.02, bmax[1] - 0.02, 0.12, bmax[2] - 0.06, 'drw',
-                   max_w=0.45, pulls=True, pull_mat=mats['dark'])
+                   max_w=0.45, pulls=True, pull_mat=mats['dark'],
+                   role='kitchen_front')
 
 
 def build_sink(item, mats, coll):
@@ -284,15 +295,18 @@ def build_sink(item, mats, coll):
     cid = item['id']
     bmin, bmax = item['bbox']['min'], item['bbox']['max']
     root = item_root(item, coll)
-    child(root, cid + '_rim', bmin, bmax, coll, mats['dark'])
+    child(root, cid + '_rim', bmin, bmax, coll, mats['dark'], role='sink_graphite')
     child(root, cid + '_inner', (bmin[0] + 0.04, bmin[1] + 0.03, bmin[2] + 0.001),
-          (bmax[0] - 0.04, bmax[1] - 0.03, bmin[2] + 0.004), coll, mats['white'])
+          (bmax[0] - 0.04, bmax[1] - 0.03, bmin[2] + 0.004), coll, mats['white'],
+          role='ceramic_white')
     xm = (bmin[0] + bmax[0]) / 2
     ywall = bmax[1] - 0.08  # 北侧贴墙
     child(root, cid + '_tap', (xm - 0.012, ywall - 0.012, bmax[2]),
-          (xm + 0.012, ywall + 0.012, bmax[2] + 0.28), coll, mats['dark'])
+          (xm + 0.012, ywall + 0.012, bmax[2] + 0.28), coll, mats['dark'],
+          role='metal_black')
     child(root, cid + '_taparm', (xm - 0.012, ywall - 0.012, bmax[2] + 0.26),
-          (xm + 0.012, ywall - 0.22, bmax[2] + 0.29), coll, mats['dark'])
+          (xm + 0.012, ywall - 0.22, bmax[2] + 0.29), coll, mats['dark'],
+          role='metal_black')
 
 
 def build_hob(item, mats, coll):
@@ -300,11 +314,12 @@ def build_hob(item, mats, coll):
     bmin, bmax = item['bbox']['min'], item['bbox']['max']
     root = item_root(item, coll)
     child(root, cid + '_glass', (bmin[0], bmin[1], bmin[2]),
-          (bmax[0], bmax[1], bmin[2] + 0.012), coll, mats['dark'], bevel=0.003)
+          (bmax[0], bmax[1], bmin[2] + 0.012), coll, mats['dark'], bevel=0.003,
+          role='black_glass')
     xm = (bmin[0] + bmax[0]) / 2
     for i, cy in enumerate(((bmin[1] + bmax[1]) / 2 - 0.17, (bmin[1] + bmax[1]) / 2 + 0.17)):
         child(root, '%s_burner%d' % (cid, i), (xm - 0.06, cy - 0.06, bmin[2] + 0.012),
-              (xm + 0.06, cy + 0.06, bmax[2]), coll, mats['dark'])
+              (xm + 0.06, cy + 0.06, bmax[2]), coll, mats['dark'], role='metal_black')
 
 
 def build_range_hood(item, mats, coll):
@@ -312,9 +327,10 @@ def build_range_hood(item, mats, coll):
     bmin, bmax = item['bbox']['min'], item['bbox']['max']
     root = item_root(item, coll)
     child(root, cid + '_topbox', (bmin[0], bmin[1], bmax[2] - 0.16),
-          (bmax[0], bmax[1], bmax[2]), coll, mats['dark'])
+          (bmax[0], bmax[1], bmax[2]), coll, mats['dark'], role='metal_black')
     child(root, cid + '_slant', (bmin[0], bmin[1], bmin[2]),
-          (bmax[0], bmax[1] - 0.12, bmax[2] - 0.16), coll, mats['dark'])
+          (bmax[0], bmax[1] - 0.12, bmax[2] - 0.16), coll, mats['dark'],
+          role='metal_black')
 
 
 def build_vanity(item, mats, coll):
@@ -322,40 +338,44 @@ def build_vanity(item, mats, coll):
     bmin, bmax = item['bbox']['min'], item['bbox']['max']
     root = item_root(item, coll)
     top = item.get('parts', [{}])[0].get('bbox')
-    child(root, cid + '_cab', bmin, (bmax[0], bmax[1], bmax[2] - 0.04), coll, mats['wood'])
+    child(root, cid + '_cab', bmin, (bmax[0], bmax[1], bmax[2] - 0.04), coll,
+          mats['wood'], role='wood')
     if top:
         child(root, cid + '_top', tuple(top['min']), tuple(top['max']), coll,
-              mats['white'], bevel=0.006)
+              mats['white'], bevel=0.006, role='quartz_top')
         zt = top['max'][2]
     else:
         child(root, cid + '_top', (bmin[0], bmin[1], bmax[2] - 0.035), bmax,
-              coll, mats['white'], bevel=0.006)
+              coll, mats['white'], bevel=0.006, role='quartz_top')
         zt = bmax[2]
     axis, face, inward = _front_plane(bmin, bmax, item.get('room'))
     a0, a1 = (bmin[1], bmax[1]) if axis == 'x' else (bmin[0], bmax[0])
     add_fronts(root, cid, coll, mats['wood'], axis, face, inward, a0, a1,
                bmin[2] + 0.02, bmax[2] - 0.06, 'drw', max_w=0.5,
-               pulls=True, pull_mat=mats['dark'])
+               pulls=True, pull_mat=mats['dark'], role='wood')
     if item['room'] == 'corridor':  # 双台下盆
         for i, cy in enumerate(((bmin[1] + bmax[1]) / 2 - 0.36, (bmin[1] + bmax[1]) / 2 + 0.36)):
             child(root, '%s_basin%d' % (cid, i), (bmin[0] + 0.10, cy - 0.18, zt - 0.012),
-                  (bmin[0] + 0.44, cy + 0.18, zt - 0.002), coll, mats['dark'])
+                  (bmin[0] + 0.44, cy + 0.18, zt - 0.002), coll, mats['dark'],
+                  role='ceramic_white')
     else:
         cy = (bmin[1] + bmax[1]) / 2
         child(root, cid + '_basin', (bmin[0] + 0.12, cy - 0.18, zt - 0.012),
-              (bmax[0] - 0.12, cy + 0.18, zt - 0.002), coll, mats['dark'])
+              (bmax[0] - 0.12, cy + 0.18, zt - 0.002), coll, mats['dark'],
+              role='ceramic_white')
 
 
 def build_mirror_cabinet(item, mats, coll):
     cid = item['id']
     bmin, bmax = item['bbox']['min'], item['bbox']['max']
     root = item_root(item, coll)
-    child(root, cid + '_body', bmin, bmax, coll, mats['white'])
+    child(root, cid + '_body', bmin, bmax, coll, mats['white'], role='cabinet_box')
     axis, face, inward = _front_plane(bmin, bmax, item.get('room'))
     a0, a1 = (bmin[1], bmax[1]) if axis == 'x' else (bmin[0], bmax[0])
     n2 = 0.68 if (a1 - a0) < 1.1 else 0.9
     add_fronts(root, cid, coll, mats['mirror'], axis, face, inward, a0, a1,
-               bmin[2] + 0.02, bmax[2] - 0.02, 'mir', max_w=n2, pulls=False)
+               bmin[2] + 0.02, bmax[2] - 0.02, 'mir', max_w=n2, pulls=False,
+               role='mirror')
 
 
 def build_toilet(item, mats, coll):
@@ -373,11 +393,14 @@ def build_toilet(item, mats, coll):
     zt = min(bmax[2] + 0.03, bmin[2] + 0.48)
     y_lo, y_hi = sorted((yb0 + 0.02, front))
     child(root, cid + '_base', (bmin[0] + 0.05, yb0, bmin[2]),
-          (bmax[0] - 0.05, yb1, bmin[2] + 0.18), coll, mats['white'], bevel=0.03)
+          (bmax[0] - 0.05, yb1, bmin[2] + 0.18), coll, mats['white'], bevel=0.03,
+          role='ceramic_white')
     child(root, cid + '_seat', (bmin[0] + 0.02, y_lo, bmin[2] + 0.16),
-          (bmax[0] - 0.02, y_hi, bmin[2] + 0.26), coll, mats['white'], bevel=0.04)
+          (bmax[0] - 0.02, y_hi, bmin[2] + 0.26), coll, mats['white'], bevel=0.04,
+          role='ceramic_white')
     child(root, cid + '_tank', (bmin[0], yb0, bmin[2] + 0.22),
-          (bmax[0], yb1, zt), coll, mats['white'], bevel=0.02)
+          (bmax[0], yb1, zt), coll, mats['white'], bevel=0.02,
+          role='ceramic_white')
 
 
 def build_glass_partition(item, mats, coll):
@@ -387,7 +410,7 @@ def build_glass_partition(item, mats, coll):
     fr = 0.03
     child(root, cid + '_glass', (bmin[0] + fr, bmin[1] + fr, fr),
           (bmax[0] - fr, bmax[1] - fr, bmax[2] - fr), coll, mats['glass'],
-          glass=True)
+          glass=True, role='glass_clear')
     boxes = []
     if (bmax[0] - bmin[0]) < (bmax[1] - bmin[1]):
         x0, x1 = bmin[0], bmax[0]
@@ -404,7 +427,8 @@ def build_glass_partition(item, mats, coll):
                  ((bmin[0], y0, 0.0), (bmin[0] + fr, y1, bmax[2])),
                  ((bmax[0] - fr, y0, 0.0), (bmax[0], y1, bmax[2]))]
     for i, (a, b) in enumerate(boxes):
-        child(root, '%s_fr%d' % (cid, i), a, b, coll, mats['dark'])
+        child(root, '%s_fr%d' % (cid, i), a, b, coll, mats['dark'],
+              role='metal_graphite')
 
 
 def build_screen(item, mats, coll):
@@ -418,37 +442,43 @@ def build_screen(item, mats, coll):
         cx = x0 + i * (x1 - x0) / n
         child(root, '%s_slat%02d' % (cid, i), (cx - 0.015, bmin[1], 0.0),
               (cx + 0.015, bmax[1], bmax[2]), coll, mats['wood'],
-              bevel=0.004)
+              bevel=0.004, role='wood')
     child(root, cid + '_cap', (x0, bmin[1], bmax[2] - 0.03),
-          (x1, bmax[1], bmax[2]), coll, mats['wood'])
+          (x1, bmax[1], bmax[2]), coll, mats['wood'], role='wood')
 
 
 def build_tv_cabinet(item, mats, coll):
     cid = item['id']
     bmin, bmax = item['bbox']['min'], item['bbox']['max']
     root = item_root(item, coll)
-    child(root, cid + '_body', bmin, bmax, coll, mats['wood'])
+    child(root, cid + '_body', bmin, bmax, coll, mats['wood'], role='wood')
     axis, face, inward = _front_plane(bmin, bmax, item.get('room'))
     a0, a1 = (bmin[1], bmax[1]) if axis == 'x' else (bmin[0], bmax[0])
     add_fronts(root, cid, coll, mats['wood'], axis, face, inward, a0, a1,
-               bmin[2] + 0.01, bmax[2] - 0.01, 'door', max_w=1.0, pulls=False)
+               bmin[2] + 0.01, bmax[2] - 0.01, 'door', max_w=1.0, pulls=False,
+               role='wood')
 
 
 def build_fridge(item, mats, coll):
     cid = item['id']
     bmin, bmax = item['bbox']['min'], item['bbox']['max']
     root = item_root(item, coll)
-    child(root, cid + '_body', bmin, bmax, coll, mats['white'], bevel=0.004)
+    child(root, cid + '_body', bmin, bmax, coll, mats['white'], bevel=0.004,
+          role='steel_fridge')
     fz = bmin[2] + (bmax[2] - bmin[2]) * 0.62
     xm = (bmin[0] + bmax[0]) / 2
     child(root, cid + '_seamH', (bmin[0] + 0.01, bmin[1], fz - 0.004),
-          (bmax[0] - 0.01, bmin[1] + 0.002, fz + 0.004), coll, mats['dark'])
+          (bmax[0] - 0.01, bmin[1] + 0.002, fz + 0.004), coll, mats['dark'],
+          role='metal_black')
     child(root, cid + '_seamV', (xm - 0.004, bmin[1], fz),
-          (xm + 0.004, bmin[1] + 0.002, bmax[2] - 0.02), coll, mats['dark'])
+          (xm + 0.004, bmin[1] + 0.002, bmax[2] - 0.02), coll, mats['dark'],
+          role='metal_black')
     child(root, cid + '_pullL', (bmin[0] + 0.08, bmin[1], bmax[2] - 0.30),
-          (xm - 0.05, bmin[1] + 0.014, bmax[2] - 0.25), coll, mats['dark'])
+          (xm - 0.05, bmin[1] + 0.014, bmax[2] - 0.25), coll, mats['dark'],
+          role='metal_black')
     child(root, cid + '_pullU', (bmin[0] + 0.08, bmin[1], fz + 0.05),
-          (xm - 0.05, bmin[1] + 0.014, fz + 0.10), coll, mats['dark'])
+          (xm - 0.05, bmin[1] + 0.014, fz + 0.10), coll, mats['dark'],
+          role='metal_black')
 
 
 def build_bookcase(item, mats, coll):
@@ -457,46 +487,47 @@ def build_bookcase(item, mats, coll):
     root = item_root(item, coll)
     axis, face, inward = _front_plane(bmin, bmax, item.get('room'))
     if '底座' in item['name']:
-        child(root, cid + '_body', bmin, bmax, coll, mats['wood'])
+        child(root, cid + '_body', bmin, bmax, coll, mats['wood'], role='wood_dark')
         add_fronts(root, cid, coll, mats['wood'], axis, face, inward,
                    bmin[1] + 0.01, bmax[1] - 0.01, bmin[2] + 0.03,
                    bmax[2] - 0.02, 'drw', max_w=0.40, pulls=True,
-                   pull_mat=mats['dark'])
+                   pull_mat=mats['dark'], role='wood_dark')
     else:
-        child(root, cid + '_body', bmin, bmax, coll, mats['wood'])
+        child(root, cid + '_body', bmin, bmax, coll, mats['wood'], role='wood_dark')
         y0, y1 = bmin[1], bmax[1]
         z0, z1 = bmin[2], bmax[2]
         # 南单元（洗衣机柜侧）平开门 y0..y0+0.45
         add_fronts(root, cid, coll, mats['wood'], axis, face, inward,
                    y0, y0 + 0.45, z0 + 0.02, z1 - 0.02, 'doorS', max_w=0.45,
-                   pulls=True, pull_mat=mats['dark'])
+                   pulls=True, pull_mat=mats['dark'], role='wood_dark')
         # 中段开放格 y0+0.45..y1-0.45（按 parts 即 -9.95..-9.2）
         ny0, ny1 = y0 + 0.45, y1 - 0.45
         child(root, cid + '_niceline', (bmax[0] - 0.02, ny0 + 0.02, z0 + 0.02),
-              (bmax[0], ny1 - 0.02, z1 - 0.02), coll, mats['wood'])
+              (bmax[0], ny1 - 0.02, z1 - 0.02), coll, mats['wood'], role='wood_dark')
         for i, z in enumerate(_shelf_zs(z0 + 0.10, z1 - 0.10, 0.40)):
             child(root, '%s_nsh%d' % (cid, i), (bmax[0] - 0.02, ny0 + 0.02, z),
-                  (bmax[0], ny1 - 0.02, z + 0.02), coll, mats['wood'])
+                  (bmax[0], ny1 - 0.02, z + 0.02), coll, mats['wood'], role='wood_dark')
         # 北单元（端景角侧）玻璃门 y1-0.45..y1
         add_fronts(root, cid, coll, mats['glass'], axis, face, inward,
                    y1 - 0.45, y1, z0 + 0.02, z1 - 0.02, 'doorN', max_w=0.45,
-                   pulls=False)
+                   pulls=False, role='glass_clear')
 
 
 def build_mirror_door(item, mats, coll):
     cid = item['id']
     bmin, bmax = item['bbox']['min'], item['bbox']['max']
     root = item_root(item, coll)
-    child(root, cid + '_mirror', bmin, bmax, coll, mats['mirror'])
+    child(root, cid + '_mirror', bmin, bmax, coll, mats['mirror'], role='mirror')
     f = 0.02
     strips = [((bmin[0], bmin[1], bmin[2]), (bmax[0], bmin[1] + f, bmax[2])),
               ((bmin[0], bmax[1] - f, bmin[2]), (bmax[0], bmax[1], bmax[2])),
               ((bmin[0], bmin[1], bmin[2]), (bmax[0], bmax[1], bmin[2] + f)),
               ((bmin[0], bmin[1], bmax[2] - f), (bmax[0], bmax[1], bmax[2]))]
     for i, (a, b) in enumerate(strips):
-        child(root, '%s_fr%d' % (cid, i), a, b, coll, mats['dark'])
+        child(root, '%s_fr%d' % (cid, i), a, b, coll, mats['dark'],
+              role='metal_black')
     child(root, cid + '_pull', (bmax[0] - 0.012, bmax[1] - 0.28, 1.0),
-          (bmax[0], bmax[1] - 0.24, 1.3), coll, mats['dark'])
+          (bmax[0], bmax[1] - 0.24, 1.3), coll, mats['dark'], role='metal_black')
 
 
 def build_glass_sliding_door(item, mats, coll):
@@ -506,22 +537,23 @@ def build_glass_sliding_door(item, mats, coll):
     st = 0.03
     child(root, cid + '_glass', (bmin[0] + st, bmin[1] + 0.004, 0.05),
           (bmax[0] - st, bmax[1] - 0.004, bmax[2] - 0.05), coll, mats['glass'],
-          glass=True)
+          glass=True, role='glass_clear')
     parts = {'stL': ((bmin[0], bmin[1], 0.02), (bmin[0] + st, bmax[1], bmax[2])),
              'stR': ((bmax[0] - st, bmin[1], 0.02), (bmax[0], bmax[1], bmax[2])),
              'stT': ((bmin[0], bmin[1], bmax[2] - st), (bmax[0], bmax[1], bmax[2])),
              'stB': ((bmin[0], bmin[1], 0.02), (bmax[0], bmax[1], 0.05))}
     for tag, (a, b) in parts.items():
-        child(root, '%s_%s' % (cid, tag), a, b, coll, mats['wood'])
+        child(root, '%s_%s' % (cid, tag), a, b, coll, mats['wood'], role='wood')
 
 
 def build_shower_floor(item, mats, coll):
     cid = item['id']
     bmin, bmax = item['bbox']['min'], item['bbox']['max']
     root = item_root(item, coll)
-    child(root, cid + '_pan', bmin, bmax, coll, mats['white'])
+    child(root, cid + '_pan', bmin, bmax, coll, mats['white'], role='ceramic_white')
     child(root, cid + '_drain', (bmin[0] + 0.15, bmin[1] + 0.12, bmax[2] - 0.004),
-          (bmin[0] + 0.75, bmin[1] + 0.17, bmax[2] + 0.001), coll, mats['dark'])
+          (bmin[0] + 0.75, bmin[1] + 0.17, bmax[2] + 0.001), coll, mats['dark'],
+          role='metal_graphite')
 
 
 def build_dishwasher(item, mats, coll):
@@ -529,11 +561,12 @@ def build_dishwasher(item, mats, coll):
     bmin, bmax = item['bbox']['min'], item['bbox']['max']
     if cid.endswith('_02'):
         root = item_root(item, coll)
-        child(root, cid + '_panel', bmin, bmax, coll, mats['kfront'], bevel=0.002)
+        child(root, cid + '_panel', bmin, bmax, coll, mats['kfront'], bevel=0.002,
+              role='kitchen_front')
         child(root, cid + '_pull',
               (bmin[0] + 0.05, bmin[1], (bmin[2] + bmax[2]) / 2 - 0.15),
               (bmax[0] - 0.05, bmin[1] + 0.012, (bmin[2] + bmax[2]) / 2 + 0.15),
-              coll, mats['dark'])
+              coll, mats['dark'], role='metal_black')
     else:
         build_kitchen_counter(item, mats, coll)  # 北台面段（自建根）
 

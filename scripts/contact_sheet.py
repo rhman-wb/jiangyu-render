@@ -1,163 +1,141 @@
 # -*- coding: utf-8 -*-
-# contact_sheet.py —— 拼总览图：23 张预览 + 标题 + 中文说明（MSYH 字体）
-# 用法：blender -b --python scripts\contact_sheet.py [-- --final]
+# contact_sheet.py —— 拼版工具（REWORK #8 后整体重写为 Pillow 独立脚本）
+# 旧版用 Blender 贴图渲染拼版，from_pydata 丢 UV + 正交取景算错 → 纯色块/裁切。
+# 新版：系统 Python 直接跑（无需 Blender）：
+#   python scripts\contact_sheet.py                # preview 档总览 -> renders/preview/
+#   python scripts\contact_sheet.py --mode final   # 成品档总览 -> renders/final/
+#   python scripts\contact_sheet.py --compare      # C1 木色三联对比图
+# 版式（REWORK #8）：每行 3 张、缩略图宽 600px、两行中文说明、msyh 字体、留足边距。
 import os
 import sys
-import bpy
+import json
+
+from PIL import Image, ImageDraw, ImageFont
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import config
-import util
 
 FONT_PATH = r'C:\Windows\Fonts\msyh.ttc'
-TILE_W, TILE_H, LABEL_H = 480, 270, 44
-COLS, MARG, GAP, TITLE_H = 4, 28, 22, 108
+TILE_W = 600            # 缩略图宽（REWORK：>=600px）
+TILE_H = 338            # 16:9
+CAP_H = 62              # 两行说明
+GAP = 24
+MARGIN = 40
+TITLE_H = 96
+COLS = 3
+BG = (244, 242, 238)
+FG = (52, 48, 44)
+ACCENT = (139, 90, 43)
+KIDS_NOTE = '（家具仅示意，以实际选购为准）'
 
-ORDER = ['01', '02', '03', '06', '04', '07', '05', '08',
-         '09', '10', '11', 'P1', '12', '13', 'P3', '14',
-         '15', '16', '17', '18', '19', '20', 'P2']
-KIDS_NOTE = {'15': '（家具仅示意，以实际选购为准）', '16': '（家具仅示意，以实际选购为准）'}
+
+def font(size):
+    return ImageFont.truetype(FONT_PATH, size)
 
 
-def main():
-    argv = sys.argv[sys.argv.index('--') + 1:] if '--' in sys.argv else []
-    final_mode = '--final' in argv
-    src_dir = config.RENDER_DIR if final_mode else os.path.join(config.RENDER_DIR, 'preview')
-    out_name = 'contact_sheet.png' if final_mode else 'contact_sheet_preview.png'
-
-    def find_img(cid):
-        for d in ('final', 'pano', 'preview'):
-            p = os.path.join(config.RENDER_DIR, d, cid + '.png')
-            if os.path.isfile(p):
-                return p
-        return None
-
-    cams = {c['id']: c for c in util.load_cameras()['cameras']}
-    by_prefix = {}
-    for cid in cams:
-        by_prefix[cid.split('_')[0]] = cid
-
-    # 清空默认场景
-    for o in list(bpy.data.objects):
-        bpy.data.objects.remove(o, do_unlink=True)
-
-    font = None
-    if os.path.isfile(FONT_PATH):
-        try:
-            font = bpy.data.fonts.load(FONT_PATH)
-        except Exception:
-            font = None
-
-    def txt(name, s, x, y, size):
-        curve = bpy.data.curves.new(name, type='FONT')
-        curve.body = s
-        if font:
-            curve.font = font
-        curve.size = size
-        curve.align_x = 'LEFT'
-        curve.align_y = 'TOP'
-        obj = bpy.data.objects.new(name, curve)
-        obj.location = (x, y, 0)
-        bpy.context.scene.collection.objects.link(obj)
-        return obj
-
-    def plane(name, img_path, x, y, w, h):
-        img = bpy.data.images.load(img_path)
-        mat = bpy.data.materials.new(name)
-        mat.use_nodes = True
-        bsdf = next(n for n in mat.node_tree.nodes if n.type == 'BSDF_PRINCIPLED')
-        _in = bsdf.inputs.get('Base Color')
-        tex = mat.node_tree.nodes.new('ShaderNodeTexImage')
-        tex.image = img
-        mat.node_tree.links.new(tex.outputs['Color'], _in)
-        _set = bsdf.inputs.get('Emission Color')
-        if _set is not None:
-            e = mat.node_tree.nodes.new('ShaderNodeEmission')
-            mat.node_tree.nodes.remove(bsdf)
-            outn = next(n for n in mat.node_tree.nodes if n.type == 'OUTPUT_MATERIAL')
-            mat.node_tree.links.new(tex.outputs['Color'], e.inputs['Color'])
-            e.inputs['Strength'].default_value = 1.0
-            mat.node_tree.links.new(e.outputs['Emission'], outn.inputs['Surface'])
-        m = bpy.data.meshes.new(name)
-        import bmesh
-        bm = bmesh.new()
-        bmesh.ops.create_grid(bm, x_segments=1, y_segments=1, size=0.5)
-        verts = [(v.co.x * w, v.co.y * h, 0.0) for v in bm.verts]
-        bm.free()
-        m.from_pydata(verts, [], [(0, 1, 3, 2)])
-        m.update()
-        o = bpy.data.objects.new(name, m)
-        o.location = (x + w / 2, y - h / 2, 0)
-        o.data.materials.append(mat)
-        bpy.context.scene.collection.objects.link(o)
-        return o
-
-    # 背景（纯色材质）
-    rows = (len(ORDER) + COLS - 1) // COLS
-    W = MARG * 2 + COLS * TILE_W + (COLS - 1) * GAP
-    H = TITLE_H + rows * (TILE_H + LABEL_H + GAP) + MARG
-    bgm = bpy.data.materials.new('sheet_bg_mat')
-    bgm.use_nodes = True
-    _bs = next(n for n in bgm.node_tree.nodes if n.type == 'BSDF_PRINCIPLED')
-    _bs.inputs['Base Color'].default_value = (0.09, 0.09, 0.10, 1.0)
-    import bmesh as _bm2
-    _m = bpy.data.meshes.new('sheet_bg')
-    _b = _bm2.new()
-    _bm2.ops.create_grid(_b, x_segments=1, y_segments=1, size=0.5)
-    _verts = [(v.co.x * W, v.co.y * H, -0.01) for v in _b.verts]
-    _b.free()
-    _m.from_pydata(_verts, [], [(0, 1, 3, 2)])
-    _m.update()
-    bg = bpy.data.objects.new('sheet_bg', _m)
-    bg.location = (W / 2, -H / 2, 0)
-    bg.data.materials.append(bgm)
-    bpy.context.scene.collection.objects.link(bg)
-
-    title = ('江语云庭 143㎡ 效果图 · 轻中古' if final_mode
-             else '江语云庭 143㎡ 效果图 · 轻中古（预览档 preview）')
-    txt('sheet_title', title, MARG, -34, 44)
-    txt('sheet_sub', '机位 23 张：20 透视 + 3 全景（720° 需查看原文件）', MARG, -84, 20)
-
-    for i, pref in enumerate(ORDER):
-        cid = by_prefix.get(pref)
-        if not cid:
+def load_imgs_map(mode='preview'):
+    """按档位扫 renders/ 下 png：文件名(去扩展) -> 路径。
+    preview 档只扫 preview/（避免被 M6 同名 final 图覆盖）；final 档扫 final/+pano/。"""
+    m = {}
+    subs = ['preview'] if mode == 'preview' else ['final', 'pano']
+    for sub in subs:
+        d = os.path.join(config.RENDER_DIR, sub)
+        if not os.path.isdir(d):
             continue
-        path = find_img(cid)
-        if not path:
+        for f in os.listdir(d):
+            if f.endswith('.png'):
+                m[os.path.splitext(f)[0]] = os.path.join(d, f)   # d 已含子目录名
+    return m
+
+
+def find_img(imgs, cid):
+    return imgs.get(cid)   # id 唯一，同名优先即本身
+
+
+def thumb(path, w=TILE_W, h=TILE_H):
+    """读图 -> 8bit RGB -> 等比缩放居中（留白填充），根治 RGBA/16bit/纯色块问题。"""
+    im = Image.open(path).convert('RGB')          # REWORK #8：统一转 8bit RGB
+    im.thumbnail((w, h), Image.LANCZOS)
+    canvas = Image.new('RGB', (w, h), (238, 236, 232))
+    canvas.paste(im, ((w - im.width) // 2, (h - im.height) // 2))
+    return canvas
+
+
+def draw_caption(d, x, y, w, line1, line2, kids=False):
+    d.text((x, y), line1, font=font(21), fill=FG)
+    if kids:
+        line2 = line2 + KIDS_NOTE
+    d.text((x, y + 27), line2[:30], font=font(16), fill=(120, 112, 104))
+
+
+def make_sheet(mode='preview'):
+    cams = json.load(open(config.CAMERAS_JSON, encoding='utf-8'))['cameras']
+    imgs = load_imgs_map(mode)
+    tiles = []
+    for c in cams:
+        cid = c['id']
+        path = find_img(imgs, cid)
+        if path is None:
+            print('[sheet][warn] missing %s' % cid)
             continue
-        r, c = divmod(i, COLS)
-        x = MARG + c * (TILE_W + GAP)
-        y = -(TITLE_H + r * (TILE_H + LABEL_H + GAP))
-        plane('tile_%s' % pref, path, x, y, TILE_W, TILE_H)
-        desc = cams[cid].get('description', '')
-        label = '%s · %s' % (pref, desc.split('：', 1)[-1][:22])
-        if pref in KIDS_NOTE:
-            label += KIDS_NOTE[pref]
-        txt('label_%s' % pref, label, x, y - TILE_H - 6, 22)
-
-    cam_data = bpy.data.cameras.new('sheet_cam')
-    cam_data.type = 'ORTHO'
-    cam = bpy.data.objects.new('sheet_cam', cam_data)
-    cam.location = (W / 2, -H / 2, 100)
-    cam.rotation_euler = (0, 0, 0)
-    bpy.context.scene.collection.objects.link(cam)
-    cam_data.ortho_scale = W
-    bpy.context.scene.camera = cam
-    s = bpy.context.scene
-    s.render.resolution_x = int(W)
-    s.render.resolution_y = int(H)
-    s.render.resolution_percentage = 100
-    s.render.engine = 'CYCLES'
-    s.cycles.samples = 16
-    s.cycles.device = 'CPU'
-    try:
-        s.view_settings.view_transform = 'Standard'
-    except Exception:
-        pass
-    out = os.path.join(config.RENDER_DIR, 'final', out_name)
-    s.render.filepath = out
-    bpy.ops.render.render(write_still=True)
-    print('[sheet] saved %s' % out)
+        tiles.append((cid, path, c.get('description', ''), cid.startswith(('15', '16'))))
+    rows = (len(tiles) + COLS - 1) // COLS
+    W = MARGIN * 2 + COLS * TILE_W + (COLS - 1) * GAP
+    H = TITLE_H + rows * (TILE_H + CAP_H + 18) + MARGIN
+    sheet = Image.new('RGB', (W, H), BG)
+    d = ImageDraw.Draw(sheet)
+    title = ('江语云庭 143㎡ 效果图 · 轻中古 —— 预览总览（R1）' if mode == 'preview'
+             else '江语云庭 143㎡ 效果图 · 轻中古')
+    d.text((MARGIN, 26), title, font=font(34), fill=FG)
+    d.text((MARGIN, 68), '返工 R1 轮 preview 档 · 木色 A（默认）· 孩子房家具仅示意见标注' if mode == 'preview'
+           else '成品档 1920x1080 / 全景 4096x2048', font=font(17), fill=(120, 112, 104))
+    for i, (cid, path, desc, kids) in enumerate(tiles):
+        r, cix = divmod(i, COLS)
+        x = MARGIN + cix * (TILE_W + GAP)
+        y = TITLE_H + r * (TILE_H + CAP_H + 18)
+        sheet.paste(thumb(path), (x, y))
+        d.rectangle([x, y, x + TILE_W - 1, y + TILE_H - 1], outline=(210, 205, 198), width=1)
+        num = cid.split('_')[0]
+        name = cid[len(num) + 1:].replace('_', ' ')
+        draw_caption(d, x, y + TILE_H + 6, TILE_W, '%s · %s' % (num, name), desc, kids)
+    out = os.path.join(config.RENDER_DIR, mode, 'contact_sheet_%s.png' % mode)
+    sheet.save(out, 'PNG')
+    print('[sheet] %s (%dx%d, %d tiles)' % (out, W, H, len(tiles)))
+    return out
 
 
-main()
+def make_compare():
+    """REWORK 第 7 章：C1 木色三联对比图。"""
+    imgs = load_imgs_map('preview')
+    trio = [('C1_wood_A', 'A 胡桃（默认 #5E4330）'),
+            ('C1_wood_B', 'B 浅胡桃（#7A5C43）'),
+            ('C1_wood_C', 'C 橡木（#B48E66）')]
+    W = MARGIN * 2 + COLS * TILE_W + (COLS - 1) * GAP
+    H = TITLE_H + TILE_H + CAP_H + MARGIN
+    sheet = Image.new('RGB', (W, H), BG)
+    d = ImageDraw.Draw(sheet)
+    d.text((MARGIN, 26), '木色对比（同 04 机位，其他条件完全相同）', font=font(34), fill=FG)
+    d.text((MARGIN, 68), '业主看图选定后全屋统一换成选定的一套', font=font(17), fill=(120, 112, 104))
+    for i, (key, label) in enumerate(trio):
+        path = imgs.get(key)
+        if path is None:
+            print('[sheet][warn] missing %s' % key)
+            continue
+        x = MARGIN + i * (TILE_W + GAP)
+        y = TITLE_H
+        sheet.paste(thumb(path), (x, y))
+        d.rectangle([x, y, x + TILE_W - 1, y + TILE_H - 1], outline=(210, 205, 198), width=1)
+        d.text((x, y + TILE_H + 8), label, font=font(21), fill=ACCENT)
+    out = os.path.join(config.RENDER_DIR, 'preview', 'C1_wood_compare.png')
+    sheet.save(out, 'PNG')
+    print('[sheet] %s' % out)
+    return out
+
+
+if __name__ == '__main__':
+    args = sys.argv[1:]
+    if '--compare' in args:
+        make_compare()
+    else:
+        mode = 'final' if '--mode' in args and 'final' in args else 'preview'
+        make_sheet(mode)

@@ -365,6 +365,29 @@
    "description": "儿子房：从门口看东墙通长书桌+矮书架、北窗下的床（家具为成品示意）"
   },
   {
+   "id": "16b_son_room_blue",
+   "scheme": "A",
+   "type": "PERSP",
+   "location": [
+    11.05,
+    -3.1,
+    1.45
+   ],
+   "look_at": [
+    13.0,
+    -0.9,
+    1.0
+   ],
+   "lens_mm": 18,
+   "sensor_width_mm": 36,
+   "resolution": [
+    1920,
+    1080
+   ],
+   "variant": "son_blue",
+   "description": "儿子房雾霾蓝对比版（REWORK 第7章，家具颜色变体，家具为成品示意）"
+  },
+  {
    "id": "17_public_bath_dry",
    "scheme": "A",
    "type": "PERSP",

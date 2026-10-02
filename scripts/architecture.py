@@ -26,6 +26,19 @@ SKIP_FLOORS = {'parents_bay_window'}  # 飘窗台面由 build_bay 建 0~0.45 台
 
 MULLION_MAX = 1.5  # 窗宽超过此值加分中梃（等分）
 
+# REWORK 2.2 / 2.4：贴砖墙角色（材质表 tile_* 对应）；未列出的墙 = wall_paint
+# （与 materials.py WALL_TILE 表同键：W02/03/11/12 厨房、W09/10/14 主卫、W05/07/08 公卫）
+WALL_TILE_ROLES = {
+    'W02': 'wall_tile_kitchen', 'W03': 'wall_tile_kitchen',
+    'W11': 'wall_tile_kitchen', 'W12': 'wall_tile_kitchen',
+    'W09': 'wall_tile_bath_oat', 'W10': 'wall_tile_bath_oat', 'W14': 'wall_tile_bath_oat',
+    'W05': 'wall_tile_bath_beige', 'W07': 'wall_tile_bath_beige', 'W08': 'wall_tile_bath_beige',
+}
+
+# REWORK 2.2：卫生间玻璃平开门（长虹玻璃）——(墙号, 洞口序号)
+# W08 唯一 door = 公卫门；W14 第 2 个 door（10.9..11.7）= 主卫门（第 1 个是主卧木门）
+FLUTED_DOORS = {('W08', 0), ('W14', 1)}
+
 
 # ================================================================ 墙体几何
 def wall_geo(w, walls):
@@ -126,8 +139,10 @@ def build_walls(layout, mats, coll):
             segs.append((cur, g['u1e'], 0.0, CEIL))
         for i, (ua, ub, z0, z1) in enumerate(segs):
             bmin, bmax = seg_box(g, ua, ub, z0, z1)
+            # REWORK role：贴砖墙按墙号给 tile 角色（apply_all 按面朝向双材质）
+            tile = WALL_TILE_ROLES.get(w['id'])
             util.make_box('%s_s%02d' % (w['id'], i), bmin, bmax,
-                          coll=coll, mat=mats['white'])
+                          coll=coll, mat=mats['white'], role=tile or 'wall')
     return warns
 
 
@@ -143,7 +158,7 @@ def build_floors(layout, mats, coll):
         for j, ((rx0, ry0), (rx1, ry1)) in enumerate(rects):
             name = 'floor_%s' % fid if len(rects) == 1 else 'floor_%s_%d' % (fid, j)
             util.make_box(name, (rx0, ry0, -0.02), (rx1, ry1, 0.0),
-                          coll=coll, mat=mats['white'])
+                          coll=coll, mat=mats['white'], role='floor')
 
 
 # ================================================================ 窗
@@ -168,7 +183,7 @@ def build_windows(layout, mats, coll):
                 else:
                     bmin, bmax = (c - fd / 2, u0, z0), (c + fd / 2, u1, z1)
                 util.make_box('win_%s_%d%s' % (w['id'], k, tag), bmin, bmax,
-                              coll=coll, mat=mats['white'])
+                              coll=coll, mat=mats['white'], role='win_frame')
             # 中梃（等分，间距 <= MULLION_MAX）
             npan = max(1, math.ceil((b - a) / MULLION_MAX - 1e-6))
             for m in range(1, npan):
@@ -178,40 +193,95 @@ def build_windows(layout, mats, coll):
                 else:
                     bmin, bmax = (c - fd / 2, u - 0.025, s + fw), (c + fd / 2, u + 0.025, h - fw)
                 util.make_box('win_%s_%dmul%d' % (w['id'], k, m), bmin, bmax,
-                              coll=coll, mat=mats['white'])
+                              coll=coll, mat=mats['white'], role='win_frame')
             # 玻璃
             if g['axis'] == 'x':
                 bmin, bmax = (a + fw, c - 0.005, s + fw), (b - fw, c + 0.005, h - fw)
             else:
                 bmin, bmax = (c - 0.005, a + fw, s + fw), (c + 0.005, b - fw, h - fw)
             gl = util.make_box('win_%s_%dglass' % (w['id'], k), bmin, bmax,
-                               coll=coll, mat=mats['glass'])
+                               coll=coll, mat=mats['glass'], role='win_glass')
             if gl:
                 gl.visible_shadow = False
 
 
 # ================================================================ 门
-def _panel_frame(name_prefix, g, ua, ub, z0, z1, mats, coll, glass=False):
-    """一块门扇：边框梃 + 芯板（玻璃或实心）。"""
+def _panel_frame(name_prefix, g, ua, ub, z0, z1, mats, coll, glass=False,
+                 frame_role='door_frame_wood', glass_role='glass_clear'):
+    """一块门扇：边框梃 + 芯板（玻璃或实心）。role 由调用方给（REWORK 2.2）。"""
     st, sd = 0.045, 0.035  # 梃宽 / 扇厚
     c = g['v_center']
 
-    def box(tag, u0, u1, zz0, zz1, mat):
+    def box(tag, u0, u1, zz0, zz1, mat, role):
         if g['axis'] == 'x':
             bmin, bmax = (u0, c - sd / 2, zz0), (u1, c + sd / 2, zz1)
         else:
             bmin, bmax = (c - sd / 2, u0, zz0), (c + sd / 2, u1, zz1)
-        util.make_box('%s%s' % (name_prefix, tag), bmin, bmax, coll=coll, mat=mat)
+        util.make_box('%s%s' % (name_prefix, tag), bmin, bmax, coll=coll, mat=mat,
+                      role=role)
 
-    box('_bot', ua, ub, z0, z0 + st, mats['white'])
-    box('_top', ua, ub, z1 - st, z1, mats['white'])
-    box('_lft', ua, ua + st, z0 + st, z1 - st, mats['white'])
-    box('_rgt', ub - st, ub, z0 + st, z1 - st, mats['white'])
+    box('_bot', ua, ub, z0, z0 + st, mats['white'], frame_role)
+    box('_top', ua, ub, z1 - st, z1, mats['white'], frame_role)
+    box('_lft', ua, ua + st, z0 + st, z1 - st, mats['white'], frame_role)
+    box('_rgt', ub - st, ub, z0 + st, z1 - st, mats['white'], frame_role)
     if glass:
-        box('_glass', ua + st, ub - st, z0 + st, z1 - st, mats['glass'])
+        box('_glass', ua + st, ub - st, z0 + st, z1 - st, mats['glass'], glass_role)
         obj = bpy.data.objects.get('%s_glass' % name_prefix)
         if obj:
             obj.visible_shadow = False
+
+
+def _door_handle(name, g, u_edge, mats, coll, half_t=0.026):
+    """黑色细长竖拉手 30cm（规格 4.3 / REWORK 2.2）：贴门扇自由边，两侧微凸。"""
+    hh = 0.30
+    zc = 1.05
+    c = g['v_center']
+    if g['axis'] == 'x':
+        bmin = (u_edge - 0.030, c - half_t, zc - hh / 2)
+        bmax = (u_edge + 0.005, c + half_t, zc + hh / 2)
+    else:
+        bmin = (c - half_t, u_edge - 0.030, zc - hh / 2)
+        bmax = (c + half_t, u_edge + 0.005, zc + hh / 2)
+    util.make_box(name, bmin, bmax, coll=coll, mat=mats['dark'], role='metal_black')
+
+
+def _fluted_door(wid, k, g, a, b, head, mats, coll):
+    """REWORK 2.2：卫生间长虹玻璃平开门 —— 木色细框 4cm + 长虹玻璃芯 + 黑色竖拉手。"""
+    fw = 0.04
+    sd = 0.08  # 玻璃门扇厚
+    c = g['v_center']
+
+    def box(tag, u0, u1, z0, z1, mat, role):
+        if g['axis'] == 'x':
+            bmin, bmax = (u0, c - sd / 2, z0), (u1, c + sd / 2, z1)
+        else:
+            bmin, bmax = (c - sd / 2, u0, z0), (c + sd / 2, u1, z1)
+        util.make_box('door_%s_%d%s' % (wid, k, tag), bmin, bmax, coll=coll,
+                      mat=mat, role=role)
+
+    # 门套（木色 4cm 可见宽度，同木门；jtop 只做门楣段 head..head+fw）
+    jamb_d = 0.16
+    jambs = [('jlft', a - 0.01, a + fw - 0.01, 0.0, head + fw),
+             ('jrgt', b - fw + 0.01, b + 0.01, 0.0, head + fw),
+             ('jtop', a - 0.01, b + 0.01, head, head + fw)]
+    for tag, u0, u1, z0, z1 in jambs:
+        if g['axis'] == 'x':
+            bmin, bmax = (u0, c - jamb_d / 2, z0), (u1, c + jamb_d / 2, z1)
+        else:
+            bmin, bmax = (c - jamb_d / 2, u0, z0), (c + jamb_d / 2, u1, z1)
+        util.make_box('door_%s_%d%s' % (wid, k, tag), bmin, bmax, coll=coll,
+                      mat=mats['white'], role='door_frame_wood')
+    # 门扇：细框 4cm + 长虹玻璃芯（关闭，铰链在 start 端）
+    lw = (b - a) - 2 * fw
+    la = a + fw
+    lb = la + lw
+    box('lft', la, la + fw, 0.01, head - fw, mats['white'], 'door_frame_wood')
+    box('rgt', lb - fw, lb, 0.01, head - fw, mats['white'], 'door_frame_wood')
+    box('top', la, lb, head - 2 * fw, head - fw, mats['white'], 'door_frame_wood')
+    box('bot', la, lb, 0.01, 0.01 + fw, mats['white'], 'door_frame_wood')
+    box('fglass', la + fw, lb - fw, 0.01 + fw, head - 2 * fw, mats['glass'],
+        'glass_fluted')
+    _door_handle('door_%s_%dhdl' % (wid, k), g, lb - fw, mats, coll, half_t=0.045)
 
 
 def build_doors(layout, mats, coll):
@@ -223,15 +293,21 @@ def build_doors(layout, mats, coll):
             if typ == 'door' and w['id'] == 'W12':
                 pass  # 四联动门由 builtins.py 按 item（双轨道）建模
             elif typ == 'glass_door':
-                # 开发商玻璃门（W15 两扇 / W17 三扇），关闭
+                # 开发商玻璃门（W15 两扇 / W17 三扇），关闭。
+                # REWORK 2.2：深灰铝框 + 清玻璃，绝不能是木门
                 n = 2 if (b - a) < 1.5 else 3
                 for i in range(n):
                     ua = a + (b - a) * i / n
                     ub = a + (b - a) * (i + 1) / n
                     _panel_frame('door_%s_%d' % (w['id'], i), g, ua + 0.015, ub - 0.015,
-                                 0.05, head - 0.05, mats, coll, glass=True)
+                                 0.05, head - 0.05, mats, coll, glass=True,
+                                 frame_role='door_frame_graphite',
+                                 glass_role='glass_clear')
+            elif typ == 'door' and (w['id'], k) in FLUTED_DOORS:
+                # REWORK 2.2：公卫门 / 主卫门 -> 长虹玻璃平开门
+                _fluted_door(w['id'], k, g, a, b, head, mats, coll)
             elif typ == 'door':
-                # 室内木门 / 入户门：门套（三边）+ 关闭门扇，白模
+                # 室内木门 / 入户门：门套（三边）+ 关闭门扇 + 黑色竖拉手
                 fw = 0.04
                 sd = 0.16  # 套深度，比墙厚每侧凸 1cm
                 c = g['v_center']
@@ -244,7 +320,7 @@ def build_doors(layout, mats, coll):
                     else:
                         bmin, bmax = (c - sd / 2, u0, z0), (c + sd / 2, u1, z1)
                     util.make_box('door_%s_%d%s' % (w['id'], k, tag), bmin, bmax,
-                                  coll=coll, mat=mats['white'])
+                                  coll=coll, mat=mats['white'], role='door_frame_wood')
                 # 门扇（关），铰链在 start 端
                 lw = (b - a) - 2 * fw
                 if g['axis'] == 'x':
@@ -252,13 +328,16 @@ def build_doors(layout, mats, coll):
                 else:
                     bmin, bmax = (c - 0.022, a + fw, 0.01), (c + 0.022, a + fw + lw, head - fw)
                 util.make_box('door_%s_%dleaf' % (w['id'], k), bmin, bmax,
-                              coll=coll, mat=mats['white'])
+                              coll=coll, mat=mats['white'], role='door_leaf_wood')
+                # 黑色细长竖拉手（自由边）
+                _door_handle('door_%s_%dhdl' % (w['id'], k), g,
+                             a + fw + lw - fw, mats, coll)
             # full_opening：无门扇
 
 
 # ================================================================ 吊顶
-def _cbox(name, bmin, bmax, coll, mat=None):
-    return util.make_box(name, bmin, bmax, coll=coll, mat=mat)
+def _cbox(name, bmin, bmax, coll, mat=None, role='ceiling_paint'):
+    return util.make_box(name, bmin, bmax, coll=coll, mat=mat, role=role)
 
 
 def build_ceilings(layout, mats, coll):
@@ -279,7 +358,7 @@ def build_ceilings(layout, mats, coll):
     _cbox('ceil_living_slab', (x0, y0, 2.85), (x1, y1, 2.90), coll, white)
     # 中央空调出风口：电视墙(东)一侧边吊底面，2.4m x 0.1m 深色格栅（位置记 decisions_log）
     _cbox('ceil_living_ac_slot', (x1 - 0.275, -9.8, 2.585), (x1 - 0.175, -7.4, 2.602),
-          coll, mats['dark'])
+          coll, mats['dark'], role='ac_slot')
 
     # —— 卧室平顶 2.85 + 空调局部吊顶
     for rid in ('master_bedroom', 'parents_room', 'daughter_room', 'son_room', 'foyer'):
@@ -296,19 +375,20 @@ def build_ceilings(layout, mats, coll):
     _cbox('ceil_bay_slab', (a, b, 2.85), (c2, d, 2.90), coll, white)
 
     # —— 厨卫铝扣板 2.40 / 过道干区与电梯厅 2.60（整块填充，规格 4.3）
-    fills = [('kitchen', 2.40), ('public_bath_wet', 2.40), ('master_bath', 2.40),
-             ('corridor', 2.60), ('elevator_hall', 2.60)]
-    for rid, z in fills:
+    fills = [('kitchen', 2.40, 'ceiling_alu'), ('public_bath_wet', 2.40, 'ceiling_alu'),
+             ('master_bath', 2.40, 'ceiling_alu'), ('corridor', 2.60, 'ceiling_alu'),
+             ('elevator_hall', 2.60, 'ceiling_paint')]
+    for rid, z, crole in fills:
         (a, b), (c2, d) = R[rid]
-        _cbox('ceil_%s_fill' % rid, (a, b, z), (c2, d, 2.85), coll, white)
+        _cbox('ceil_%s_fill' % rid, (a, b, z), (c2, d, 2.85), coll, white, role=crole)
     # 露台无顶
 
 
 # ================================================================ 飘窗与露台栏杆
 def build_bay(layout, mats, coll):
-    """父母房飘窗坐榻台面：0~0.45（顶面与 W23 窗台对齐）。"""
+    """父母房飘窗坐榻台面：0~0.45（顶面与 W23 窗台对齐；胡桃木饰面 规格五.9）。"""
     util.make_box('bay_platform', (0.45, -10.55, 0.0), (3.05, -10.05, 0.45),
-                  coll=coll, mat=mats['white'])
+                  coll=coll, mat=mats['white'], role='wood')
 
 
 def build_terrace_railing(layout, mats, coll):
@@ -329,15 +409,18 @@ def build_terrace_railing(layout, mats, coll):
                 bmin, bmax = (px - 0.025, py - 0.025, 0.0), (px + 0.025, py + 0.025, h_top)
             else:
                 bmin, bmax = (px - 0.025, py - 0.025, 0.0), (px + 0.025, py + 0.025, h_top)
-            util.make_box('rail_ter_%s_p%d' % (tag, i), bmin, bmax, coll=coll, mat=mats['white'])
+            util.make_box('rail_ter_%s_p%d' % (tag, i), bmin, bmax, coll=coll,
+                          mat=mats['white'], role='metal_black')
         if horizontal:
             bmin, bmax = (min(a, c2), b - 0.035, h_top - 0.05), (max(a, c2), b + 0.035, h_top)
             gmin, gmax = (min(a, c2) + 0.05, b - 0.008, h_glass0), (max(a, c2) - 0.05, b + 0.008, h_glass1)
         else:
             bmin, bmax = (a - 0.035, min(b, d), h_top - 0.05), (a + 0.035, max(b, d), h_top)
             gmin, gmax = (a - 0.008, min(b, d) + 0.05, h_glass0), (a + 0.008, max(b, d) - 0.05, h_glass1)
-        util.make_box('rail_ter_%s_top' % tag, bmin, bmax, coll=coll, mat=mats['white'])
-        util.make_box('rail_ter_%s_glass' % tag, gmin, gmax, coll=coll, mat=mats['glass'])
+        util.make_box('rail_ter_%s_top' % tag, bmin, bmax, coll=coll,
+                      mat=mats['white'], role='metal_black')
+        util.make_box('rail_ter_%s_glass' % tag, gmin, gmax, coll=coll,
+                      mat=mats['glass'], role='glass_clear')
 
 
 # ================================================================ 入口

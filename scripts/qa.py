@@ -242,10 +242,10 @@ def check_counts():
         log('FAIL', 'floors mismatch missing=%s extra=%s' %
             (expect_floors - floor_ids, floor_ids - expect_floors))
     ncam = len([o for o in bpy.data.objects if o.type == 'CAMERA'])
-    if ncam == 23:
+    if ncam == 24:   # REWORK：23 + 新增 16b_son_room_blue
         log('PASS', 'cameras %d' % ncam)
     else:
-        log('FAIL', 'cameras %d != 23' % ncam)
+        log('FAIL', 'cameras %d != 24' % ncam)
     markers = [o.name for o in bpy.data.objects if 'marker' in o.name.lower()]
     if markers:
         log('FAIL', 'marker objects built: %s' % markers[:3])
@@ -350,6 +350,11 @@ def check_items_bbox():
                 ibmax[a] = max(ibmax[a], p['bbox']['max'][a])
         if iid in B.COVERED:
             log('INFO', 'item %s covered by architecture object' % iid)
+            continue
+        # REWORK #9 豁免：B 方案移动电视按规格指定挪到 (8.25,-6.0) 屏幕朝西，
+        # 脱离 layout bbox 属已知决策（见 decisions_log D-033），跳过包络检查。
+        if iid == 'B_living_dining_balcony_tv_01':
+            log('INFO', 'item %s at REWORK#9 exempt position (8.25,-6.0)' % iid)
             continue
         # 规格要求的超出豁免（D-023）：龙头/吊杆/床品/显示器/靠枕/画灯/弧形灯头
         typ = item.get('type')
@@ -481,6 +486,113 @@ def check_scheme_membership():
         log('PASS', 'scheme collections correct')
 
 
+# ---------------------------------------------------------------- REWORK 第 6 章新增
+# 4.5 Collection 无 .parent：方案归属反查统一走 util.root_side（D-014）
+_root_side = util.root_side
+
+
+def check_roles():
+    """QA-2（REWORK 第 6 章）：任何网格对象没有 role -> FAIL。"""
+    import materials as M
+    missing = [o.name for o in bpy.data.objects
+               if o.type == 'MESH' and not o.get('role')]
+    if missing:
+        log('FAIL', 'meshes without role (%d): %s' % (len(missing), missing[:6]))
+    else:
+        n = len([o for o in bpy.data.objects if o.type == 'MESH'])
+        log('PASS', 'all %d meshes have role' % n)
+    # 未知 role（表里查不到且非语境角色）也算 FAIL
+    known_ctx = {'kids_furn', 'kids_accent', 'kids_bedding', 'kids_rug', 'headboard',
+                 'book', 'toy', 'outdoor'}
+    unknown = []
+    for o in bpy.data.objects:
+        if o.type != 'MESH':
+            continue
+        r = o.get('role')
+        if r and r not in M.ROLE_TO_MATERIAL and r not in known_ctx \
+                and not r.startswith('wall_tile'):
+            unknown.append('%s(%s)' % (o.name, r))
+    if unknown:
+        log('FAIL', 'unknown roles (%d): %s' % (len(unknown), unknown[:6]))
+    else:
+        log('PASS', 'all roles resolvable')
+
+
+def check_material_zones():
+    """QA-1（REWORK 2.4）：禁木色清单 role 的对象不得挂 walnut 类材质。"""
+    import materials as M
+    bad = []
+    for o in bpy.data.objects:
+        if o.type != 'MESH':
+            continue
+        if o.get('role') in M.ROLE_WOOD_FORBIDDEN and o.material_slots:
+            m = o.material_slots[0].material
+            if m and m.name.startswith('walnut'):
+                bad.append('%s(%s->%s)' % (o.name, o.get('role'), m.name))
+    if bad:
+        log('FAIL', 'wood on forbidden roles (%d): %s' % (len(bad), bad[:6]))
+    else:
+        log('PASS', 'no wood material on forbidden roles (2.4)')
+
+
+def check_scheme_full():
+    """QA-3（REWORK 第 6 章/#2）：全部对象（含 fx_ 与灯光）恰属一个方案集合；
+    B 开放格摆件不得在 COMMON / SCHEME_A。"""
+    bad_multi, bad_b = [], []
+    for o in bpy.data.objects:
+        if o.type not in ('MESH', 'LIGHT'):
+            continue
+        sides = {_root_side(c) for c in o.users_collection}
+        sides.discard(None)
+        if len(sides) != 1:
+            bad_multi.append('%s%s' % (o.name, tuple(sorted(sides)) if sides else '(none)'))
+        elif o.name.startswith('fx_B_') and sides.pop() != config.COL_SCHEME_B:
+            bad_b.append(o.name)
+    if bad_multi:
+        log('FAIL', 'objects not in exactly one scheme (%d): %s' %
+            (len(bad_multi), bad_multi[:6]))
+    else:
+        log('PASS', 'all meshes/lights in exactly one scheme collection')
+    if bad_b:
+        log('FAIL', 'B-niche props outside SCHEME_B: %s' % bad_b[:6])
+    else:
+        log('PASS', 'B open-niche props in SCHEME_B')
+
+
+def check_bed_orientation():
+    """QA-4（REWORK 第 6 章/#3）：枕头中心必须在床头一侧 1/3 范围内。"""
+    bad = 0
+    for item in L['items']:
+        if item.get('type') != 'bed':
+            continue
+        root = bpy.data.objects.get(item['id'])
+        if root is None:
+            continue
+        pillows = [c for c in root.children
+                   if '_pillow' in c.name and not c.name.endswith('_acc')]
+        if not pillows:
+            log('FAIL', 'bed %s: no pillows found' % item['id'])
+            bad += 1
+            continue
+        bmin, bmax = item['bbox']['min'], item['bbox']['max']
+        Lx = bmax[0] - bmin[0]
+        head = config.BED_HEAD_SIDE.get(item.get('room', ''), '-X')
+        # 子对象坐标是相对父 Empty 的局部坐标，世界 X = matrix_world（不要手加/2）
+        px = sum(c.matrix_world.translation.x for c in pillows) / len(pillows)
+        if Lx >= (bmax[1] - bmin[1]):   # X 向床
+            ok = (px > bmin[0] + Lx * 2 / 3) if head == '+X' else (px < bmin[0] + Lx / 3)
+        else:
+            ok = True   # Y 向床本项目没有
+        if ok:
+            log('PASS', 'bed %s pillows at %s head' % (item['id'], head))
+        else:
+            log('FAIL', 'bed %s pillows NOT at %s head (px=%.2f bbox %s..%s)' %
+                (item['id'], head, px, bmin[0], bmax[0]))
+            bad += 1
+    if bad == 0:
+        log('PASS', 'all beds oriented per BED_HEAD_SIDE')
+
+
 
 def check_floor_overlap():
     fl = [(o.name, bbox_of(o.name)) for o in bpy.data.objects
@@ -549,10 +661,15 @@ def main():
     check_scheme_membership()
     # M3
     check_m3_completeness()
+    # REWORK 第 6 章（R1 新增：材质 role / 禁木色 / 全对象方案隔离 / 床朝向）
+    check_roles()
+    check_material_zones()
+    check_scheme_full()
+    check_bed_orientation()
     os.makedirs(config.REVIEW_DIR, exist_ok=True)
     out = os.path.join(config.REVIEW_DIR, 'qa_report.md')
     with open(out, 'w', encoding='utf-8') as f:
-        f.write('# QA 报告 · M1 硬装白模\n\n')
+        f.write('# QA 报告 · R1 返工\n\n')
         f.write('blend: %s\n\n' % config.BLEND_FILE)
         f.write('汇总: PASS %d / FAIL %d / WARN %d / INFO %d\n\n' %
                 (counts['PASS'], counts['FAIL'], counts['WARN'], counts['INFO']))

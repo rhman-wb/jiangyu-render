@@ -11,13 +11,37 @@ import util
 SHIFT_LIMIT = 0.15
 
 # 机位碰撞微调（cameras.json meta 规则：0.3m 内调整并记录）
+# REWORK #9：03/06、11、16/16b、18 机位遮挡修正；REWORK 2.5：全机位曝光初值（+0.7~+1.5，按白墙采样迭代）
 CAM_OVERRIDES = {
-    # 18 原位 (10.3,-2.3) 距关闭的公卫门扇 2.8cm，北移 0.3m；无日照房间曝光 +0.25
-    '18_public_bath_wet': {'location': (10.35, -2.0, 1.5), 'exposure': 0.25},
-    # 偏暗房间曝光微调（业主 M5 确认时一并授权的候选值，render_log D-031）
-    '15_daughter_room': {'exposure': 0.3},
-    '16_son_room': {'exposure': 0.3},
-    '19_master_bath': {'exposure': 0.25},
+    # --- REWORK #9 遮挡修正 ---
+    '03_living_A_from_foyer': {'location': (3.95, -6.35, 1.35), 'exposure': 1.80},
+    '06_living_B_from_foyer': {'location': (3.95, -6.35, 1.35), 'exposure': 1.80},
+    '11_foyer': {'location': (3.25, -4.95, 1.5), 'look_at': (2.2, -6.2, 1.1), 'lens': 16,
+                 'exposure': 1.70},   # 同时看到端景柜和西墙镜面门
+    '16_son_room': {'location': (11.3, -2.6, 1.45), 'exposure': 1.95},
+    '16b_son_room_blue': {'location': (11.3, -2.6, 1.45), 'exposure': 1.95},
+    '18_public_bath_wet': {'location': (10.35, -2.0, 1.5),   # D-030 北移避开门扇
+                           'look_at': (9.5, -0.8, 1.0), 'lens': 16,   # 看到马桶和淋浴
+                           'exposure': 1.95},
+    # --- 曝光初值（其余机位）---
+    '01_aerial_A': {'exposure': 0.85},
+    '02_aerial_B': {'exposure': 0.85},
+    '04_living_A_from_balcony': {'exposure': 1.80},
+    '05_living_A_tv_wall': {'exposure': 1.55},
+    '07_living_B_from_balcony': {'exposure': 1.80},
+    '08_living_B_tv_wall': {'exposure': 1.80},
+    '09_kitchen_walnut': {'exposure': 1.60},
+    '10_kitchen_olive': {'exposure': 1.60},
+    '12_master_bed_screen': {'exposure': 1.75},
+    '13_master_wardrobe_vanity': {'exposure': 2.30},
+    '14_parents_room': {'exposure': 1.40},
+    '15_daughter_room': {'exposure': 1.95},   # 北向无直射光
+    '17_public_bath_dry': {'exposure': 1.90},
+    '19_master_bath': {'exposure': 2.10},
+    '20_terrace': {'exposure': 0.75},
+    'P1_living_A_pano': {'exposure': 1.75},
+    'P2_living_B_pano': {'exposure': 1.75},
+    'P3_master_pano': {'exposure': 1.95},
 }
 
 
@@ -40,12 +64,15 @@ def build_all(coll):
     made = []
     for c in cams:
         cid = c['id']
+        ov = CAM_OVERRIDES.get(cid, {})   # REWORK #9：支持 location/look_at/lens/exposure 覆盖
+        loc = ov.get('location', c['location'])
+        look = ov.get('look_at', c['look_at'])
         cam_data = bpy.data.cameras.new('cd_%s' % cid)
         cam = bpy.data.objects.new('cam_%s' % cid, cam_data)
         coll.objects.link(cam)
-        cam.location = CAM_OVERRIDES.get(cid, {}).get('location', c['location'])
-        if 'exposure' in CAM_OVERRIDES.get(cid, {}):
-            cam['exposure'] = CAM_OVERRIDES[cid]['exposure']
+        cam.location = loc
+        if 'exposure' in ov:
+            cam['exposure'] = ov['exposure']
         cam_data.sensor_fit = 'HORIZONTAL'
         cam_data.sensor_width = c.get('sensor_width_mm', 36)
         cam_data.clip_start = 0.02
@@ -56,24 +83,24 @@ def build_all(coll):
         if is_pano:
             cam_data.type = 'PANO'
             cam_data.panorama_type = 'EQUIRECTANGULAR'  # 4.0+ 位置在 camera.data
-            yaw = math.atan2(-(c['look_at'][0] - cam.location[0]),
-                              c['look_at'][1] - cam.location[1])
+            yaw = math.atan2(-(look[0] - cam.location[0]),
+                              look[1] - cam.location[1])
             cam.rotation_euler = (math.radians(90), 0.0, yaw)
             shift_raw = shift_used = 0.0
         elif is_aerial:
             aim = bpy.data.objects.new('aim_%s' % cid, None)
-            aim.location = c['look_at']
+            aim.location = look
             aim.empty_display_size = 0.5
             coll.objects.link(aim)
             con = cam.constraints.new('TRACK_TO')
             con.target = aim
             con.track_axis = 'TRACK_NEGATIVE_Z'
             con.up_axis = 'UP_Y'
-            cam_data.lens = c.get('lens_mm', 32)
+            cam_data.lens = ov.get('lens', c.get('lens_mm', 32))
             shift_raw = shift_used = 0.0
         else:
-            cam_data.lens = c.get('lens_mm', 18)
-            d = c['look_at']
+            cam_data.lens = ov.get('lens', c.get('lens_mm', 18))
+            d = look
             yaw = math.atan2(-(d[0] - cam.location[0]), d[1] - cam.location[1])
             cam.rotation_euler = (math.radians(90), 0.0, yaw)
             shift_raw, shift_used = _shift_y(cam.location, d,

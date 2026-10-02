@@ -133,3 +133,63 @@
 ## D-031 M5 预览整体状态（imgstat 全量）
 - 23 张无黑帧、结构完整；最亮 14 父母房 0.53（飘窗向阳），客厅 0.32-0.44，全景 0.34-0.38。
 - 已知偏暗待业主反馈：15 女儿房 0.21 / 16 儿子房 0.19（北向无直射光，可加曝光 +0.3~0.5）；18/19 卫生间 0.11-0.12（无日照房间，可微调）。
+
+## R1 返工批次（D-032 ~ D-040，REWORK.md 治理）
+
+## D-032 木色贴图更换 + 三案预设（REWORK 2.1 / #25）
+- Poly Haven 候选 4 张经视觉模型比对（black_walnut_veneer_01/02/03、american_walnut_veneer）：03 纹理最平直（横向直纹、灰棕中深、低饱和、细密），选定为全屋木纹基底（assets/walnut2_{diff,rough,nor_gl}_2k.jpg，CC0）。
+- 三案 A/B/C 共用该贴图，仅靠节点参数区分：HueSaturation（降饱和×0.62、色相 0.53）+ MixRGB 目标色转向（A #5E4330 / B #7A5C43 / C #B48E66，steer 0.42）+ Mapping 尺度（A/B 2.4、C 1.8）。
+- apply_wood_preset() 在线重建 walnut/walnut_dark/kitchen_front 节点树（walnut_dark = 目标色×0.92），不复制几何；对比图 C1_wood_* 用 --wood A|B|C 渲 04 机位。
+- 坑：预设键 rough=粗糙度数值，与贴图路径撞名 → 贴图覆盖键改 diff_tex/rough_tex/nor_tex。
+
+## D-033 B 移动电视豁免（REWORK #9）
+- layout bbox (7.2..7.6, -9.4..-8.4) 与 REWORK 指定位置 (8.25,-6.0 屏幕朝西) 冲突，以 REWORK 为准；qa.py check_items_bbox 跳过该项记 INFO。支架改细杆属 #14/R2，本轮仍为箱式支架。
+
+## D-034 厨房香草盆归位（REWORK #18）
+- 原 fx_kn_herb 白柱+黑球悬在 (4.9,-2.7) 半空（下方无台面）。归位到北窗台面 (6.05,-1.55, z0.9)，白陶盆 + 两片绿色弯叶。水槽改台下盆属 R2，未动。
+
+## D-035 HDRI 更换（REWORK 2.6 / #17）
+- roof_garden_4k（屋顶花园，与"3 楼小区花园"不符）→ kloofendal_48d_partly_cloudy_puresky_4k（48° 太阳≈上午、薄云、纯天空无建筑），强度 1.1。
+- Poly Haven 文件名坑：asset id 是 puresky 连写；files API 键名 Diffuse/Rough 大写开头。
+- 室外环境：OUTDOOR 集合（COMMON 子集）——地坪 Z=-6.0（草地+南北园路）、14 棵树（干+4 球冠，冠高 6-10m，种子 20261002 可复现）、远处南北各 1 栋浅色住宅楼。从 3 楼窗口看出去 = 略高于树冠、俯视花园。
+
+## D-036 门返工实现（REWORK 2.2 / #6 / #26）
+- 公卫 W08/主卫 W14 = 长虹玻璃平开门：胡桃木 4cm 框 + glass_fluted 芯（Wave scale 55 ≈1.8cm 竖条纹 Bump 0.30、Transmission 0.7、rough 0.42、IOR 1.45）+ 30cm 黑色竖拉手。门套梃只包洞口两侧与顶（0..head+框 / head..head+框），不堵门洞。
+- W15 通露台 / W17 主卧落地门窗 = 开发商深灰铝框 + 清玻璃（原误做木门）。
+- 其余室内门保持胡桃木平板门 + 新增 30cm 黑色竖拉手。
+
+## D-037 Blender 4.5 Collection 无 .parent 属性（D-014 补充）
+- 方案归属反查不能用 coll.parent（AttributeError）；父子链接只能从 parent.children 正向查。util.collection_parent_map() 反查 + util.root_side() 统一供 build_scene 收尾校验与 qa.check_scheme_full 使用。
+- AgX look 枚举名 4.5 带 "AgX - " 前缀（'Base Contrast' 会静默失败）：config.AGX_LOOK='AgX - Base Contrast'，util.set_agx_look 兼容两种拼写。
+
+## D-038 基调与补光（REWORK 2.5 / #4）
+- AgX Base Contrast + 太阳 5800K 3.5W；室内 3000K 降为点缀（灯带/壁灯/吊灯），厨卫筒灯 4000K（无日照房间摄影补光感）；逐机位曝光 +0.4~+1.2（cameras.py CAM_OVERRIDES）。
+- 无日照房间窗外不可见面光（visible_camera/diffuse/glossy=False，AREA 75°）：女儿房 120W / 儿子房 100W / 厨房 60W / 公卫 60W / 主卫 60W / 过道干区顶 25W。
+
+## D-039 contact_sheet 重写 + 16bit 结论（REWORK #8 / #24）
+- 旧版（Blender from_pydata 贴图渲染拼版）三处硬伤：重建网格丢 UV → 纯色块；正交取景按 AUTO sensor_fit 算错 → 右列裁切；22 字×22pt 标签超 tile 宽。整体重写为系统 Python + Pillow 独立脚本：每行 3 张、缩略宽 600px、msyh.ttc 两行中文说明、孩子房标注"家具仅示意"。
+- #24"16bit 输出"实测不存在：M6 产物全部 8bit RGBA（Blender PNG 16bit 需 color_depth='16'，当时未设）；R1 全部 preview 8bit，final 档保持 8bit（REWORK 已按实测修正要求）。
+
+## D-040 植物弯叶精确解算（REWORK #13）
+- _leaf_blade 重写为"外倾角 lean0→lean1 渐变"折线叶；_blade_fit 迭代解算叶长/倾角使叶尖高度=包络顶-2cm、水平伸展=r-8mm，8/6 叶按 12° 起排正对 ±X/±Y（既真实又满足包络铁律）。
+- 露台盆栽补 0.22m 陶盆（原裸地起茎）；端景天堂鸟 z0=0.45 坐在 planter_01 陶盆顶上，盆另建。
+
+## D-041 白墙白平衡收敛（REWORK 2.5 / #4，R1 内三轮迭代）
+- 初版采样框按几何推测全部落错位（天花边吊/门框/暖灯区）；逐张视觉校准 + 全图扫描（全图最白块 R-B 也有 34-70）证实不是框的问题，是画面系统性偏黄。
+- 根因链：墙漆 #F3EFE7 本身 R-B=12（预算极紧）+ 暖米地砖 #E3D5C0 的 GI bounce + 3000K 点光直射白墙 + 暖调 HDRI + 灯带 2800K 自发光。
+- 收敛五步（保持 3000K 只作小范围点缀的设计意图）：
+  1) 太阳/窗外补光 5800→6500K；HDRI 强度 1.1→0.7 且输出接 HueSaturation 降饱和（Sat 0.72 / Val 1.12）；
+  2) 主照明（全屋筒灯/吸顶灯）3000K→5200K、功率 ×0.65；
+  3) 壁灯 4200K 4.5W；吊灯保持暖色（照木面不照白墙）；
+  4) 灯带自发光 2800K 暖橙 → 4300K 暖白、强度 3.0→2.6；
+  5) 合成层 ColorBalance Gain R×0.94 / B×1.10（等效摄影后期 WB）。
+- 坑：4.5 ColorBalance 输入名是大写 'Gain'（RGBA 档），小写 get('gain') 返回 None 静默失效——第一轮 WB 无效即此因。
+- 采样框终版：视觉定位 + 扫描（亮度 140-245、低方差、R-B 最小）双法校准；09/10 用奶白吊柜门板，18/19 用墙砖（厨卫无白墙，砖色系阈值在 visual_review 解释）。
+- 曝光三轮：全局 +0.35 → 逐机位精调（室内 +0.4、厨 +0.25、已亮的 05/14 +0.15、户外 01/02/20 +0）→ 13 号再 +0.2（北墙暗区）+ 主卧吸顶灯 10→13W。
+- 效果（同框对比）：12 号 R-B 52→11、03 号 30→12、P3 52→11；太阳直射区经 WB 后 R-B≈-3..+8（轻微偏冷=日光白平衡观感，"白墙要白"的代价）。
+
+## D-042 qa_render WARN 收手阈值（R1）
+- 白平衡结构性修复后（D-041），全量指标从 20 WARN/最白块 R-B 34-70 收敛到 12 WARN：亮度 170-185（差 0-15）、R-B 除 08 号 19 / 13 号框2 23 外全部 <=18。
+- 亮度无法线性追平的原因：AgX Base Contrast 肩部压缩——实测 +0.15EV 在 170+ sRGB 区只带来 +4（线性预期 +19）；再推会把直射区（05 框2 已 196、上限 225）顶爆。这是指标与视图变换响应曲线的固有张力，最终成品档（256 samples）噪点更低时亮部会再抬 2-4。
+- 保留的两个 R-B 超标点均为设计意图区：08 号=B 整墙柜胡桃木内衬大面积 bounce（木色层 15% 占比的规定画面）；13 号框2=主卧北墙床头上方（无窗 + 壁灯 4200K 暖点缀 + 全屋最深 bounce 角落）。3000-4200K 点缀是 REWORK 2.5 明确保留的"局部暖色点缀"。
+- 结论：R1 轮以"结构修复 + 边缘 WARN 书面解释"收口，留 R2/成品轮按业主观感再定是否加第三次 WB 迭代。

@@ -11,7 +11,7 @@
 你是一名资深室内设计可视化工程师，同时熟练掌握 Blender Python API（bpy）。你的任务是：在业主的 Windows 电脑上，通过 **Blender + MCP + Python 脚本**，把一套已经确定好的家装设计方案，做成接近装修公司水准的**室内效果图**（不是 CAD 图，不是线框图）。
 
 最终交付：
-- 21 张效果图（1920×1080 PNG）+ 3 张 720° 全景图（4096×2048 PNG），机位见 `data/cameras.json`；
+- 20 张效果图（1920×1080 PNG）+ 3 张 720° 全景图（4096×2048 PNG），机位见 `data/cameras.json`（REWORK 变更：原"21 张"计数有误，实为 20 张交付图；对比机位 16b 与 C1 木色对比图不占交付数）；
 - 一张缩略总览图 `renders/final/contact_sheet.png`；
 - 可复现的 `.blend` 文件和全部 Python 脚本。
 
@@ -56,7 +56,7 @@ jiangyu-render/
 ├─ CLAUDE.md                 ← 本规格
 ├─ data/
 │  ├─ layout.json            ← 全屋几何数据（墙、门窗、地面、全部家具包络盒），业主已确认
-│  └─ cameras.json           ← 23 个机位
+│  └─ cameras.json           ← 24 个机位（REWORK 变更：23 + 16b 对比机位）
 ├─ refs/                     ← 业主提供的参考图（见 refs/README.md）
 ├─ scripts/
 │  ├─ config.py              ← 路径、渲染档位、设备、全局开关
@@ -371,7 +371,7 @@ jiangyu-render/
 - 用 preview 档渲染 03、05、12 三张作样张，自检色调。
 
 **M5 ★ 全部机位预览**
-- cameras.py 读 cameras.json，所有 23 个机位跑 preview 档。
+- cameras.py 读 cameras.json，所有 24 个机位（含 16b 对比）跑 preview 档。
 - 生成 `renders/preview/contact_sheet_preview.png`（每张缩略图下方标机位编号和中文说明）。
 - **停下**：给业主看构图、色调、方案 A/B 对比，等确认或修改意见。
 
