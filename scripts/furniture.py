@@ -651,6 +651,19 @@ def build_rug(item, mats, coll):
     bmin, bmax = item['bbox']['min'], item['bbox']['max']
     root = R(item, mats, coll)
     box(root, cid + '_pile', bmin, bmax, coll, mats['wood'], role=role)
+    # F6：A 方案地毯加一圈 3cm 深燕麦边（rug_plain BFAE92，几何边框不占纹理面积）
+    if role == 'rug_a':
+        bw = 0.03
+        z0, z1 = bmin[2], bmax[2] + 0.002
+        borders = [
+            ((bmin[0], bmin[1]), (bmin[0] + bw, bmax[1])),             # 南边
+            ((bmax[0] - bw, bmin[1]), (bmax[0], bmax[1])),             # 北边
+            ((bmin[0] + bw, bmin[1]), (bmax[0] - bw, bmin[1] + bw)),   # 西边
+            ((bmin[0] + bw, bmax[1] - bw), (bmax[0] - bw, bmax[1])),   # 东边
+        ]
+        for i, ((x0, y0), (x1, y1)) in enumerate(borders):
+            box(root, '%s_border%d' % (cid, i), (x0, y0, z0), (x1, y1, z1),
+                coll, mats['white'], role='rug')
 
 
 def build_cushion(item, mats, coll):

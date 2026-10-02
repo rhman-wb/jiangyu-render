@@ -105,17 +105,33 @@ def make_sheet(mode='preview'):
 
 
 def make_compare():
-    """REWORK 第 7 章：C1 木色三联对比图。"""
+    """REWORK_R1FIX F3：C1 木色四格对比图（A/B/C + 实体店参考木门局部 + 实测平均色）。"""
     imgs = load_imgs_map('preview')
-    trio = [('C1_wood_A', 'A 胡桃（默认 #5E4330）'),
-            ('C1_wood_B', 'B 浅胡桃（#7A5C43）'),
-            ('C1_wood_C', 'C 橡木（#B48E66）')]
-    W = MARGIN * 2 + COLS * TILE_W + (COLS - 1) * GAP
+    # 与 qa_r1fix.py 相同的三个木面框（04 机位：门/岛台侧板/电视柜）
+    boxes = [(0.04, 0.30, 0.12, 0.55), (0.40, 0.48, 0.55, 0.62), (0.55, 0.45, 0.85, 0.58)]
+
+    def measured(path):
+        im = Image.open(path).convert('RGB')
+        rs = gs = bs = n = 0
+        for bx in boxes:
+            x0, y0 = int(bx[0] * im.width), int(bx[1] * im.height)
+            x1, y1 = int(bx[2] * im.width), int(bx[3] * im.height)
+            c = im.crop((x0, y0, x1, y1))
+            px = list(c.getdata())
+            rs += sum(p[0] for p in px); gs += sum(p[1] for p in px)
+            bs += sum(p[2] for p in px); n += len(px)
+        return '#%02X%02X%02X' % (int(rs / n), int(gs / n), int(bs / n))
+
+    trio = [('C1_wood_A', 'A 胡桃（默认）'),
+            ('C1_wood_B', 'B 浅胡桃'),
+            ('C1_wood_C', 'C 橡木')]
+    W = MARGIN * 2 + 4 * TILE_W + 3 * GAP
     H = TITLE_H + TILE_H + CAP_H + MARGIN
     sheet = Image.new('RGB', (W, H), BG)
     d = ImageDraw.Draw(sheet)
     d.text((MARGIN, 26), '木色对比（同 04 机位，其他条件完全相同）', font=font(34), fill=FG)
-    d.text((MARGIN, 68), '业主看图选定后全屋统一换成选定的一套', font=font(17), fill=(120, 112, 104))
+    d.text((MARGIN, 68), '业主看图选定后全屋统一换成选定的一套；实测色为三处木面（门/岛台侧板/电视柜）采样均值',
+           font=font(17), fill=(120, 112, 104))
     for i, (key, label) in enumerate(trio):
         path = imgs.get(key)
         if path is None:
@@ -125,7 +141,31 @@ def make_compare():
         y = TITLE_H
         sheet.paste(thumb(path), (x, y))
         d.rectangle([x, y, x + TILE_W - 1, y + TILE_H - 1], outline=(210, 205, 198), width=1)
-        d.text((x, y + TILE_H + 8), label, font=font(21), fill=ACCENT)
+        d.text((x, y + TILE_H + 8), '%s 实测 %s' % (label, measured(path)),
+               font=font(20), fill=ACCENT)
+    # 第 4 格：实体店参考木门局部
+    refp = os.path.join(os.path.dirname(config.RENDER_DIR), 'refs', 'livingroom_cabinet.jpg')
+    x = MARGIN + 3 * (TILE_W + GAP)
+    y = TITLE_H
+    if os.path.isfile(refp):
+        ref = Image.open(refp).convert('RGB')
+        rx = (0.22, 0.42, 0.35, 0.78)   # 左列平开门整块门板（视觉选定，避拉手反光）
+        crop = ref.crop((int(rx[0] * ref.width), int(rx[1] * ref.height),
+                         int(rx[2] * ref.width), int(rx[3] * ref.height)))
+        crop.thumbnail((TILE_W, TILE_H), Image.LANCZOS)
+        cv = Image.new('RGB', (TILE_W, TILE_H), (238, 236, 232))
+        cv.paste(crop, ((TILE_W - crop.width) // 2, (TILE_H - crop.height) // 2))
+        sheet.paste(cv, (x, y))
+        px = list(cv.getdata())
+        npx = len(px)
+        hexref = '#%02X%02X%02X' % (sum(p[0] for p in px) // npx,
+                                    sum(p[1] for p in px) // npx,
+                                    sum(p[2] for p in px) // npx)
+    else:
+        hexref = '-'
+        print('[sheet][warn] missing refs/livingroom_cabinet.jpg')
+    d.rectangle([x, y, x + TILE_W - 1, y + TILE_H - 1], outline=(210, 205, 198), width=1)
+    d.text((x, y + TILE_H + 8), '实体店参考 实测 %s' % hexref, font=font(20), fill=ACCENT)
     out = os.path.join(config.RENDER_DIR, 'preview', 'C1_wood_compare.png')
     sheet.save(out, 'PNG')
     print('[sheet] %s' % out)

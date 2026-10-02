@@ -2,7 +2,7 @@
 # qa_render.py —— 渲染后检查（REWORK 第 6 章 QA-5/QA-6，系统 Python + Pillow，无需 Blender）
 #   python scripts\qa_render.py [--mode preview]
 # QA-5 白墙采样：config.WHITE_WALL_SAMPLES 每机位 1-2 框，
-#       sRGB 均值 <185 或 R-B >18 -> WARN（需在 visual_review 解释或修复）。
+#       sRGB 均值 <185 或 R-B >22 -> WARN（F3 后阈值；需在 visual_review 解释或修复）。
 # QA-6 分辨率断言：preview PERSP 960x540 / PANO 2048x1024（final 档断言 R2 后启用）。
 import os
 import sys
@@ -57,8 +57,8 @@ def main():
             lum = 0.2126 * r + 0.7152 * g + 0.0722 * b
             if lum < 185:
                 warns.append('框%d 亮度 %.0f<185' % (k + 1, lum))
-            if r - b > 18:
-                warns.append('框%d R-B=%.0f>18（偏黄）' % (k + 1, r - b))
+            if r - b > 22:   # REWORK_R1FIX F3：18 -> 22（删后期 WB、木色回暖后放宽）
+                warns.append('框%d R-B=%.0f>22（偏黄）' % (k + 1, r - b))
         if not res_ok:
             rows.append('FAIL  %s%s' % (cid, res_note))
             n_fail += 1
@@ -73,7 +73,7 @@ def main():
     out = os.path.join(config.REVIEW_DIR, 'qa_render_%s.md' % mode)
     with open(out, 'w', encoding='utf-8') as f:
         f.write('# 渲染后检查（qa_render · %s 档）\n\n' % mode)
-        f.write('白墙目标：sRGB 均值 200-225、R-B<=18（REWORK 2.5）；亮度 <185 或 R-B>18 -> WARN。\n\n')
+        f.write('白墙目标：sRGB 亮度 >=185、R-B<=22（REWORK_R1FIX F3 阈值，删后期 WB 后木色回暖）；低于即 WARN。\n\n')
         f.write('\n'.join(rows) + '\n')
     print('[qa_render] -> %s' % out)
     return 0 if n_fail == 0 else 1

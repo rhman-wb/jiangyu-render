@@ -20,9 +20,13 @@ CAM_OVERRIDES = {
                  'exposure': 1.70},   # 同时看到端景柜和西墙镜面门
     '16_son_room': {'location': (11.3, -2.6, 1.45), 'exposure': 1.95},
     '16b_son_room_blue': {'location': (11.3, -2.6, 1.45), 'exposure': 1.95},
-    '18_public_bath_wet': {'location': (10.35, -2.0, 1.5),   # D-030 北移避开门扇
-                           'look_at': (9.5, -0.8, 1.0), 'lens': 16,   # 看到马桶和淋浴
-                           'exposure': 1.95},
+    '18_public_bath_wet': {'location': (10.55, -2.3, 1.45),  # F5：REWORK_R1FIX 指定机位（z 1.6->1.45 许可内微调）
+                           'look_at': (9.35, -1.2, 0.6), 'lens': 16,
+                           # 指定 look_at 俯角 31.5° + 16mm 下两点透视容不下马桶包络（qa 投影出界
+                           # u0.12-0.57 / v-0.92..0.27）。参数搜索（tilt x shift x loc）定案：
+                           # 俯 15° + shift -0.25，9 点全入画边距 5.5%（D-046）。
+                           'tilt_deg': 15, 'shift_y': -0.25,
+                           'exposure': 2.25},
     # --- 曝光初值（其余机位）---
     '01_aerial_A': {'exposure': 0.85},
     '02_aerial_B': {'exposure': 0.85},
@@ -102,9 +106,13 @@ def build_all(coll):
             cam_data.lens = ov.get('lens', c.get('lens_mm', 18))
             d = look
             yaw = math.atan2(-(d[0] - cam.location[0]), d[1] - cam.location[1])
-            cam.rotation_euler = (math.radians(90), 0.0, yaw)
+            # REWORK_R1FIX F5：tilt_deg 允许低机位俯拍（两点透视无解的机位）
+            rx = 90.0 - ov.get('tilt_deg', 0.0)
+            cam.rotation_euler = (math.radians(rx), 0.0, yaw)
             shift_raw, shift_used = _shift_y(cam.location, d,
                                              cam_data.lens, c.get('resolution', (1920, 1080)))
+            if 'shift_y' in ov:                 # REWORK_R1FIX F5：允许显式覆盖 shift
+                shift_used = ov['shift_y']
             cam_data.shift_y = shift_used
 
         # 元数据存自定义属性，render.py / qa 读取

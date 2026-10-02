@@ -193,3 +193,40 @@
 - 亮度无法线性追平的原因：AgX Base Contrast 肩部压缩——实测 +0.15EV 在 170+ sRGB 区只带来 +4（线性预期 +19）；再推会把直射区（05 框2 已 196、上限 225）顶爆。这是指标与视图变换响应曲线的固有张力，最终成品档（256 samples）噪点更低时亮部会再抬 2-4。
 - 保留的两个 R-B 超标点均为设计意图区：08 号=B 整墙柜胡桃木内衬大面积 bounce（木色层 15% 占比的规定画面）；13 号框2=主卧北墙床头上方（无窗 + 壁灯 4200K 暖点缀 + 全屋最深 bounce 角落）。3000-4200K 点缀是 REWORK 2.5 明确保留的"局部暖色点缀"。
 - 结论：R1 轮以"结构修复 + 边缘 WARN 书面解释"收口，留 R2/成品轮按业主观感再定是否加第三次 WB 迭代。
+
+## R1 补修批次（D-043 ~ D-048，REWORK_R1FIX 治理）
+
+## D-043 F4 主卧"木纹竖条"射线定位与修法
+- 探针（12 号机位 u0.08-0.18 列 x v0.30-0.66 行射线，qa_r1fix.check_f4 固化）：u0.08-0.14 全部命中 W14_s02 门间墙垛 [wall_paint]——墙垛本来就是白的；u0.16 起命中 door_W14_1jlft [walnut]。
+- 根因：旧门套是包墙厚的"筒子板"（jamb_d=0.16m 通高 walnut 面板），从主卧斜视角看整个 16cm 深侧面暴露成通高木色竖条；R1 主轮只改了长虹门扇、没动门套。
+- 修法：新增 architecture._jamb_lines()——门套改"贴两侧墙皮外凸 4cm 的窄线条"（洞口三边 x 内外两皮共 6 条），洞口侧壁保持 wall_paint。室内木门与长虹门统一换用。规格 4.3"门套窄 4cm 可见宽度"落实。
+- 复测：u0.16 命中 door_W14_1jlfti（4cm 线，walnut）——"正确的门套材质且宽度 <=4cm"达标；12 号两门之间自左至右为：白墙垛 → 4cm 门套线 → 长虹门。
+
+## D-044 F3 木色变灰根因与回退
+- 根因确认（REWORK_R1FIX 分析）：合成层 ColorBalance Gain R0.94/B1.10（全局后期白平衡）叠加木纹 HSL 降饱和 x0.62，把暖棕木色洗成灰褐。
+- 修法：①删除合成层白平衡（build_scene 不再建 ColorBalance，use_nodes=False）；②WOOD_PRESETS sat 放宽 A 0.62->0.85 / B 0.68->0.88 / C 0.78->0.92（target/steer 不动）；③wall_paint #F3EFE7->#F3F1EC（略冷奶白补偿删 WB 后的白墙）；④白墙阈值放宽 亮度>=185、R-B<=22（qa_render 同步）。
+- 白墙 R-B 若因删 WB 回超 22：以光源微调（主照明 5200K->5400K / HDRI 饱和再降）迭代，不再动后期。
+
+## D-045 F1/F2 变体 0 objs 根因与根治
+- 根因（时间戳+日志双证）：kitchen_lower_olive / kids_son_blue 材质创建后无对象使用（0 user），save_as_mainfile 不写 0-user 数据块 -> 渲染进程 bpy.data.materials.get()=None -> 日志先报 "variant material missing" 再 "(0 objs)"，set_variant 从未进入对象扫描。slot0 匹配逻辑本身无错。
+- 根治：①两个材质 use_fake_user=True 随 blend 存活；②build_scene._tag_variant_groups() 给 role='kitchen_front'（厨房下柜全套 13 件）打 variant_group='kitchen_lower_olive'、儿子房 kids_furn（21 件）打 'son_blue'；③set_variant 改按 variant_group 遍历全部 slots 按材质基础名（去 .NNN 后缀）替换；④替换数 0 直接 raise；⑤变体机位渲染时关 Persistent Data 防材质缓存。
+- 检查纪律：qa_r1fix 扫渲染日志，任何 (0 objs)/warn/assert 直接 FAIL。
+
+## D-046 F5 公卫湿区机位（REWORK_R1FIX 指定值）
+- CAM_OVERRIDES 18 -> loc (10.55,-2.3,1.6) look_at (9.35,-1.2,0.6) lens 16（替换 D-030 的 (10.35,-2.0)）。碰撞：10.55 距东墙 W10（x=13.9）远、距女儿房西墙远、位于过道净空内，无需微调。
+- 验收固化 qa_r1fix.check_f5：马桶 8 角点 + 淋浴隔断中心 world_to_camera_view 全部落在画面内。
+
+## D-047 F6 地毯几何纹重做
+- 旧版两组 Wave Fac 直接混色（宽波带+扭曲）= 大面积红绿格子观感。重写 make_rug_geo：Wave X/Y（间距 0.20/0.22m）-> ColorRamp CONSTANT 硬边窄条带（0.482-0.518，线宽约 7-8mm）-> 两向细线分别混墨绿/砖红，线条覆盖约 7.2% <= 8%；底色 CDBEA4 不变。
+- 另加 3cm 深燕麦几何边框（build_rug 4 条 box，role='rug' -> rug_plain BFAE92）。
+- 验收：04/05 地毯区 HSV S<=0.25 且距 #CDBEA4 <=35（qa_r1fix.check_rug）。
+
+## D-048 输出格式 8bit RGB（REWORK_R1FIX 第 1 节）
+- 实测旧产物全部 8bit RGBA（scripts 从未设置 image_settings，16bit 从未生效）。render.py 显式设 PNG / color_mode='RGB' / color_depth='8'；CLAUDE.md 第 9 章与 Docs/REWORK.md 已同步；qa_r1fix 断言 IHDR colortype=2。
+
+## D-049 R1FIX 执行期发现（补充 D-044/D-045/D-046）
+- **diff_tex 路径坑**：WOOD_PRESETS 的 *_tex 键是裸文件名，_build_wood_nodes 直接传给 _load_tex_img，os.path.isfile 按 blender 进程 CWD 解析永远 False -> 贴图链整条不建、Base Color 空挂纯色。症状：C1_wood_C 换 value/steer 采样值纹丝不动。修复：_tex_path() 统一拼 ASSET 目录。排查中另确认 Blender 节点类型串是 'HUE_SAT'（非 'HUE_SATURATION'），诊断脚本按后者匹配误报"节点不存在"。
+- **C 案橡木贴图**：黑胡桃底图（walnut2 平均 #8B6F55 暗）无论 value 拉多高，画面亮度被 AgX 肩部压在 ~135 上限，进不了 150-195 档。C 案改用 Poly Haven oak_veneer_02（#DBB894 浅橡木直纹）三件套（assets/oak2_*.jpg），steer 0.42->0.32（target #B48E66 比橡木贴图暗，贴图主导）。终值：A value 0.66 / B 1.45 / C 1.28+oak，画面 91/115/153，档差 24/38，R-B 36/44/56。
+- **F1 橄榄绿被暖光洗白**：olive #6E7A52 的 G-R=12，在 4000K 厨房筒灯+暖 bounce 下画面 G-R≈0。厨房两筒灯 4000->4700K（仍暖白），配合 tight 采样框。
+- **白墙第三轮收敛**：主照明 5400->5700K、HDRI 饱和 0.66->0.60（5400/0.66/gamma0.93 后白墙仍 R-B 23-34 超阈值 22）。
+- **F5 定案**（D-046 补）：参数搜索（tilt x shift_y x location 三维）证明指定 look_at 俯角 31.5° + 16mm 下两点透视无解（shift_y 全范围 out）；最优 = 原位 (10.55,-2.3,1.45) + 俯 15° + shift_y -0.25，9 点全入画边距 5.5%。cameras.py 新增 tilt_deg 覆盖键。竖线轻微收敛属低机位俯拍的自然透视。

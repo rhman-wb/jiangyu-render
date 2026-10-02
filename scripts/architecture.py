@@ -245,6 +245,28 @@ def _door_handle(name, g, u_edge, mats, coll, half_t=0.026):
     util.make_box(name, bmin, bmax, coll=coll, mat=mats['dark'], role='metal_black')
 
 
+def _jamb_lines(wid, k, g, a, b, head, mats, coll):
+    """门套窄线条（REWORK_R1FIX F4 / 规格 4.3 "4cm 可见宽度"）：
+    洞口三边（左右顶）各两条 4cm 线，贴两侧墙皮向外凸 4cm；不包墙厚——
+    洞口侧壁保持 wall_paint。旧版 jamb_d=0.16 筒子板在斜视角（12 号机位）
+    露出 16cm 宽通高 walnut 面，即主卧北墙"木纹竖条"的实体（D-043）。"""
+    fw = 0.04
+    c = g['v_center']
+    t = config.WALL_T_EXT if g['ext'] else config.WALL_T
+    for tag, u0, u1, z0, z1 in (('jlft', a - 0.01, a + fw - 0.01, 0.0, head + fw),
+                                ('jrgt', b - fw + 0.01, b + 0.01, 0.0, head + fw),
+                                ('jtop', a - 0.01, b + 0.01, head, head + fw)):
+        for side, sgn in (('o', 1), ('i', -1)):
+            v0 = c + sgn * t / 2
+            v1 = c + sgn * (t / 2 + fw)
+            if g['axis'] == 'x':
+                bmin, bmax = (u0, min(v0, v1), z0), (u1, max(v0, v1), z1)
+            else:
+                bmin, bmax = (min(v0, v1), u0, z0), (max(v0, v1), u1, z1)
+            util.make_box('door_%s_%d%s%s' % (wid, k, tag, side), bmin, bmax,
+                          coll=coll, mat=mats['white'], role='door_frame_wood')
+
+
 def _fluted_door(wid, k, g, a, b, head, mats, coll):
     """REWORK 2.2：卫生间长虹玻璃平开门 —— 木色细框 4cm + 长虹玻璃芯 + 黑色竖拉手。"""
     fw = 0.04
@@ -259,18 +281,8 @@ def _fluted_door(wid, k, g, a, b, head, mats, coll):
         util.make_box('door_%s_%d%s' % (wid, k, tag), bmin, bmax, coll=coll,
                       mat=mat, role=role)
 
-    # 门套（木色 4cm 可见宽度，同木门；jtop 只做门楣段 head..head+fw）
-    jamb_d = 0.16
-    jambs = [('jlft', a - 0.01, a + fw - 0.01, 0.0, head + fw),
-             ('jrgt', b - fw + 0.01, b + 0.01, 0.0, head + fw),
-             ('jtop', a - 0.01, b + 0.01, head, head + fw)]
-    for tag, u0, u1, z0, z1 in jambs:
-        if g['axis'] == 'x':
-            bmin, bmax = (u0, c - jamb_d / 2, z0), (u1, c + jamb_d / 2, z1)
-        else:
-            bmin, bmax = (c - jamb_d / 2, u0, z0), (c + jamb_d / 2, u1, z1)
-        util.make_box('door_%s_%d%s' % (wid, k, tag), bmin, bmax, coll=coll,
-                      mat=mats['white'], role='door_frame_wood')
+    # 门套：窄线条（F4，见 _jamb_lines；旧版 16cm 筒子板即主卧竖条根因）
+    _jamb_lines(wid, k, g, a, b, head, mats, coll)
     # 门扇：细框 4cm + 长虹玻璃芯（关闭，铰链在 start 端）
     lw = (b - a) - 2 * fw
     la = a + fw
@@ -307,20 +319,10 @@ def build_doors(layout, mats, coll):
                 # REWORK 2.2：公卫门 / 主卫门 -> 长虹玻璃平开门
                 _fluted_door(w['id'], k, g, a, b, head, mats, coll)
             elif typ == 'door':
-                # 室内木门 / 入户门：门套（三边）+ 关闭门扇 + 黑色竖拉手
+                # 室内木门 / 入户门：门套（三边窄线条）+ 关闭门扇 + 黑色竖拉手
                 fw = 0.04
-                sd = 0.16  # 套深度，比墙厚每侧凸 1cm
                 c = g['v_center']
-                parts = [('lft', a - 0.01, a + fw - 0.01, 0.0, head + fw),
-                         ('rgt', b - fw + 0.01, b + 0.01, 0.0, head + fw),
-                         ('top', a - 0.01, b + 0.01, head, head + fw)]
-                for tag, u0, u1, z0, z1 in parts:
-                    if g['axis'] == 'x':
-                        bmin, bmax = (u0, c - sd / 2, z0), (u1, c + sd / 2, z1)
-                    else:
-                        bmin, bmax = (c - sd / 2, u0, z0), (c + sd / 2, u1, z1)
-                    util.make_box('door_%s_%d%s' % (w['id'], k, tag), bmin, bmax,
-                                  coll=coll, mat=mats['white'], role='door_frame_wood')
+                _jamb_lines(w['id'], k, g, a, b, head, mats, coll)
                 # 门扇（关），铰链在 start 端
                 lw = (b - a) - 2 * fw
                 if g['axis'] == 'x':

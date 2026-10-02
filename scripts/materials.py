@@ -18,15 +18,19 @@ WOOD_NOR = os.path.join(ASSET, 'walnut2_nor_gl_2k.jpg')
 # REWORK 2.1 木色预设：A 胡桃默认(#5E4330 中深棕/直纹/低饱和/哑光)，
 # B 浅胡桃(#7A5C43)，C 橡木(#B48E66)。diff/rough/nor 可按预设换贴图。
 WOOD_PRESETS = {
-    'A': dict(target='5E4330', sat=0.62, hue=0.53, value=0.98, steer=0.42,
+    'A': dict(target='5E4330', sat=0.88, hue=0.53, value=0.66, steer=0.42,
               scale=2.4, rough=0.52, rough_scale=0.35, rough_add=0.45,
               nor_strength=0.45),
-    'B': dict(target='7A5C43', sat=0.68, hue=0.55, value=1.12, steer=0.42,
+    'B': dict(target='7A5C43', sat=0.88, hue=0.55, value=1.55, steer=0.42,
               scale=2.4, rough=0.52, rough_scale=0.35, rough_add=0.45,
               nor_strength=0.40),
-    'C': dict(target='B48E66', sat=0.78, hue=0.57, value=1.30, steer=0.42,
+    'C': dict(target='B48E66', sat=0.92, hue=0.57, value=1.36, steer=0.32,
               scale=1.8, rough=0.50, rough_scale=0.35, rough_add=0.42,
-              nor_strength=0.40),
+              nor_strength=0.40,
+              # R1FIX F3：C 案换浅色橡木贴图（oak_veneer_02 #DBB894），
+              # steer 降到 0.32 —— target 比橡木贴图暗，贴图主导亮度
+              diff_tex='oak2_diff_2k.jpg', rough_tex='oak2_rough_2k.jpg',
+              nor_tex='oak2_nor_gl_2k.jpg'),
 }
 
 
@@ -272,10 +276,14 @@ def _build_wood_nodes(m, p):
     out.location = (400, 0)
     b = nt.nodes.new('ShaderNodeBsdfPrincipled')
     b.location = (100, 0)
-    # 注意：预设里 rough=粗糙度数值，贴图覆盖键用 diff_tex/rough_tex/nor_tex，避免撞名
-    diff = _load_tex_img(p.get('diff_tex') or WOOD_DIFF, 'sRGB')
-    rough = _load_tex_img(p.get('rough_tex') or WOOD_ROUGH, 'Non-Color')
-    nor = _load_tex_img(p.get('nor_tex') or WOOD_NOR, 'Non-Color')
+    # 注意：预设里 rough=粗糙度数值，贴图覆盖键用 diff_tex/rough_tex/nor_tex，避免撞名。
+    # 预设里的 *_tex 是裸文件名（assets/ 下），必须拼 ASSET 目录——相对 CWD 永远找不到。
+    def _tex_path(key, fallback):
+        t = p.get(key)
+        return os.path.join(ASSET, t) if t else fallback
+    diff = _load_tex_img(_tex_path('diff_tex', WOOD_DIFF), 'sRGB')
+    rough = _load_tex_img(_tex_path('rough_tex', WOOD_ROUGH), 'Non-Color')
+    nor = _load_tex_img(_tex_path('nor_tex', WOOD_NOR), 'Non-Color')
     if diff is not None:
         tc = _node(m, 'ShaderNodeTexCoord', -1400, 100)
         mp = _node(m, 'ShaderNodeMapping', -1250, 100, 'scale')
@@ -358,32 +366,53 @@ def apply_wood_preset(preset):
 
 
 def make_rug_geo():
-    """几何纹地毯：燕麦底 + 墨绿/砖红细线（Wave 条纹）。"""
+    """几何纹地毯（F6 重写）：燕麦底 CDBEA4 + 墨绿/砖红交替细线。
+    Wave(间距 0.2/0.22m) -> ColorRamp 硬边窄条带(带宽 3.6% 周期 ≈ 7-8mm 线宽)
+    -> 两组线叠加，线条覆盖面积 ≈ 2x3.6% = 7.2% <= 8%。替换旧版宽波带混色
+    （旧版大面积红绿格子观感，REWORK_R1FIX F6）。"""
     m = bpy.data.materials.new('rug_geo')
     m.use_nodes = True
     b = _bsdf(m)
     _set(b, 'Base Color', (*lin('CDBEA4'), 1.0))
     _set(b, 'Roughness', 0.95)
-    tc = _node(m, 'ShaderNodeTexCoord', -800, 100)
-    w1 = _node(m, 'ShaderNodeTexWave', -600, 150)
-    w1.inputs['Scale'].default_value = 2.2
-    w1.inputs['Distortion'].default_value = 2.0
+    tc = _node(m, 'ShaderNodeTexCoord', -900, 100)
+    # 两组正交 Wave：X 向线（墨绿）与 Y 向线（砖红），间距 15-25cm
+    w1 = _node(m, 'ShaderNodeTexWave', -720, 150)
+    w1.inputs['Scale'].default_value = 5.0    # 周期 0.2m
+    w1.inputs['Distortion'].default_value = 0.0
     w1.bands_direction = 'X'
-    w2 = _node(m, 'ShaderNodeTexWave', -600, -60)
-    w2.inputs['Scale'].default_value = 1.6
-    w2.inputs['Distortion'].default_value = 2.5
+    w2 = _node(m, 'ShaderNodeTexWave', -720, -80)
+    w2.inputs['Scale'].default_value = 4.5    # 周期 0.22m
+    w2.inputs['Distortion'].default_value = 0.0
     w2.bands_direction = 'Y'
-    m1 = _node(m, 'ShaderNodeMixRGB', -400, 150)
-    m1.inputs['Fac'].default_value = 0.16
+    # ColorRamp 硬边窄条带：只在波峰 0.482-0.518 出线（CONSTANT 插值）
+    r1 = _node(m, 'ShaderNodeValToRGB', -540, 150)
+    r1.color_ramp.interpolation = 'CONSTANT'
+    r1.color_ramp.elements[0].position = 0.482
+    r1.color_ramp.elements[0].color = (0, 0, 0, 1)
+    r1.color_ramp.elements[1].position = 0.518
+    r1.color_ramp.elements[1].color = (1, 1, 1, 1)
+    r2 = _node(m, 'ShaderNodeValToRGB', -540, -80)
+    r2.color_ramp.interpolation = 'CONSTANT'
+    r2.color_ramp.elements[0].position = 0.482
+    r2.color_ramp.elements[0].color = (0, 0, 0, 1)
+    r2.color_ramp.elements[1].position = 0.518
+    r2.color_ramp.elements[1].color = (1, 1, 1, 1)
+    # 底色 -> 混墨绿线（X 向） -> 混砖红线（Y 向）
+    m1 = _node(m, 'ShaderNodeMixRGB', -340, 150)
+    m1.blend_type = 'MIX'
+    m1.inputs['Color1'].default_value = (*lin('CDBEA4'), 1.0)
     m1.inputs['Color2'].default_value = (*lin('5F6B45'), 1.0)
+    m2 = _node(m, 'ShaderNodeMixRGB', -180, 60)
+    m2.blend_type = 'MIX'
+    m2.inputs['Color2'].default_value = (*lin('A5533F'), 1.0)
     _link(m, tc.outputs['Object'], w1.inputs['Vector'])
     _link(m, tc.outputs['Object'], w2.inputs['Vector'])
-    _link(m, w1.outputs['Fac'], m1.inputs['Fac'])
-    m2 = _node(m, 'ShaderNodeMixRGB', -260, 60)
-    m2.inputs['Fac'].default_value = 0.12
-    m2.inputs['Color2'].default_value = (*lin('A5533F'), 1.0)
+    _link(m, w1.outputs['Fac'], r1.inputs['Fac'])
+    _link(m, w2.outputs['Fac'], r2.inputs['Fac'])
+    _link(m, r1.outputs['Color'], m1.inputs['Fac'])
     _link(m, m1.outputs['Color'], m2.inputs['Color1'])
-    _link(m, w2.outputs['Fac'], m2.inputs['Fac'])
+    _link(m, r2.outputs['Color'], m2.inputs['Fac'])
     _link(m, m2.outputs['Color'], b.inputs['Base Color'])
     m.diffuse_color = (*lin('CDBEA4'), 1.0)
     return m
@@ -514,7 +543,7 @@ def make_rug_accent(name, base_hex, line_hex):
 def build_all_materials():
     """按规格 6.3 材质表建全部材质（名字与表一致）。"""
     mats = {}
-    mats['wall_paint'] = base_mat('wall_paint', 'F3EFE7', 0.9)
+    mats['wall_paint'] = base_mat('wall_paint', 'F3F1EC', 0.9)  # F3：F3EFE7→略冷奶白（删后期 WB 后的白墙补偿，D-044）
     _bump_noise(mats['wall_paint'], 0.02, 80)
     mats['wall_art_plaster'] = base_mat('wall_art_plaster', 'ECE5D8', 0.85)
     _bump_noise(mats['wall_art_plaster'], 0.05, 6)
@@ -559,6 +588,10 @@ def build_all_materials():
     mats['rug_geo'] = make_rug_geo()
     mats['rug_plain'] = base_mat('rug_plain', 'BFAE92', 0.95)
     mats['kitchen_lower_olive'] = base_mat('kitchen_lower_olive', '6E7A52', 0.5)
+    # F1 根因修复：变体材质平时无对象使用（0 user），save_as_mainfile 不保存 0-user
+    # 数据块 → 渲染进程里 get() 为 None（日志 variant material missing / 0 objs）。
+    # use_fake_user 让它随 blend 存活。
+    mats['kitchen_lower_olive'].use_fake_user = True
     # 表外补充
     mats['ceiling_aluminum'] = base_mat('ceiling_aluminum', 'F0F0EE', 0.28, metallic=0.3)
     mats['public_stone'] = base_mat('public_stone', 'BDB8B0', 0.25, metallic=0.05)
@@ -570,8 +603,8 @@ def build_all_materials():
     mats['led_strip'] = base_mat('led_strip', 'FFFFFF', 0.5)
     b = _bsdf(mats['led_strip'])
     # REWORK 2.5 白平衡收敛：2800K 暖橙 -> 4300K 暖白（17 条 cove 灯带是客厅墙主要暖源）
-    _set(b, 'Emission Color', (1.0, 0.86, 0.70, 1.0))
-    _set(b, 'Emission Strength', 2.6)
+    _set(b, 'Emission Color', (1.0, 0.90, 0.78, 1.0))
+    _set(b, 'Emission Strength', 2.2)
     # 孩子房材质统一移至 REWORK 色板块（下方）
     mats['plant_leaf'] = base_mat('plant_leaf', '4E6E3A', 0.5)
     mats['plant_pot'] = mats['ceramic_brick']
@@ -587,6 +620,7 @@ def build_all_materials():
     kp = config.KIDS_PALETTE
     mats['kids_son_green'] = base_mat('kids_son_green', kp['son_main'], 0.6)
     mats['kids_son_blue'] = base_mat('kids_son_blue', kp['son_alt'], 0.6)   # 16b 对比版
+    mats['kids_son_blue'].use_fake_user = True   # F2：同 kitchen_lower_olive 的 0-user 修复
     mats['kids_daughter_oat'] = base_mat('kids_daughter_oat', kp['daughter_main'], 0.6)
     mats['kids_daughter_rose'] = base_mat('kids_daughter_rose', kp['daughter_accent'], 0.9)
     _set(_bsdf(mats['kids_daughter_rose']), 'Sheen Weight', 0.3)

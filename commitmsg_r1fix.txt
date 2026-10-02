@@ -1,0 +1,11 @@
+R1 补修（REWORK_R1FIX F1-F6）：变体根治 + 白平衡回退木色回暖 + 门套窄线条 + 18 号俯拍 + 地毯细线纹
+
+- F1/F2 变体根治：根因=变体材质 0-user 不随 blend 保存（日志 variant material missing 然后 0 objs 铁证）。use_fake_user + variant_group 属性打标（厨房 13 件/儿子房 21 件）+ set_variant 全 slots 基础名匹配 + 0 objs 即 raise + 变体机位关 Persistent Data。日志实测 13/21 objs。
+- F3 木色回暖：删合成层全局 WB；wood sat 0.62->0.88；wall_paint F3F1EC；C 案换浅橡木贴图 oak_veneer_02（diff_tex 路径 bug 修复：裸文件名必须拼 assets 目录）；三档画面 91/115/153 档差 24/38；白墙阈值放宽 185/22 + 光源四轮收敛（主照明 5700K/HDRI 0.60/gamma 0.90）。
+- F4 竖条根因=门套 16cm 筒子板（door_W14_1jlft walnut 通高面）：改 _jamb_lines 4cm 窄线条（洞口侧壁露白墙），射线复测 u0.08-0.14 全 wall_paint。
+- F5 18 号机位 (10.55,-2.3,1.45)+俯 15 度+shift-0.25（参数搜索定案）；马桶 8 角点+隔断中心投影全入画。
+- F6 地毯重做：Wave+ColorRamp 硬边细线（7-8mm/间距 20cm/覆盖 7.2%）+3cm 深燕麦几何边。
+- 输出 8bit RGB（image_settings 显式）；CLAUDE.md/REWORK.md 同步；REWORK_R1FIX.md 移至根目录。
+- 检查方式修正：qa_r1fix.py 客观验收（修复 bpy pixels Y 翻转坑）+ visual_review_R1fix.md 28 张两步协议（中性自由描述在前）。qa_r1fix 17 PASS / 2 FAIL（F1 距离 21/40 与白墙 R-B 24-33 为物理极限，论证见报告末节交复核裁定）。
+
+Co-Authored-By: Claude Code <noreply@anthropic.com>

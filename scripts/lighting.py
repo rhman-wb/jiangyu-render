@@ -15,7 +15,7 @@ HDRI = os.path.join(config.ASSET_DIR, 'kloofendal_48d_partly_cloudy_puresky_4k.h
 K3000 = (1.0, 0.50, 0.25)     # 3000K→3300K 折中（点缀：灯带/壁灯/吊灯；qa_render R-B 超标后收敛）
 K4000 = (1.0, 0.70, 0.44)     # 4000K（厨卫筒灯：无日照房间的摄影补光感，避免整屋偏橙）
 K6500 = (1.0, 0.99, 0.97)     # 6500K
-K5200 = (1.0, 0.915, 0.855)  # 5200K 主照明（筒灯/吸顶）：REWORK 2.5 白墙 R-B<=18 的硬约束（REWORK 2.5 白平衡收敛：太阳+补光提白压暖）
+K5700 = (1.0, 0.955, 0.925)  # 5700K（R1FIX：白墙 R-B<=22 第三轮）（R1FIX F3：5200K 再提白，白墙 R-B<=22 不靠后期） 主照明（筒灯/吸顶）：REWORK 2.5 白墙 R-B<=18 的硬约束（REWORK 2.5 白平衡收敛：太阳+补光提白压暖）
 
 
 def _light(name, ltype, loc, coll, energy, color=K3000, parent=None, **kw):
@@ -62,7 +62,7 @@ def build_world():
         # REWORK 2.5 白平衡收敛：HDRI 是暖调（草地+上午光），间接光区全屋偏黄。
         # 输出接 HueSaturation 降饱和提亮 -> 环境漫射整体提白（qa_render R-B<=18）。
         hsv = nt.nodes.new('ShaderNodeHueSaturation')
-        hsv.inputs['Saturation'].default_value = 0.72
+        hsv.inputs['Saturation'].default_value = 0.60
         hsv.inputs['Value'].default_value = 1.12
         hsv.location = (-430, 0)
         nt.links.new(env.outputs['Color'], hsv.inputs['Color'])
@@ -85,12 +85,12 @@ LIVING_SPOTS = [(4.3, -11.35), (5.4, -11.35), (6.5, -11.35), (7.6, -11.35), (8.4
                 (4.3, -4.20), (5.4, -4.20), (6.5, -4.20), (7.6, -4.20), (8.4, -4.20),
                 (3.57, -10.2), (3.57, -9.1), (3.57, -6.8), (3.57, -5.6),
                 (9.02, -10.9), (9.02, -6.9), (9.02, -5.6)]
-ROOM_SPOTS = [(11.0, -8.8, 2.85, 3.5, K5200), (11.0, -6.6, 2.85, 3.5, K5200),
-              (1.75, -9.5, 2.85, 3.5, K5200), (7.65, -3.0, 2.85, 3.5, K5200),
-              (12.2, -2.9, 2.85, 3.5, K5200), (9.9, -4.4, 2.60, 8.0, K4000),
-              (10.6, -3.0, 2.60, 8.0, K4000), (2.7, -5.7, 2.85, 3.5, K5200),
+ROOM_SPOTS = [(11.0, -8.8, 2.85, 5.0, K5700), (11.0, -6.6, 2.85, 5.0, K5700),
+              (1.75, -9.5, 2.85, 5.0, K5700), (7.65, -3.0, 2.85, 5.0, K5700),
+              (12.2, -2.9, 2.85, 5.0, K5700), (9.9, -4.4, 2.60, 8.0, K4000),
+              (10.6, -3.0, 2.60, 8.0, K4000), (2.7, -5.7, 2.85, 5.0, K5700),
               # 厨房 / 主卫 / 公卫（铝扣板顶筒灯：无日照房间，4000K 摄影补光感）
-              (4.6, -2.6, 2.395, 10.0, K4000), (5.7, -2.6, 2.395, 10.0, K4000),
+              (4.6, -2.6, 2.395, 10.0, (1.0, 0.83, 0.68)), (5.7, -2.6, 2.395, 10.0, (1.0, 0.83, 0.68)),  # R1FIX F1: 厨房筒灯 4700K 让 olive 读作绿
               (11.3, -4.9, 2.395, 10.0, K4000), (12.6, -4.6, 2.395, 10.0, K4000),
               (9.5, -1.9, 2.395, 10.0, K4000), (10.4, -0.7, 2.395, 10.0, K4000)]
 CEILING_LAMPS = {'master': (11.0, -7.7, 13.0), 'parents': (1.75, -8.3, 10.0),
@@ -103,18 +103,18 @@ def build_lights(mats, colls):
     build_world()
     build_sun(common)
     for i, (x, y) in enumerate(LIVING_SPOTS):
-        _light('lt_spot_liv%02d' % i, 'SPOT', (x, y, 2.595), common, 3.5, color=K5200,
+        _light('lt_spot_liv%02d' % i, 'SPOT', (x, y, 2.595), common, 5.0, color=K5700,
                spot_size=math.radians(55), shadow_soft_size=0.08)
     for i, (x, y, z, watts, col) in enumerate(ROOM_SPOTS):
         _light('lt_spot_room%d' % i, 'SPOT', (x, y, z), common, watts, color=col,
                spot_size=math.radians(55), shadow_soft_size=0.08)
     for rid, (cx, cy, w) in CEILING_LAMPS.items():
-        _light('lt_ceiling_%s' % rid, 'POINT', (cx, cy, 2.77), common, w, color=K5200,
+        _light('lt_ceiling_%s' % rid, 'POINT', (cx, cy, 2.77), common, w, color=K5700,
                shadow_soft_size=0.15)
     # 床头壁灯
     for i, (x, y) in enumerate([(12.60, -7.0), (12.60, -9.2), (0.32, -8.65)]):
-        _light('lt_wall%d' % i, 'POINT', (x, y, 1.42), common, 4.5,
-               color=(1.0, 0.75, 0.55), shadow_soft_size=0.10)  # 壁灯 4200K 暖点缀
+        _light('lt_wall%d' % i, 'POINT', (x, y, 1.42), common, 4.0,
+               color=(1.0, 0.80, 0.62), shadow_soft_size=0.10)  # 壁灯 4600K 暖点缀
     # 吊灯（跟方案走：挂在 item 父 Empty 下）
     for iid, loc in (('A_living_dining_balcony_pendant_lamp_01', (4.9, -5.4, 2.02)),
                      ('A_living_dining_balcony_pendant_lamp_02', (6.55, -5.4, 1.97)),

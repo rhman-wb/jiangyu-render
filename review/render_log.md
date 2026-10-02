@@ -49,3 +49,15 @@
 - 设备 oneAPI GPU ｜ Cycles 960×540 / 2048×1024全景 ｜ 64 samples ｜ OIDN ｜ AgX Base Contrast（4.5 枚举名 'AgX - Base Contrast'）｜ 合成层 WB Gain R0.94/B1.10 ｜ 太阳 6500K 4.5W ｜ HDRI kloofendal 0.7+降饱和 ｜ 主照明 5200K
 - 曝光终值（cameras.py CAM_OVERRIDES，三轮迭代累计 +0.9~+1.5）：室内多数 1.7~2.0（13 号最高 2.30：北墙暗区）、户外 01/02/20 保持原值、厨 09/10 约 1.6、全景 1.6~1.8
 - 单张耗时：PERSP 约 15-17s / PANO 约 60s；三轮全量重渲合计约 35 分钟（R1a 初版 → R1c 白平衡版 → 终版 13 张 +0.15EV 微调 + C1×3）
+
+
+---
+
+# R1 补修轮（REWORK_R1FIX · 四轮迭代 · 终版）
+
+- 设备 oneAPI GPU ｜ Cycles 960x540 / 2048x1024 ｜ 64 samples ｜ OIDN ｜ AgX Base Contrast ｜ gamma 0.90 ｜ 无合成层（后期 WB 已删）｜ PNG 8bit RGB
+- 光源终态：太阳 6500K 4.5W ｜ HDRI kloofendal 强度 0.7 + 降饱和 0.60 ｜ 主照明（筒灯/吸顶）5700K（客厅 5W/室 5W）｜ 壁灯 4600K 4W ｜ 吊灯 3000K 20W（暖点缀）｜ 灯带自发光 4700K 观感 2.2 ｜ 厨房筒灯 4700K ｜ 厨卫 4000K
+- 木色三案终值：A value 0.66 / B 1.55 / C 1.36+浅橡木贴图（oak_veneer_02）steer 0.32；画面 91/115/153，档差 24/38
+- 机位：18 号 (10.55,-2.3,1.45) 俯 15 度 shift -0.25 曝光 2.55；其余曝光较 R1 轮 +0.15~+0.5
+- 四轮迭代：R1FIX-1 初版 -> R1FIX-2（光源 5400K/gamma0.93）-> R1FIX-3（5700K/HDRI0.60）-> R1FIX-4（客厅 5W/灯带 2.2/gamma0.90）+ C1 单独两轮（diff_tex 路径 bug 修复 + oak 贴图 + B/C 提亮）
+- 单张耗时 PERSP 13-17s / PANO 60s；qa_r1fix 终态 17 PASS / 2 FAIL（物理论证见该报告末节）

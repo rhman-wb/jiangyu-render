@@ -79,25 +79,28 @@ def enable_render_device():
     return 'CPU'
 
 
-def _setup_white_balance(scene):
-    """REWORK 2.5 白平衡（等效摄影后期 WB）：暖米地砖/木作 bounce 使间接光区白墙
-    R-B 超标（物理正确但 REWORK 指标 <=18）；合成层统一 R×0.97 / B×1.05 微降温。
-    直射区（6500K 太阳）会轻微偏冷（R-B 约 -6..-9），符合"日光白平衡"观感。"""
-    scene.use_nodes = True
-    nt = scene.node_tree
-    nt.nodes.clear()
-    rl = nt.nodes.new('CompositorNodeRLayers')
-    cb = nt.nodes.new('CompositorNodeColorBalance')
-    out = nt.nodes.new('CompositorNodeComposite')
-    # 4.5 输入名大写 'Gain'（RGBA 版；小写 get 会拿 None 静默失效）
-    gain = cb.inputs.get('Gain')
-    while gain is not None and gain.type == 'VALUE':   # 跳过同名 VALUE 档，取 RGBA 档
-        idx = [i.name for i in cb.inputs].index('Gain') + 1
-        gain = cb.inputs[idx] if idx < len(cb.inputs) else None
-    if gain is not None:
-        gain.default_value = (0.94, 1.0, 1.10, 1.0)
-    nt.links.new(rl.outputs['Image'], cb.inputs['Image'])
-    nt.links.new(cb.outputs['Image'], out.inputs['Image'])
+def _tag_variant_groups():
+    """REWORK_R1FIX F1/F2：变体对象打标（建模函数不动，收尾统一圈定）。
+    kitchen_lower_olive = 厨房下柜全套（role='kitchen_front'：柜身/侧板/踢脚/门板/洗碗机面板）；
+    son_blue = 儿子房家具（父 root 名含 son_room 且 role='kids_furn'；
+    床品/地毯/点缀 kids_accent 等按 5.10 不随变体换蓝）。"""
+    n_k = n_s = 0
+    for o in bpy.data.objects:
+        if o.type != 'MESH':
+            continue
+        if o.get('role') == 'kitchen_front':
+            o['variant_group'] = 'kitchen_lower_olive'
+            n_k += 1
+            continue
+        if o.get('role') == 'kids_furn':
+            root = o
+            while root.parent is not None:
+                root = root.parent
+            if 'son_room' in root.name:
+                o['variant_group'] = 'son_blue'
+                n_s += 1
+    print('[build] variant groups: kitchen_lower_olive=%d son_blue=%d' % (n_k, n_s))
+    return n_k, n_s
 
 
 def main():
@@ -129,7 +132,14 @@ def main():
     look = util.set_agx_look(scene)              # REWORK 2.5：Base Contrast（拼写兼容）
     if look is None:
         print('[build] AgX look %r failed' % config.AGX_LOOK)
-    _setup_white_balance(scene)                  # REWORK 2.5：合成层 WB（R-B 收敛）
+    # R1FIX F3：gamma 0.93 —— AgX 肩部在 170+ 压缩曝光增益（+0.15EV 实得 +4sRGB），
+    # 改用 gamma 提亮中间调（白墙 168-185 -> ~180-195），直射区不会顶爆 225。
+    scene.view_settings.gamma = 0.90
+    # REWORK_R1FIX F3：删除全局合成层白平衡（它把木色洗成灰褐）；白墙靠光源色温。
+    scene.use_nodes = False
+    if scene.node_tree is not None:
+        scene.node_tree.nodes.clear()
+    _tag_variant_groups()                        # F1/F2：变体对象打标（先于保存）
 
     # MCP Poly Haven 开关是场景级属性（decisions_log D-004）
     try:

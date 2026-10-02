@@ -17,11 +17,21 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import config
 import util
 
-# 变体 = (基准材质, 变体材质)；套用/还原按 slot0 材质名互换
+# 变体 = (基准材质, 变体材质)；按对象 variant_group 属性批量切换全部 slots 的材质。
+# REWORK_R1FIX F1/F2：旧版按 slot0 材质名精确匹配，而变体材质 0-user 不随 blend
+# 保存导致 get()=None 直接 0 objs（日志有 variant material missing 为证）。
+# 新版：材质 use_fake_user 保活（materials.py）+ variant_group 属性精确圈定对象。
 VARIANT_PAIRS = {
     'kitchen_lower_olive': ('kitchen_front', 'kitchen_lower_olive'),
     'son_blue': ('kids_son_green', 'kids_son_blue'),
 }
+
+
+def _base_name(m):
+    """材质基础名：去掉 .001 这类数字后缀。"""
+    n = m.name
+    i = n.rfind('.')
+    return n[:i] if i > 0 and n[i + 1:].isdigit() else n
 
 
 def parse_args():
@@ -68,22 +78,27 @@ def enable_gpu():
 
 
 def set_variant(name, active):
-    """变体材质互换（active=True 套用 / False 还原）。REWORK #5/#28。"""
+    """变体材质互换（active=True 套用 / False 还原）。REWORK_R1FIX F1/F2。
+    按 obj['variant_group'] 圈定对象，遍历全部 slots，按材质基础名匹配替换。
+    替换数为 0 时 raise（不许静默渲出未变体的图）。"""
     if name not in VARIANT_PAIRS:
         return 0
     base, var = VARIANT_PAIRS[name]
     src, dst = (var, base) if not active else (base, var)
     m_dst = bpy.data.materials.get(dst)
     if m_dst is None:
-        print('[render][warn] variant material missing: %s' % dst)
-        return 0
+        have = sorted({m.name for m in bpy.data.materials})[:20]
+        raise RuntimeError('[render] variant material missing: %s (blend has %s...)'
+                           % (dst, have))
     n = 0
     for o in bpy.data.objects:
-        if o.type == 'MESH' and o.material_slots:
-            slot = o.material_slots[0]
-            if slot.material and slot.material.name == src:
+        if o.type != 'MESH' or o.get('variant_group') != name:
+            continue
+        for slot in o.material_slots:
+            if slot.material and _base_name(slot.material) == src:
                 slot.material = m_dst
                 n += 1
+                break   # 每对象换一次即可（同一基准材质只挂一个 slot）
     return n
 
 
@@ -185,6 +200,10 @@ def main():
                               'final' if preset == 'final' else
                               ('pano' if preset == 'pano_final' else 'preview'))
         prefix_out = ''
+    # REWORK_R1FIX 第 1 节：8bit RGB（无 alpha）输出
+    scene.render.image_settings.file_format = 'PNG'
+    scene.render.image_settings.color_mode = 'RGB'
+    scene.render.image_settings.color_depth = '8'
     os.makedirs(outdir, exist_ok=True)
     util.set_scheme_visibility(scene, opts['scheme'])
 
@@ -221,7 +240,12 @@ def main():
         variant = opts['variant'] or cam.get('variant')
         nv = 0
         if variant:
+            # REWORK_R1FIX F1/F2：关 Persistent Data 防材质缓存；0 objs 直接 raise
+            scene.cycles.use_persistent_data = False
             nv = set_variant(variant, True)
+            if nv == 0:
+                raise RuntimeError('[render] variant %s matched 0 objects on cam %s'
+                                   % (variant, cam_prefix))
         base = opts['out'] if opts['out'] else ('%s%s' % (prefix_out, cid))
         out = os.path.join(outdir, '%s.png' % base)
         scene.render.filepath = out
@@ -232,6 +256,7 @@ def main():
                (' variant=%s(%d objs)' % (variant, nv)) if variant else ''))
         if variant:
             set_variant(variant, False)
+            scene.cycles.use_persistent_data = True
         if res is not None:
             assert_output_size(out, res)
     if ceil_coll is not None:

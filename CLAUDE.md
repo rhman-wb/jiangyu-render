@@ -342,7 +342,7 @@ jiangyu-render/
 
 - 引擎 Cycles；Light Paths：Max Bounces 8（Diffuse 4、Glossy 4、Transmission 8、Transparent 8），Clamp Indirect 8；Light Tree 开；Persistent Data 开。
 - 如果单张 final 超过 15 分钟：先降 samples 到 192 并提高噪波阈值到 0.03，仍超时再告诉业主，不要自行降低分辨率。
-- 文件输出：PNG，16 bit，sRGB（AgX 视图变换烘入）。命名：`renders/final/<camera_id>.png`、`renders/pano/<camera_id>.png`，预览在 `renders/preview/`。
+- 文件输出：PNG，**8 bit、RGB 三通道（无 alpha）**，sRGB（AgX 视图变换烘入）。鸟瞰图如需透明底，先合成到浅色底再存 RGB。（REWORK_R1FIX 变更：原"16 bit"经实测从不生效且无必要，业主同意 8bit RGB。）命名：`renders/final/<camera_id>.png`、`renders/pano/<camera_id>.png`，预览在 `renders/preview/`。
 
 ---
 
