@@ -707,7 +707,7 @@ def build_all_materials():
     # 孩子房材质统一移至 REWORK 色板块（下方）
     mats['plant_leaf'] = base_mat('plant_leaf', '4E6E3A', 0.5)
     mats['plant_pot'] = mats['ceramic_brick']
-    mats['gap_dark'] = base_mat('gap_dark', '2E2A26', 0.85)   # R2 #10 门缝深色背板
+    mats['gap_dark'] = base_mat('gap_dark', '3A3530', 0.85)   # R2FIX M1 门缝深色背板
     # R2 #14 藤编单椅：藤色 + 两组正交细密 Wave 叠加成编织 bump
     mats['rattan'] = base_mat('rattan', 'B49B72', 0.75)
     rb = _bsdf(mats['rattan'])
@@ -789,6 +789,7 @@ ROLE_TO_MATERIAL = {
     'door_frame_wood': 'walnut',
     'gap_dark': 'gap_dark',                           # R2 #10 门缝深色背板
     'rattan': 'rattan',                               # R2 #14 藤编
+    'ceramic_brick': 'ceramic_brick',                 # R2FIX m1 陶罐（砖红釉）
     'niche_oat': 'tile_bath_oat',                     # R2 #11 主卫壁龛内衬
     'niche_beige': 'tile_bath_beige',                 # R2 #11 公卫壁龛内衬
     'door_leaf_wood': 'walnut',

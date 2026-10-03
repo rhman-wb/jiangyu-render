@@ -486,20 +486,49 @@ def build_pendant_lamp(item, mats, coll):
 
 
 def build_floor_lamp(item, mats, coll):
-    """弧形落地灯：立杆 + 弯臂（斜杆）+ 灯罩。"""
+    """R2FIX m2 弧形落地灯：圆盘底座 + Bezier 弧形细杆（弯向沙发侧上方）+
+    半球乳白灯罩悬于杆端。旧版两根断开的竖直圆柱+悬空直筒罩废弃。"""
     cid = item['id']
     c = item['center']
-    r = item['radius']
     z0 = item.get('z_base', 0.0)
     h = item['height']
     root = R(item, mats, coll)
-    cyl(root, cid + '_pole', c, 0.015, z0, z0 + h * 0.8, coll, mats['dark'],
+    # 圆盘底座
+    cyl(root, cid + '_base', c, 0.15, z0, z0 + 0.02, coll, mats['dark'],
         role='metal_black')
-    cyl(root, cid + '_arm', (c[0] + 0.25, c[1]), 0.012, z0 + h * 0.78, z0 + h - 0.02,
-        coll, mats['dark'], role='metal_black')
-    o = cyl(root, cid + '_shade', (c[0] + 0.42, c[1]), 0.14, z0 + h - 0.30, z0 + h,
-            coll, mats['white'], role='opal_glass')
-    # 灯罩锥形（白模直筒即可）
+    # 弧形细杆：Bezier 三段（立直 -> 弯弧 -> 水平悬伸），bevel 成 Ø24mm 杆
+    cu = bpy.data.curves.new(cid + '_arc', 'CURVE')
+    cu.dimensions = '3D'
+    sp = cu.splines.new('BEZIER')
+    sp.bezier_points.add(2)
+    pts = [(c[0], c[1], z0),
+           (c[0], c[1], z0 + h * 0.60),
+           (c[0] + 0.16, c[1], z0 + h * 0.92),
+           (c[0] + 0.46, c[1], z0 + h * 0.97)]
+    for bp, p in zip(sp.bezier_points, pts):
+        bp.co = p
+        bp.handle_left_type = bp.handle_right_type = 'AUTO'
+    cu.bevel_depth = 0.012
+    arc = bpy.data.objects.new(cid + '_arc', cu)
+    arc.data.materials.append(mats['dark'])
+    arc['role'] = 'metal_black'
+    coll.objects.link(arc)
+    arc.parent = root
+    # 半球灯罩（开口朝下，悬于杆端）
+    import bmesh
+    me = bpy.data.meshes.new(cid + '_shade_mesh')
+    bm = bmesh.new()
+    bmesh.ops.create_uvsphere(bm, u_segments=24, v_segments=12, radius=0.16)
+    bmesh.ops.delete(bm, geom=[v for v in bm.verts if v.co.z < -0.001],
+                     context='VERTS')
+    bm.to_mesh(me)
+    bm.free()
+    so = bpy.data.objects.new(cid + '_shade', me)
+    so.location = (c[0] + 0.46, c[1], z0 + h * 0.97 - 0.06)
+    so.data.materials.append(mats['white'])
+    so['role'] = 'opal_glass'
+    coll.objects.link(so)
+    so.parent = root
     return root
 
 
@@ -750,12 +779,14 @@ def build_dressing_table(item, mats, coll):
         coll, mats['wood'], role='wood')
     for p in item.get('parts', []):
         pb = p['bbox']
-        box(root, cid + '_upper', tuple(pb['min']), tuple(pb['max']), coll,
+        # R2FIX M1-0：吊柜体前脸缩到门板内皮（原 body 前皮盖门板 5mm）
+        box(root, cid + '_upper', (pb['min'][0], pb['min'][1], pb['min'][2]),
+            (pb['max'][0] - 0.025, pb['max'][1], pb['max'][2]), coll,
             mats['white'], role='cabinet_box')
         B.add_fronts(root, cid, coll, mats['white'], 'x', pb['max'][0] - 0.005, -1,
                      pb['min'][1], pb['max'][1], pb['min'][2] + 0.02,
-                     pb['max'][2] - 0.02, 'door', max_w=0.35, pulls=True,
-                     pull_mat=mats['dark'], role='cabinet_front')
+                     pb['max'][2] - 0.02, 'door', max_w=0.35, framed=True,
+                     pulls=True, pull_mat=mats['dark'], role='cabinet_front')
     # 镜子（台面与吊柜之间，贴墙）
     box(root, cid + '_mirror', (x0 + 0.01, (y0 + y1) / 2 - 0.28, 0.85),
         (x0 + 0.035, (y0 + y1) / 2 + 0.28, 1.35), coll, mats['mirror'],
@@ -960,11 +991,42 @@ def _fx_props(mats, colls):
     sph(None, 'fx_bc_pot', (3.62, -9.4, 1.96), 0.06, c, mats['white'], role='vase_white')
     # B 整墙柜开放格：书 + 孩子作品（REWORK #2 → SCHEME_B）
     cb = colls['scheme_b']
-    for i, y in enumerate((-9.9, -9.3, -8.7, -8.1, -7.5, -6.9, -6.3, -5.8)):
-        box(None, 'fx_B_shelf_book%d' % i, (8.99, y - 0.11, 1.08), (9.16, y + 0.11, 1.32),
-            cb, mats['white' if i % 2 else 'wood'], role='book')
-        box(None, 'fx_B_shelf_toy%d' % i, (8.99, y - 0.1 + 0.5, 0.98), (9.14, y + 0.1 + 0.5, 1.12),
-            cb, mats['wood'] if i % 3 else mats['dark'], role='toy')
+    # R2FIX m1：B 开放格摆件重做——彩色方块换成可辨识物件：
+    # 书组（3-6 本/组、高矮不一、低饱和书脊、部分平放叠置）/ 陶罐 / 唱片+支架，
+    # 每格 1-3 组留白。书脊色即四种点缀/软装低饱和色（role 复用）。
+    spine_roles = ('fabric_oat', 'leather_caramel', 'fabric_olive', 'pillow_brick')
+    shelf_y = (-9.9, -9.3, -8.7, -8.1, -7.5, -6.9, -6.3, -5.8)
+    for i, y in enumerate(shelf_y):
+        kind = i % 3
+        if kind == 0:                       # 书组：5 本直立 + 顶上 2 本平放
+            nb = 5
+            th = 0.032
+            for k in range(nb):
+                bh = 0.20 + 0.02 * ((i + k) % 3)
+                yy = y - 0.12 + k * th
+                box(None, 'fx_Bs%d_b%d' % (i, k), (8.99, yy, 1.06),
+                    (9.15, yy + th, 1.06 + bh), cb, mats['white'],
+                    role=spine_roles[(i + k) % 4])
+            for k in range(2):              # 平放叠置
+                box(None, 'fx_Bs%d_f%d' % (i, k), (8.99, y - 0.10 + k * 0.012, 1.06 + 0.22 + k * 0.032),
+                    (9.15, y + 0.12 - k * 0.02, 1.06 + 0.22 + (k + 1) * 0.032), cb,
+                    mats['white'], role=spine_roles[(i + k + 1) % 4])
+        elif kind == 1:                     # 陶罐（旋转体：罐身+颈+沿口）
+            pot = 'ceramic_brick' if i % 2 else 'vase_white'
+            cyl(None, 'fx_Bs%d_pot' % i, (9.075, y), 0.085, 0.94, 1.10, cb,
+                mats['white'], verts=20, role=pot)
+            cyl(None, 'fx_Bs%d_neck' % i, (9.075, y), 0.045, 1.10, 1.20, cb,
+                mats['white'], verts=20, role=pot)
+            cyl(None, 'fx_Bs%d_lip' % i, (9.075, y), 0.062, 1.20, 1.225, cb,
+                mats['white'], verts=20, role=pot)
+        else:                               # 唱片：立放圆盘 x3 + 小支架
+            for k in range(3):
+                d = cyl(None, 'fx_Bs%d_rec%d' % (i, k), (9.075, y - 0.05 + k * 0.05),
+                        0.10, 1.10, 1.106, cb, mats['dark'], verts=24,
+                        role='metal_black')
+                d.rotation_euler = (0.0, math.radians(90), 0.0)
+            box(None, 'fx_Bs%d_recstand' % i, (8.99, y - 0.10, 1.06),
+                (9.15, y + 0.10, 1.085), cb, mats['wood'], role='wood')
     # 主卧书桌上方开放格：书 + 小件
     for i, y in enumerate((-6.3, -5.8)):
         box(None, 'fx_desk_book%d' % i, (12.46, y - 0.1, 1.5), (12.66, y + 0.1, 1.74),

@@ -1814,17 +1814,18 @@
    "shape": "box",
    "bbox": {
     "min": [
-     9.1,
-     -2.25,
+     9.05,
+     -1.85,
      0.0
     ],
     "max": [
-     9.5,
-     -1.55,
+     9.75,
+     -1.45,
      0.45
     ]
    },
-   "stage1_color": "#FAFAFA"
+   "stage1_color": "#FAFAFA",
+   "note": "| R2FIX M5（复核方授权修改）：包络盒更正为西墙水箱、面朝东"
   },
   {
    "id": "common_terrace_coffee_table_01",

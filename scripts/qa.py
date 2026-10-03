@@ -254,10 +254,10 @@ def check_counts():
         log('FAIL', 'floors mismatch missing=%s extra=%s' %
             (expect_floors - floor_ids, floor_ids - expect_floors))
     ncam = len([o for o in bpy.data.objects if o.type == 'CAMERA'])
-    if ncam == 25:   # REWORK：23 + 16b 对比 + REWORK_R1FIX2 F3 CAL_wood_door 校准机位
+    if ncam == 28:   # REWORK：23 + 16b + CAL + R2FIX M1 柜门特写 ×3
         log('PASS', 'cameras %d' % ncam)
     else:
-        log('FAIL', 'cameras %d != 25' % ncam)
+        log('FAIL', 'cameras %d != 28' % ncam)
     markers = [o.name for o in bpy.data.objects if 'marker' in o.name.lower()]
     if markers:
         log('FAIL', 'marker objects built: %s' % markers[:3])
@@ -372,16 +372,20 @@ def check_items_bbox():
         typ = item.get('type')
         z_extra = {'sink': 0.40, 'pendant_lamp': 0.60, 'bed': 0.15,
                    'desk': 0.40, 'cushion': 0.35, 'artwork': 0.10,
-                   'vanity': 0.30}.get(typ, 0.0)   # R2 #11：vanity 鹅颈龙头高出 ~0.28
+                   'vanity': 0.30, 'floor_lamp': 0.10}.get(typ, 0.0)   # R2FIX m2 弧形灯罩高出
         z_top_allow = z_extra + 0.03
         # R2 #15：bookcase 矮台外凸 5cm（REWORK #15 明确要求，铁律 ±2cm 容差内）；
-        # R2 #11：vanity 龙头/盆沿南缘出界 ~0.17（同水槽龙头先例，spec 5.8 功能件）
-        xy_allow = 0.65 if typ == 'floor_lamp' else (
-            0.025 if typ == 'bookcase' else (0.20 if typ == 'vanity' else 0.0))
+        # R2 #11：vanity 龙头/盆沿南缘出界 ~0.17（同水槽龙头先例，spec 5.8 功能件）；
+        # R2FIX M3：水槽台下盆沿口/盆体水平出界 ~0.06（规格要求，z 豁免同理）
+        xy_extra = 0.08 if typ == 'sink' else 0.0
+        xy_allow = xy_extra + (0.65 if typ == 'floor_lamp' else (
+            0.025 if typ == 'bookcase' else (0.20 if typ == 'vanity' else 0.0)))
         bad = []
         for a in range(3):
             tol_out = 0.005 + (z_top_allow if a == 2 else xy_allow)
             tol_lo = 0.005 + (0 if a == 2 else xy_allow)
+            if typ == 'sink' and a == 2:
+                tol_lo = 0.005 + 0.25   # R2FIX M3：台下盆下沉 0.2m（盆体入柜体）
             if cmin[a] < ibmin[a] - tol_lo or cmax[a] > ibmax[a] + tol_out:
                 bad.append('axis%d out (%.3f..%.3f vs %.3f..%.3f)'
                            % (a, cmin[a], cmax[a], ibmin[a], ibmax[a]))

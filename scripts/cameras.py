@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 # cameras.py —— 读 cameras.json 建 23 个机位。
 # 规则（cameras.json meta）：透视机位两点透视（水平，shift_y 调构图）；
 # 鸟瞰允许俯视（Track To）；PANO 用 EQUIRECT（Blender 4.0+ 在 camera.data）。
@@ -27,21 +27,25 @@ CAM_OVERRIDES = {
                            'shift_y': -0.10,
                            'exposure': 2.25},
     # --- 曝光初值（其余机位）---
-    '01_aerial_A': {'exposure': 0.85},
-    '02_aerial_B': {'exposure': 0.85},
+    '01_aerial_A': {'exposure': 1.15},   # R2FIX m4：+0.3 提亮浅色纯底
+    '02_aerial_B': {'exposure': 1.15},
     '04_living_A_from_balcony': {'exposure': 1.80},
     '05_living_A_tv_wall': {'exposure': 1.55},
     '07_living_B_from_balcony': {'exposure': 1.80},
     '08_living_B_tv_wall': {'exposure': 1.80},
-    '09_kitchen_walnut': {'exposure': 1.60},
-    '10_kitchen_olive': {'exposure': 1.60},
+    '09_kitchen_walnut': {'exposure': 2.25},   # R2FIX：厨房补光停用后由世界光承担，+0.65 档
+    '10_kitchen_olive': {'exposure': 2.25},
     '12_master_bed_screen': {'exposure': 1.75},
     '13_master_wardrobe_vanity': {'exposure': 2.30},
     '14_parents_room': {'exposure': 1.40},
     '15_daughter_room': {'exposure': 1.95},   # 北向无直射光
     '17_public_bath_dry': {'exposure': 1.90},
     '19_master_bath': {'exposure': 2.10},
-    '20_terrace': {'exposure': 0.75},
+    '20_terrace': {'exposure': 0.75,
+                   # R2FIX m3：东栏杆外回拍——双藤椅+圆桌居中入画（原机位 plant_03
+                   # 投影叠在椅/桌上，且藤椅不入画）；俯角 18.8°（qa 投影验证）
+                   'location': (13.70, -11.60, 1.50), 'look_at': (10.80, -11.20, 0.50),
+                   'lens': 24, 'tilt_deg': 18.8, 'shift_y': -0.10},
     'P1_living_A_pano': {'exposure': 1.75},
     'P2_living_B_pano': {'exposure': 1.75},
     'P3_master_pano': {'exposure': 1.95},
@@ -146,4 +150,32 @@ def build_all(coll):
     cam['description'] = 'F3 wood calibration: W19 parents door face at 1.2m lens50'
     cam['exposure'] = 1.80   # 校准定版后记录 render_log
     made.append(cam)
+
+    # R2FIX M1：柜门特写机位 ×3（门缝/细边框/拉手近观；距离按"全宽入画"微调记录）
+    cab_specs = [
+        # (名, 相机位, look_at, lens, 方案, 曝光) —— 主卧衣柜前皮 x≈9.85 全宽 2.85
+        ('CAB_master_wardrobe', (12.15, -7.675, 1.30), (9.85, -7.675, 1.30), 28, 'A', 1.75),
+        # B 整墙柜前皮 x≈8.75，中段（上下柜全高）
+        ('CAB_B_wall', (6.55, -7.75, 1.30), (9.20, -7.75, 1.30), 24, 'B', 1.80),
+        # 玄关端景柜前皮 y≈-6.20，全宽 1.45（含上下段与中段开放格）
+        ('CAB_foyer', (2.675, -4.90, 1.70), (2.675, -6.20, 1.70), 24, 'A', 2.10),
+    ]
+    for nm, loc, look, lens, sch, exp in cab_specs:
+        cd = bpy.data.cameras.new('cd_' + nm)
+        cd.sensor_fit = 'HORIZONTAL'
+        cd.sensor_width = 36.0
+        cd.lens = lens
+        cd.clip_start = 0.02
+        cd.clip_end = 300.0
+        cam = bpy.data.objects.new('cam_' + nm, cd)
+        coll.objects.link(cam)
+        cam.location = loc
+        yaw = math.atan2(-(look[0] - loc[0]), look[1] - loc[1])
+        cam.rotation_euler = (math.radians(90), 0.0, yaw)   # 水平，竖线竖直
+        cam['cam_id'] = nm
+        cam['scheme'] = sch
+        cam['cam_type'] = 'PERSP'
+        cam['description'] = 'R2FIX M1 cabinet close-up'
+        cam['exposure'] = exp
+        made.append(cam)
     return made

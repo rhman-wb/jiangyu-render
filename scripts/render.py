@@ -164,11 +164,13 @@ def setup_workbench(scene):
 
 
 def find_cam(prefix):
-    """机位匹配：相机名 cam_<id>，要求 id 首段（下划线前）与 prefix 完全相等。"""
+    """机位匹配：相机名 cam_<id>；前缀与 id 首段相等，或与完整 id 相等
+    （R2FIX M1：多词特写机位 id 如 CAB_master_wardrobe）。"""
     for o in bpy.data.objects:
         if o.type != 'CAMERA' or not o.name.startswith('cam_'):
             continue
-        if o.name[4:].split('_')[0] == prefix:
+        tail = o.name[4:]
+        if tail == prefix or tail.split('_')[0] == prefix:
             return o
     return None
 
@@ -242,6 +244,13 @@ def main():
             scene.view_settings.exposure = cam.get('exposure', 0.0)
         if ceil_coll is not None:
             ceil_coll.hide_render = bool(cam.get('hide_ceilings', False))
+        # R2FIX m4：鸟瞰机位切换浅色纯底（隐草地显 base），非鸟瞰恢复
+        aerial_base = bpy.data.objects.get('out_aerial_base')
+        ground = bpy.data.objects.get('out_ground')
+        if aerial_base is not None and ground is not None:
+            aerial = bool(cam.get('hide_ceilings', False))
+            aerial_base.hide_render = not aerial
+            ground.hide_render = aerial
         cid = cam.get('cam_id', cam_prefix)
         # 变体：CLI 显式优先，否则用机位自带（10 橄榄绿 / 16b 雾霾蓝）
         variant = opts['variant'] or cam.get('variant')
@@ -268,6 +277,12 @@ def main():
             assert_output_size(out, res)
     if ceil_coll is not None:
         ceil_coll.hide_render = False
+    aerial_base = bpy.data.objects.get('out_aerial_base')
+    ground = bpy.data.objects.get('out_ground')
+    if aerial_base is not None:
+        aerial_base.hide_render = True
+    if ground is not None:
+        ground.hide_render = False
     scene.view_settings.exposure = 0.0
 
 

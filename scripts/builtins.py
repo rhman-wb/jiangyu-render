@@ -12,6 +12,7 @@ M2_TYPES = {
     'range_hood', 'mirror_door', 'laundry_cabinet', 'bookcase', 'vanity',
     'mirror_cabinet', 'toilet', 'glass_partition', 'screen', 'fridge',
     'tv_cabinet', 'glass_sliding_door', 'shower_floor', 'island',
+    'wardrobe',   # R2FIX M1：主卧/父母房衣柜归 M2 白柜体系（原误走孩子房构建器→米色平板）
 }
 M2_WARDROBE_ROOMS = {'master_bedroom', 'parents_room'}
 COVERED = {'common_parents_room_bay_seat_01': 'bay_platform',
@@ -119,34 +120,50 @@ def _front_plane(bmin, bmax, room=None):
 
 
 def add_fronts(root, cid, coll, mat, axis, face, inward, a0, a1, z0, z1, tag,
-               max_w=0.45, gap=0.0025, t=0.02, pulls=True, pull_mat=None,
-               pull_len=0.30, role='cabinet_front', pull_role='metal_black'):
+               max_w=0.45, gap=0.003, t=0.02, pulls=True, pull_mat=None,
+               pull_len=0.30, role='cabinet_front', pull_role='metal_black',
+               framed=False, backer=True):
     """门板阵列：沿 a 轴等分；法向 axis；面板外皮在 face、向内伸 t；拉手凸出 ≤4mm。
-    role/pull_role：面板与拉手的语义角色（REWORK 4.1，决定最终材质）。
-    R2 #10：gap 0.0025（2.5mm 深缝）+ 门板区整块深色背板（内缩缝深处 3mm），
-    缝里读出暗线（白柜上"露柜体本色"不可辨的旧病根）。"""
+    R2FIX M1：缝 3mm；门板后 10mm 深色背板 #3A3530（缝读作清晰暗线）；
+    framed=True 奶白门 40mm 外框 + 芯板内凹 3mm（实际几何）；backer=False 用于
+    推拉门（前后错开无缝）。调用方须先 _recess_front 后退 body 前脸。"""
     n = max(1, round((a1 - a0) / max_w))
     w = (a1 - a0) / n
     n_lo, n_hi = (face - t, face) if inward < 0 else (face, face + t)
     p_lo, p_hi = (face, face + 0.004) if inward < 0 else (face - 0.004, face)
-    gm = bpy.data.materials.get('gap_dark')
-    if gm is not None:
-        blo, bhi = (face - 0.006, face - 0.003) if inward < 0 else (face + 0.003, face + 0.006)
+    if backer:
+        blo, bhi = (face - 0.013, face - 0.010) if inward < 0 else (face + 0.010, face + 0.013)
         if axis == 'y':
             gb0, gb1 = (a0, blo, z0), (a1, bhi, z1)
         else:
             gb0, gb1 = (blo, a0, z0), (bhi, a1, z1)
-        child(root, '%s_%s_gapbg' % (cid, tag), gb0, gb1, coll, gm, role='gap_dark')
+        # R2FIX 复测修正：白模阶段 bpy.data 里没有 gap_dark（正式材质 apply_all 才建），
+        # 原 bpy.data.materials.get 恒为 None → 深色背板从未建出。改为 role 交给 apply_all。
+        child(root, '%s_%s_gapbg' % (cid, tag), gb0, gb1, coll, None, role='gap_dark')
     for i in range(n):
         ua = a0 + i * w + gap / 2
         ub = a0 + (i + 1) * w - gap / 2
         zin, zout = z0 + gap / 2, z1 - gap / 2
-        if axis == 'y':
-            bmin_, bmax_ = (ua, n_lo, zin), (ub, n_hi, zout)
+
+        def panel(nm, pa, pb, pz0, pz1, recess=0.0):
+            b0_, b1_ = (n_lo, n_hi - recess) if inward < 0 else (n_lo + recess, n_hi)
+            if axis == 'y':
+                bb0, bb1 = (pa, b0_, pz0), (pb, b1_, pz1)
+            else:
+                bb0, bb1 = (b0_, pa, pz0), (b1_, pb, pz1)
+            child(root, '%s_%s_%s' % (cid, tag, nm), bb0, bb1, coll, mat,
+                  bevel=0.003, role=role)
+
+        if framed and (ub - ua) > 0.10 and (zout - zin) > 0.10:
+            # R2FIX M1 奶白细边框门：40mm 外框 + 芯板内凹 3mm（实际几何）
+            fw = 0.04
+            panel('fl%d' % i, ua, ua + fw, zin, zout)
+            panel('fr%d' % i, ub - fw, ub, zin, zout)
+            panel('fb%d' % i, ua + fw, ub - fw, zin, zin + fw)
+            panel('ft%d' % i, ua + fw, ub - fw, zout - fw, zout)
+            panel('fc%d' % i, ua + fw, ub - fw, zin + fw, zout - fw, recess=0.003)
         else:
-            bmin_, bmax_ = (n_lo, ua, zin), (n_hi, ub, zout)
-        child(root, '%s_%s_f%d' % (cid, tag, i), bmin_, bmax_, coll, mat,
-              bevel=0.003, role=role)
+            panel('f%d' % i, ua, ub, zin, zout)
         if pulls:
             pm = pull_mat if pull_mat else mat
             hl = min(pull_len, (zout - zin) * 0.6)
@@ -206,25 +223,38 @@ def _goose_faucet(root, name, base_xy, fdir, zt, coll, mats):
 
 
 # ---------------------------------------------------------------- 建模器
+def _recess_front(bmin, bmax, axis, face, inward, t=0.025):
+    """R2FIX M1-0 根因修复：柜体盒前脸缩到门板内皮——body 前皮原本比门板外皮
+    凸约 5mm，把门板/背板/镜面整面盖死（13/11/08"一整块平板"与镜面不显同源）。"""
+    b0, b1 = list(bmin), list(bmax)
+    k = 0 if axis == 'x' else 1
+    if inward > 0:
+        b0[k] = max(b0[k], face + t)
+    else:
+        b1[k] = min(b1[k], face - t)
+    return tuple(b0), tuple(b1)
+
+
 def build_wardrobe(item, mats, coll, box_role='cabinet_box', front_role='cabinet_front'):
     cid = item['id']
     bmin, bmax = item['bbox']['min'], item['bbox']['max']
     root = item_root(item, coll)
-    child(root, cid + '_body', bmin, bmax, coll, mats['white'], role=box_role)
     axis, face, inward = _front_plane(bmin, bmax, item.get('room'))
+    bmin, bmax = _recess_front(bmin, bmax, axis, face, inward)
+    child(root, cid + '_body', bmin, bmax, coll, mats['white'], role=box_role)
     a0, a1 = (bmin[1], bmax[1]) if axis == 'x' else (bmin[0], bmax[0])
     if item['room'] == 'master_bedroom':
         add_fronts(root, cid, coll, mats['white'], axis, face, inward, a0, a1,
-                   0.05, bmax[2] - 0.04, 'door', max_w=0.42,
+                   0.05, bmax[2] - 0.04, 'door', max_w=0.42, framed=True,
                    pull_mat=mats['dark'], role=front_role)
-    else:  # 父母房推拉门：双轨两排
+    else:  # 父母房推拉门：双轨两排（前后错开，无缝无背板）
         f_in = face + 0.023 * inward
         add_fronts(root, cid, coll, mats['white'], axis, face, inward, a0, a1,
                    0.05, bmax[2] - 0.04, 'slA', max_w=0.70, pulls=False,
-                   role=front_role)
+                   backer=False, role=front_role)
         add_fronts(root, cid, coll, mats['white'], axis, f_in, inward,
                    a0 + 0.05, a1 - 0.05, 0.05, bmax[2] - 0.04, 'slB',
-                   max_w=0.70, pulls=False, role=front_role)
+                   max_w=0.70, pulls=False, backer=False, role=front_role)
 
 
 def build_cabinet(item, mats, coll, params=None):
@@ -235,12 +265,18 @@ def build_cabinet(item, mats, coll, params=None):
     mat = params.get('mat', mats['white'])
     box_role = params.get('box_role', 'cabinet_box')
     front_role = params.get('front_role', 'cabinet_front')
-    child(root, cid + '_body', bmin, bmax, coll, mat, role=box_role)
     axis, face, inward = _front_plane(bmin, bmax, item.get('room'))
+    bmin, bmax = _recess_front(bmin, bmax, axis, face, inward)
+    child(root, cid + '_body', bmin, bmax, coll, mat, role=box_role)
     a0, a1 = (bmin[1], bmax[1]) if axis == 'x' else (bmin[0], bmax[0])
+    # R2FIX M1：奶白门细边框；玄关柜/B 整墙柜短拉手 120mm；B 墙柜每段 ~10 扇
+    framed = params.get('framed', True)
+    pull_len = params.get('pull_len', 0.12 if (cid.startswith('common_foyer') or
+                                               cid.startswith('B_living')) else 0.30)
+    max_w = params.get('max_w', 0.50 if cid.startswith('B_living') else 0.45)
     add_fronts(root, cid, coll, mat, axis, face, inward, a0, a1,
                bmin[2] + 0.02, bmax[2] - 0.02, 'door',
-               max_w=params.get('max_w', 0.45),
+               max_w=max_w, framed=framed, pull_len=pull_len,
                pulls=params.get('pulls', True), pull_mat=mats.get('dark'),
                role=front_role)
 
@@ -316,11 +352,27 @@ def build_kitchen_counter(item, mats, coll):
     bmin, bmax = item['bbox']['min'], item['bbox']['max']
     root = item_root(item, coll)
     # REWORK #5：柜身/侧板/踢脚一并挂 kitchen_front（变体切换整排下柜联动）
+    # R2FIX M1-0：柜身前脸缩到门板内皮（原 body 前皮盖门板 5mm）
+    axis, face, inward = _front_plane(bmin, bmax, item.get('room'))
+    bmin, bmax = _recess_front(bmin, bmax, axis, face, inward)
     child(root, cid + '_body', bmin, (bmax[0], bmax[1], bmax[2] - 0.04), coll,
           mats['wood'], role='kitchen_front')
     for p in item.get('parts', []):
-        child(root, cid + '_top', tuple(p['bbox']['min']), tuple(p['bbox']['max']),
-              coll, mats['white'], bevel=0.003, role='quartz_top')
+        tmin, tmax = tuple(p['bbox']['min']), tuple(p['bbox']['max'])
+        # R2FIX M3：北台面在水槽位开洞（洞 0.70x0.42，台面分段）
+        if item['id'].endswith('dishwasher_01'):
+            hx0, hx1 = 4.80, 5.50
+            hy0, hy1 = -1.71, -1.29
+            slab = lambda n, a0, a1, b0, b1: child(
+                root, cid + '_top_' + n, (a0, b0, tmin[2]), (a1, b1, tmax[2]),
+                coll, mats['white'], bevel=0.003, role='quartz_top')
+            slab('L', tmin[0], hx0, tmin[1], tmax[1])
+            slab('R', hx1, tmax[0], tmin[1], tmax[1])
+            slab('B', hx0, hx1, tmin[1], hy0)
+            slab('F', hx0, hx1, hy1, tmax[1])
+        else:
+            child(root, cid + '_top', tmin, tmax, coll, mats['white'],
+                  bevel=0.003, role='quartz_top')
     if (bmax[1] - bmin[1]) < (bmax[0] - bmin[0]):  # 北台面，门朝 -Y
         add_fronts(root, cid, coll, mats['kfront'], 'y', bmin[1] + 0.005, +1,
                    bmin[0] + 0.02, bmax[0] - 0.02, 0.12, bmax[2] - 0.06, 'drw',
@@ -334,21 +386,30 @@ def build_kitchen_counter(item, mats, coll):
 
 
 def build_sink(item, mats, coll):
-    """单槽水槽 + 鹅颈龙头（龙头靠墙侧，规格 5.4；龙头允许高出 bbox，qa 豁免）。"""
+    """R2FIX M3 厨房水槽台下盆：台面已开洞（build_kitchen_counter 切），
+    盆体下沉 0.2m（石墨黑、沿口藏于台面下），黑鹅颈龙头立于盆后沿（北侧贴墙）。"""
     cid = item['id']
     bmin, bmax = item['bbox']['min'], item['bbox']['max']
     root = item_root(item, coll)
-    child(root, cid + '_rim', bmin, bmax, coll, mats['dark'], role='sink_graphite')
-    child(root, cid + '_inner', (bmin[0] + 0.04, bmin[1] + 0.03, bmin[2] + 0.001),
-          (bmax[0] - 0.04, bmax[1] - 0.03, bmin[2] + 0.004), coll, mats['white'],
-          role='ceramic_white')
+    # 盆体（沿口略大于洞、藏于台面板厚度内）；下沉 0.2m
+    child(root, cid + '_basin', (bmin[0] - 0.02, bmin[1] - 0.02, bmin[2] - 0.22),
+          (bmax[0] + 0.02, bmax[1] + 0.02, bmax[2] - 0.025), coll, mats['dark'],
+          role='sink_graphite')
+    # 内腔（透过洞口可见的深色空腔）
+    child(root, cid + '_cav', (bmin[0] + 0.06, bmin[1] + 0.05, bmin[2] - 0.17),
+          (bmax[0] - 0.06, bmax[1] - 0.05, bmax[2] - 0.035), coll, mats['dark'],
+          role='sink_graphite')
+    # 黑鹅颈龙头（盆后沿=靠墙 y_max 一侧）
     xm = (bmin[0] + bmax[0]) / 2
-    ywall = bmax[1] - 0.08  # 北侧贴墙
-    child(root, cid + '_tap', (xm - 0.012, ywall - 0.012, bmax[2]),
-          (xm + 0.012, ywall + 0.012, bmax[2] + 0.28), coll, mats['dark'],
+    yb = bmax[1] + 0.05
+    child(root, cid + '_tap', (xm - 0.012, yb - 0.012, bmax[2] - 0.02),
+          (xm + 0.012, yb + 0.012, bmax[2] + 0.24), coll, mats['dark'],
           role='metal_black')
-    child(root, cid + '_taparm', (xm - 0.012, ywall - 0.012, bmax[2] + 0.26),
-          (xm + 0.012, ywall - 0.22, bmax[2] + 0.29), coll, mats['dark'],
+    child(root, cid + '_taparm', (xm - 0.012, yb - 0.21, bmax[2] + 0.22),
+          (xm + 0.012, yb + 0.012, bmax[2] + 0.25), coll, mats['dark'],
+          role='metal_black')
+    child(root, cid + '_taptip', (xm - 0.010, bmin[1] + 0.10, bmax[2] + 0.16),
+          (xm + 0.010, bmin[1] + 0.14, bmax[2] + 0.23), coll, mats['dark'],
           role='metal_black')
 
 
@@ -381,8 +442,9 @@ def build_vanity(item, mats, coll):
     bmin, bmax = item['bbox']['min'], item['bbox']['max']
     root = item_root(item, coll)
     top = item.get('parts', [{}])[0].get('bbox')
-    child(root, cid + '_cab', bmin, (bmax[0], bmax[1], bmax[2] - 0.04), coll,
-          mats['wood'], role='wood')
+    axis, face, inward = _front_plane(bmin, bmax, item.get('room'))
+    cbmin, cbmax = _recess_front(bmin, (bmax[0], bmax[1], bmax[2] - 0.04), axis, face, inward)
+    child(root, cid + '_cab', cbmin, cbmax, coll, mats['wood'], role='wood')
     if top:
         tmin, tmax = tuple(top['min']), tuple(top['max'])
     else:
@@ -437,38 +499,71 @@ def build_mirror_cabinet(item, mats, coll):
     cid = item['id']
     bmin, bmax = item['bbox']['min'], item['bbox']['max']
     root = item_root(item, coll)
-    child(root, cid + '_body', bmin, bmax, coll, mats['white'], role='cabinet_box')
     axis, face, inward = _front_plane(bmin, bmax, item.get('room'))
+    bmin, bmax = _recess_front(bmin, bmax, axis, face, inward)   # R2FIX M2：镜板外露
+    child(root, cid + '_body', bmin, bmax, coll, mats['white'], role='cabinet_box')
     a0, a1 = (bmin[1], bmax[1]) if axis == 'x' else (bmin[0], bmax[0])
     n2 = 0.68 if (a1 - a0) < 1.1 else 0.9
     add_fronts(root, cid, coll, mats['mirror'], axis, face, inward, a0, a1,
                bmin[2] + 0.02, bmax[2] - 0.02, 'mir', max_w=n2, pulls=False,
-               role='mirror')
+               backer=False, role='mirror')
 
 
 def build_toilet(item, mats, coll):
-    """一体智能马桶（低水箱）：底座/座圈/矮水箱，总高 ≤ bbox+3cm。"""
+    """一体智能马桶（低水箱）：底座/座圈/矮水箱，总高 ≤ bbox+3cm。
+    R2FIX M5：支持 X 轴贴墙（公卫马桶水箱靠西墙面东）——优先判 Y 墙、再判 X 墙。"""
     cid = item['id']
     bmin, bmax = item['bbox']['min'], item['bbox']['max']
     root = item_root(item, coll)
-    # 水箱贴墙一侧 = 背面
-    if _face_has_wall('y', True, bmin, bmax) or not _face_has_wall('y', False, bmin, bmax):
-        yb0, yb1 = bmax[1] - 0.20, bmax[1]   # 背面在 y_max
-        front = bmin[1]
-    else:
-        yb0, yb1 = bmin[1], bmin[1] + 0.20   # 背面在 y_min
-        front = bmax[1]
     zt = min(bmax[2] + 0.03, bmin[2] + 0.48)
-    y_lo, y_hi = sorted((yb0 + 0.02, front))
-    child(root, cid + '_base', (bmin[0] + 0.05, yb0, bmin[2]),
-          (bmax[0] - 0.05, yb1, bmin[2] + 0.18), coll, mats['white'], bevel=0.03,
-          role='ceramic_white')
-    child(root, cid + '_seat', (bmin[0] + 0.02, y_lo, bmin[2] + 0.16),
-          (bmax[0] - 0.02, y_hi, bmin[2] + 0.26), coll, mats['white'], bevel=0.04,
-          role='ceramic_white')
-    child(root, cid + '_tank', (bmin[0], yb0, bmin[2] + 0.22),
-          (bmax[0], yb1, zt), coll, mats['white'], bevel=0.02,
-          role='ceramic_white')
+    has_y_pos = _face_has_wall('y', True, bmin, bmax)
+    has_y_neg = _face_has_wall('y', False, bmin, bmax)
+    has_x_neg = _face_has_wall('x', False, bmin, bmax)
+    has_x_pos = _face_has_wall('x', True, bmin, bmax)
+    if has_y_pos or (not has_y_neg and not has_x_neg and not has_x_pos):
+        # 背面在 y_max / 默认
+        wb0, wb1 = (bmax[1] - 0.20, bmax[1])
+        lo, hi = sorted((wb0 + 0.02, bmin[1]))
+        child(root, cid + '_base', (bmin[0] + 0.05, wb0, bmin[2]),
+              (bmax[0] - 0.05, wb1, bmin[2] + 0.18), coll, mats['white'], bevel=0.03,
+              role='ceramic_white')
+        child(root, cid + '_seat', (bmin[0] + 0.02, lo, bmin[2] + 0.16),
+              (bmax[0] - 0.02, hi, bmin[2] + 0.26), coll, mats['white'], bevel=0.04,
+              role='ceramic_white')
+        child(root, cid + '_tank', (bmin[0], wb0, bmin[2] + 0.22),
+              (bmax[0], wb1, zt), coll, mats['white'], bevel=0.02,
+              role='ceramic_white')
+    elif has_x_neg or has_x_pos:
+        # R2FIX M5：背面在 x 侧（公卫：水箱靠西墙 x_min，面朝东）
+        if has_x_neg:
+            wb0, wb1 = bmin[0], bmin[0] + 0.20
+            front = bmax[0]
+        else:
+            wb0, wb1 = bmax[0] - 0.20, bmax[0]
+            front = bmin[0]
+        x_lo, x_hi = sorted((wb0 + 0.02, front))
+        child(root, cid + '_base', (wb0, bmin[1] + 0.05, bmin[2]),
+              (wb1, bmax[1] - 0.05, bmin[2] + 0.18), coll, mats['white'], bevel=0.03,
+              role='ceramic_white')
+        child(root, cid + '_seat', (x_lo, bmin[1] + 0.02, bmin[2] + 0.16),
+              (x_hi, bmax[1] - 0.02, bmin[2] + 0.26), coll, mats['white'], bevel=0.04,
+              role='ceramic_white')
+        child(root, cid + '_tank', (wb0, bmin[1], bmin[2] + 0.22),
+              (wb1, bmax[1], zt), coll, mats['white'], bevel=0.02,
+              role='ceramic_white')
+    else:
+        # 背面在 y_min
+        wb0, wb1 = bmin[1], bmin[1] + 0.20
+        lo, hi = sorted((bmax[1], wb0 + 0.02))
+        child(root, cid + '_base', (bmin[0] + 0.05, wb0, bmin[2]),
+              (bmax[0] - 0.05, wb1, bmin[2] + 0.18), coll, mats['white'], bevel=0.03,
+              role='ceramic_white')
+        child(root, cid + '_seat', (bmin[0] + 0.02, lo, bmin[2] + 0.16),
+              (bmax[0] - 0.02, hi, bmin[2] + 0.26), coll, mats['white'], bevel=0.04,
+              role='ceramic_white')
+        child(root, cid + '_tank', (bmin[0], wb0, bmin[2] + 0.22),
+              (bmax[0], wb1, zt), coll, mats['white'], bevel=0.02,
+              role='ceramic_white')
 
 
 def build_glass_partition(item, mats, coll):
@@ -519,8 +614,9 @@ def build_tv_cabinet(item, mats, coll):
     cid = item['id']
     bmin, bmax = item['bbox']['min'], item['bbox']['max']
     root = item_root(item, coll)
-    child(root, cid + '_body', bmin, bmax, coll, mats['wood'], role='wood')
     axis, face, inward = _front_plane(bmin, bmax, item.get('room'))
+    bmin, bmax = _recess_front(bmin, bmax, axis, face, inward)   # R2FIX M1-0
+    child(root, cid + '_body', bmin, bmax, coll, mats['wood'], role='wood')
     a0, a1 = (bmin[1], bmax[1]) if axis == 'x' else (bmin[0], bmax[0])
     add_fronts(root, cid, coll, mats['wood'], axis, face, inward, a0, a1,
                bmin[2] + 0.01, bmax[2] - 0.01, 'door', max_w=0.6, pulls=False,
@@ -554,16 +650,17 @@ def build_bookcase(item, mats, coll):
     bmin, bmax = item['bbox']['min'], item['bbox']['max']
     root = item_root(item, coll)
     axis, face, inward = _front_plane(bmin, bmax, item.get('room'))
+    rbmin, rbmax = _recess_front(bmin, bmax, axis, face, inward)   # R2FIX M1-0
     if '底座' in item['name']:
         # R2 #15：矮台外凸 5cm——上部柜体前皮 3.82，矮台前皮至 3.87（bbox 容差 +2cm 内）
         pbmax = (bmax[0] + 0.02, bmax[1], bmax[2])
-        child(root, cid + '_body', bmin, pbmax, coll, mats['wood'], role='wood_dark')
+        child(root, cid + '_body', rbmin, pbmax, coll, mats['wood'], role='wood_dark')
         add_fronts(root, cid, coll, mats['wood'], axis, face + 0.02, inward,
                    bmin[1] + 0.01, bmax[1] - 0.01, bmin[2] + 0.03,
                    bmax[2] - 0.02, 'drw', max_w=0.40, pulls=True,
                    pull_mat=mats['dark'], role='wood_dark')
     else:
-        child(root, cid + '_body', bmin, bmax, coll, mats['wood'], role='wood_dark')
+        child(root, cid + '_body', rbmin, rbmax, coll, mats['wood'], role='wood_dark')
         y0, y1 = bmin[1], bmax[1]
         z0, z1 = bmin[2], bmax[2]
         # 南单元（洗衣机柜侧）平开门 y0..y0+0.45
@@ -572,11 +669,11 @@ def build_bookcase(item, mats, coll):
                    pulls=True, pull_mat=mats['dark'], role='wood_dark')
         # 中段开放格 y0+0.45..y1-0.45（按 parts 即 -9.95..-9.2）
         ny0, ny1 = y0 + 0.45, y1 - 0.45
-        child(root, cid + '_niceline', (bmax[0] - 0.02, ny0 + 0.02, z0 + 0.02),
-              (bmax[0], ny1 - 0.02, z1 - 0.02), coll, mats['wood'], role='wood_dark')
+        child(root, cid + '_niceline', (rbmax[0] - 0.02, ny0 + 0.02, z0 + 0.02),
+              (rbmax[0], ny1 - 0.02, z1 - 0.02), coll, mats['wood'], role='wood_dark')
         for i, z in enumerate(_shelf_zs(z0 + 0.10, z1 - 0.10, 0.40)):
-            child(root, '%s_nsh%d' % (cid, i), (bmax[0] - 0.02, ny0 + 0.02, z),
-                  (bmax[0], ny1 - 0.02, z + 0.02), coll, mats['wood'], role='wood_dark')
+            child(root, '%s_nsh%d' % (cid, i), (rbmax[0] - 0.02, ny0 + 0.02, z),
+                  (rbmax[0], ny1 - 0.02, z + 0.02), coll, mats['wood'], role='wood_dark')
         # 北单元（端景角侧）玻璃门 y1-0.45..y1
         add_fronts(root, cid, coll, mats['glass'], axis, face, inward,
                    y1 - 0.45, y1, z0 + 0.02, z1 - 0.02, 'doorN', max_w=0.45,

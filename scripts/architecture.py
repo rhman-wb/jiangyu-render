@@ -220,7 +220,10 @@ def build_windows(layout, mats, coll):
         for k, op in enumerate([o for o in normalize_openings(w) if o['type'] == 'window']):
             a, b = op['start'], op['end']
             s, h = op['sill'], op['head']
-            fw, fd = 0.06, g['t'] * 0.8
+            # R2FIX 复测修正：框深原为墙厚 80%（居中）→ 框四周留 2cm 贯通空腔，
+            # 室外补光束灌入腔内多次反弹成"光管"，从室内侧溢出把框体+窗头墙带
+            # 打到 255，再经玻璃反射成白矩形（qa 采样框 30% 白）。框改为贯穿全墙厚。
+            fw, fd = 0.06, g['t']
             c = g['v_center']
             parts = [
                 ('bot', (a, s), (b, s + fw)),

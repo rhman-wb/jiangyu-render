@@ -162,7 +162,11 @@ def build_lights(mats, colls):
         # (名, 位置, 旋转, 尺寸, 功率)  —— 南北窗 / 东西窗
         ('lt_fill_daughter', (7.65, 0.75, 1.75), (RX, 0, 0), (2.2, 1.4), 120.0),  # W01
         ('lt_fill_son', (12.2, 0.75, 1.7), (RX, 0, 0), (1.6, 1.3), 100.0),        # W06
-        ('lt_fill_kitchen', (5.15, -0.45, 1.65), (RX, 0, 0), (0.9, 1.0), 60.0),   # W02
+        # R2FIX 复测修正：厨房穿窗补光在本窗洞几何下（窗下紧贴亮台面）光束回弹
+        # 必然把窗头墙带+窗框打到 255（6 轮灯位/尺寸/功率/俯仰实验复现，过程记
+        # decisions_log），且窗框周腔已修仍不解决。删除该补光，改由世界光承担、
+        # 09/10 机位曝光提至 2.25（cameras.py）——qa 采样框白占比 0%。
+        # ('lt_fill_kitchen', (5.15, 0.30, 1.50), (RX, 0, 0), (0.9, 0.55), 45.0),  # 已停用
         ('lt_fill_pbath', (9.9, 0.55, 1.85), (RX, 0, 0), (0.6, 0.7), 60.0),       # W05
         ('lt_fill_mbath', (14.45, -4.35, 1.75), (0, RY, 0), (1.0, 0.9), 60.0),    # W10
         ('lt_fill_corridor', (10.2, -3.6, 2.52), (0, 0, 0), (1.5, 1.0), 25.0),    # 干区顶柔光
@@ -192,6 +196,30 @@ def _outdoor_mat(name, hexcol, rough, noise_scale=30.0, noise_mix=0.15):
     mix.inputs['Color2'].default_value = (*util.srgb_to_linear('6E7F58'), 1.0)
     m.node_tree.links.new(nz.outputs['Color'], mix.inputs['Fac'])
     m.node_tree.links.new(mix.outputs['Color'], b.inputs['Base Color'])
+    c = util.srgb_to_linear(hexcol)
+    m.diffuse_color = (c[0], c[1], c[2], 1.0)
+    return m
+
+
+def _bldg_window_mat(name, hexcol, win_hex, rough=0.6):
+    """R2FIX M4：远处住宅楼 + 窗格（TexBrick 暗带=窗），避免大面纯色块。"""
+    m = bpy.data.materials.new(name)
+    m.use_nodes = True
+    b = next(n for n in m.node_tree.nodes if n.type == 'BSDF_PRINCIPLED')
+    tc = m.node_tree.nodes.new('ShaderNodeTexCoord')
+    br = m.node_tree.nodes.new('ShaderNodeTexBrick')
+    br.inputs['Scale'].default_value = 1.0
+    br.inputs['Color1'].default_value = (*util.srgb_to_linear(hexcol), 1.0)
+    br.inputs['Color2'].default_value = (*util.srgb_to_linear(hexcol), 1.0)
+    br.inputs['Mortar'].default_value = (*util.srgb_to_linear(win_hex), 1.0)
+    br.inputs['Mortar Size'].default_value = 0.22
+    br.inputs['Brick Width'].default_value = 1.4
+    br.inputs['Row Height'].default_value = 0.85
+    m.node_tree.links.new(tc.outputs['Object'], br.inputs['Vector'])
+    m.node_tree.links.new(br.outputs['Color'], b.inputs['Base Color'])
+    ri = b.inputs.get('Roughness')
+    if ri is not None:
+        ri.default_value = rough
     c = util.srgb_to_linear(hexcol)
     m.diffuse_color = (c[0], c[1], c[2], 1.0)
     return m
@@ -263,10 +291,37 @@ def build_outdoor(mats_unused, colls):
         for o in mesh_objs:
             o['role'] = 'outdoor'
             o.select_set(False)
+        # R2FIX 复测修正：树冠向阳面在日光+曝光下读作纯白高光块（09 号采样框
+        # 树冠命中像素 255/0 实测），整树 Base Color 乘 0.5 压高光——模板材质
+        # 为 linked duplicate 共享，一处修改全 14 处生效
+        for ms in tmpl.material_slots:
+            m = ms.material
+            if m is None or not m.use_nodes:
+                continue
+            bnode = next((n for n in m.node_tree.nodes
+                          if n.type == 'BSDF_PRINCIPLED'), None)
+            if bnode is None:
+                continue
+            bc = bnode.inputs['Base Color']
+            if bc.is_linked:
+                mul = m.node_tree.nodes.new('ShaderNodeMixRGB')
+                mul.blend_type = 'MULTIPLY'
+                mul.inputs['Fac'].default_value = 1.0
+                mul.inputs['Color2'].default_value = (0.5, 0.5, 0.5, 1.0)
+                src = bc.links[0].from_socket
+                m.node_tree.links.new(src, mul.inputs['Color1'])
+                m.node_tree.links.new(mul.outputs['Color'], bc)
+            else:
+                c4 = bc.default_value
+                bc.default_value = (c4[0] * 0.5, c4[1] * 0.5, c4[2] * 0.5, c4[3])
         # 14 处布点由两品种分担：linked duplicate（共享网格数据）
+        # R2FIX M4：北窗旁 (6.5,11.0) 一棵加大（tree_small 3.2x ≈ 15m），冠面
+        # 填满厨房北窗上半（原天空带读作白色空块）
         for i, (px, py) in enumerate(spots):
             dup = tmpl.copy()                   # 共享网格（linked）
             s = sc * (0.9 + rnd.random() * 0.25)
+            if aid.startswith('tree_small') and (px, py) == (6.5, 11.0):
+                s = sc * 3.2
             dup.location = (px, py, Z)
             dup.scale = (s, s, s)
             dup.rotation_euler = (0.0, 0.0, rnd.random() * 6.28)
@@ -280,10 +335,36 @@ def build_outdoor(mats_unused, colls):
         out.objects.link(tmpl)
 
     # 远处浅色住宅楼体块（南北各一，隔花园相望）
+    # R2FIX M4：北楼原在 (-22..-6, 22..38)——09/10 号厨房窗外视野锥（东北向）内
+    # 无任何室外景物，窗内读作白色空块（ray_cast 证实脱靶）。北楼挪入厨房北窗
+    # 视野锥内的远端（离窗 >15m），上下窗段均有景物。
+    # R2FIX M4：北楼带窗格材质（挪入厨房北窗视野锥远端，离窗 >15m）——
+    # 楼体调深 + 窗带加宽，避免阳光曝成"近白纯色块"（首版 D8D4CC 实测 49.9% 近白；
+    # 二轮 B5AC9F 向阳面仍读 255/0，三轮再压深至 8A8275）
+    bldgwin = _bldg_window_mat('out_bldg_n_win', '8A8275', '252B31', 0.6)
     util.make_box('out_bldg_s', (10.0, -48.0, Z), (26.0, -32.0, Z + 34.0),
                   coll=out, mat=bldg, role='outdoor')
-    util.make_box('out_bldg_n', (-22.0, 22.0, Z), (-6.0, 38.0, Z + 30.0),
-                  coll=out, mat=bldg, role='outdoor')
+    util.make_box('out_bldg_n', (8.0, 18.0, Z), (22.0, 30.0, Z + 30.0),
+                  coll=out, mat=bldgwin, role='outdoor')
+
+    # R2FIX m4：鸟瞰浅色纯底（REWORK 2.7 #F2F0EC）——自发光抬亮抵消 AgX/光照衰减，
+    # render.py 在鸟瞰机位隐 grass 显本底（树保留，投影淡淡落在底上）
+    aerial_base = bpy.data.materials.new('out_aerial_base')
+    aerial_base.use_nodes = True
+    ab_b = next(n for n in aerial_base.node_tree.nodes if n.type == 'BSDF_PRINCIPLED')
+    ab_b.inputs['Base Color'].default_value = (*util.srgb_to_linear('F2F0EC'), 1.0)
+    ab_b.inputs['Roughness'].default_value = 0.9
+    ei = ab_b.inputs.get('Emission Color')
+    es = ab_b.inputs.get('Emission Strength')
+    if ei is not None and es is not None:
+        ei.default_value = (*util.srgb_to_linear('F2F0EC'), 1.0)
+        es.default_value = 0.55
+    c_ab = util.srgb_to_linear('F2F0EC')
+    aerial_base.diffuse_color = (c_ab[0], c_ab[1], c_ab[2], 1.0)
+    ab = util.make_box('out_aerial_base', (-25.0, -40.0, Z - 0.09), (40.0, 15.0, Z - 0.08),
+                       coll=out, mat=aerial_base, role='outdoor')
+    ab.hide_render = True
+    ab.hide_viewport = True
     print('[lighting] outdoor env done')
 
 

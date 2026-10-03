@@ -84,3 +84,11 @@
 - #17 树：Poly Haven jacaranda_tree + tree_small_02（MCP 搜索/预览目选；glTF 1k 入 assets/trees/，gitignore）；构建期导入+Decimate（0.12/0.18，LOD0 3.9M/2.0M tri -> 背景用量）+ linked 复用 14 处。
 - 坑位记录：PS5.1 `>>` 重定向日志为 UTF-16LE——qa 读日志须按 BOM 自适应（qa_r2 已修）；builtins/furniture 白模阶段无正式材质——新增构建件一律 role+白模回退；主卫淋浴套装初版挂错"假墙"（x=12.68 无墙）+壁龛穿窗——按 W10 实墙/避窗重排（混水阀南段 y-5.15..-5.02、壁龛窗下 z0.60-1.12）；公卫同因避窗西移；壁龛背板初版全黑读作"黑板"——改五面砖色内衬。
 - qa.py 238 全过（豁免扩展：vanity 龙头/盆 z+xy、bookcase 外凸 xy——均规格要求）；qa_coplanar 0；qa_r2 9 PASS/0 FAIL。
+
+## R2 补修轮（2026-10-03 晚，REWORK_R2FIX 复测后全量重渲）
+
+- 设备 oneAPI Arc 核显 ｜ Cycles ｜ preview 960×540（全景 2048×1024）/ 64 samples / 阈值 0.1 / OIDN ｜ AgX Base Contrast ｜ gamma 0.90 ｜ PNG 8bit RGB ｜ seed 42
+- 本轮几何/灯光变更（详见 decisions_log D-057）：全部柜体门缝深色背板（gap_dark role）落地；窗框深度=全墙厚（消 2cm 周腔光管）；厨房穿窗补光停用；室外树 Base Color ×0.5、北楼墙色 8A8275。
+- 批次：方案 A 19 机位 + CAB_master_wardrobe/CAB_foyer（scheme A）；方案 B 02/06/07/08/P2 + CAB_B_wall；CAL 木色校准 256smp。单张 14–20s，全景约 60–90s，总批次约 12 分钟。
+- 曝光变更机位：01/02 = 1.15（m4 浅底）；09/10 = 2.25（厨房补光停用后由世界光承担）；CAB_foyer = 2.10 且机位高度 1.35→1.70（原构图竖向覆盖 0.80–1.90 装不下 z0.49–0.61/z1.94–2.06 的拉手，特写改示上段：拉手+缝+边框全可见；下段拉手以 11 号为准）。其余机位沿用 R2 定值。
+- 逐张耗时/采样与 qa 数值详见 review/qa_r2fix.md（16 PASS / 0 FAIL）、qa_r2.md（9/0 回归）、review/renders/preview/render_r2fix.log。
