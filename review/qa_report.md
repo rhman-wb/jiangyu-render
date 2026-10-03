@@ -101,7 +101,7 @@ blend: D:\ClaudeCodeProject2026\jiangyu-render\blend\jiangyu.blend
 - **PASS** opening counts {'window': 7, 'door': 8, 'glass_door': 2, 'full_opening': 1}
 - **PASS** wall dims all 71 segs (top 2.85, t=0.14/0.20)
 - **PASS** floors 12 built
-- **PASS** cameras 28
+- **PASS** cameras 29
 - **PASS** no marker objects
 - **PASS** ceiling_box bbox ((2.3500001430511475, -7.400000095367432, 2.5), (3.299999952316284, -6.62000036239624, 2.8000001907348633))
 - **PASS** ray W01 window visible (fx_curt_daughter_sheer)
@@ -112,11 +112,11 @@ blend: D:\ClaudeCodeProject2026\jiangyu-render\blend\jiangyu.blend
 - **PASS** ray W18 window visible (fx_curt_living_sheer_A)
 - **PASS** ray W23 window visible (fx_curt_parents_sheer)
 - **PASS** no floor overlap (13 slabs)
-- **PASS** item common_kitchen_dishwasher_01 bbox ok (16 parts)
+- **PASS** item common_kitchen_dishwasher_01 bbox ok (17 parts)
 - **PASS** item common_kitchen_sink_01 bbox ok (5 parts)
 - **INFO** item common_kitchen_sink_01 tap rises 0.25m above bbox (spec 5.4)
 - **PASS** item common_kitchen_dishwasher_02 bbox ok (2 parts)
-- **PASS** item common_kitchen_kitchen_counter_01 bbox ok (13 parts)
+- **PASS** item common_kitchen_kitchen_counter_01 bbox ok (17 parts)
 - **PASS** item common_kitchen_hob_01 bbox ok (3 parts)
 - **PASS** item common_kitchen_range_hood_01 bbox ok (2 parts)
 - **PASS** item common_kitchen_cabinet_01 bbox ok (20 parts)
@@ -133,8 +133,8 @@ blend: D:\ClaudeCodeProject2026\jiangyu-render\blend\jiangyu.blend
 - **PASS** item common_foyer_mirror_door_01 bbox ok (6 parts)
 - **PASS** item common_foyer_stool_01 bbox ok (5 parts)
 - **PASS** item common_elevator_hall_cabinet_01 bbox ok (8 parts)
-- **PASS** item common_living_dining_balcony_bookcase_01 bbox ok (10 parts)
-- **PASS** item common_living_dining_balcony_bookcase_02 bbox ok (11 parts)
+- **PASS** item common_living_dining_balcony_bookcase_01 bbox ok (8 parts)
+- **PASS** item common_living_dining_balcony_bookcase_02 bbox ok (18 parts)
 - **PASS** item common_living_dining_balcony_plant_01 bbox ok (9 parts)
 - **PASS** item common_living_dining_balcony_planter_01 bbox ok (1 parts)
 - **PASS** item common_living_dining_balcony_stool_01 bbox ok (3 parts)
@@ -162,8 +162,8 @@ blend: D:\ClaudeCodeProject2026\jiangyu-render\blend\jiangyu.blend
 - **PASS** item common_public_bath_wet_glass_partition_01 bbox ok (5 parts)
 - **PASS** item common_public_bath_wet_toilet_01 bbox ok (3 parts)
 - **PASS** item common_terrace_coffee_table_01 bbox ok (4 parts)
-- **PASS** item common_terrace_lounge_chair_01 bbox ok (6 parts)
-- **PASS** item common_terrace_lounge_chair_02 bbox ok (6 parts)
+- **PASS** item common_terrace_lounge_chair_01 bbox ok (13 parts)
+- **PASS** item common_terrace_lounge_chair_02 bbox ok (13 parts)
 - **PASS** item common_terrace_plant_01 bbox ok (8 parts)
 - **PASS** item common_terrace_plant_02 bbox ok (8 parts)
 - **PASS** item common_terrace_plant_03 bbox ok (8 parts)
@@ -316,7 +316,7 @@ blend: D:\ClaudeCodeProject2026\jiangyu-render\blend\jiangyu.blend
 - **PASS** scheme collections correct
 - **PASS** all 112 items built, none missing
 - **PASS** no floating furniture
-- **PASS** all 1453 meshes have role
+- **PASS** all 1500 meshes have role
 - **PASS** all roles resolvable
 - **PASS** no wood material on forbidden roles (2.4)
 - **PASS** all meshes/lights in exactly one scheme collection

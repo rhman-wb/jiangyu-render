@@ -92,3 +92,11 @@
 - 批次：方案 A 19 机位 + CAB_master_wardrobe/CAB_foyer（scheme A）；方案 B 02/06/07/08/P2 + CAB_B_wall；CAL 木色校准 256smp。单张 14–20s，全景约 60–90s，总批次约 12 分钟。
 - 曝光变更机位：01/02 = 1.15（m4 浅底）；09/10 = 2.25（厨房补光停用后由世界光承担）；CAB_foyer = 2.10 且机位高度 1.35→1.70（原构图竖向覆盖 0.80–1.90 装不下 z0.49–0.61/z1.94–2.06 的拉手，特写改示上段：拉手+缝+边框全可见；下段拉手以 11 号为准）。其余机位沿用 R2 定值。
 - 逐张耗时/采样与 qa 数值详见 review/qa_r2fix.md（16 PASS / 0 FAIL）、qa_r2.md（9/0 回归）、review/renders/preview/render_r2fix.log。
+
+## R2 第二次补修轮（2026-10-03 深夜，REWORK_R2FIX2 · N1-N3）
+
+- 设备与档位同 R2FIX（preview 64smp / AgX Base Contrast / 8bit RGB / seed 42）
+- 渲染范围（工单清单）：A 方案 03/04/07*/09/10/20/P1 + 新增 CAB_west_bookcase（*07 为 B 方案机位，单独以 --scheme B 渲染）；B 方案 P2。单张 11-20s。
+- 机位变更：20 号按工单移入露台 (9.65,-10.5,1.5)→(11.6,-11.7,0.6) lens18（exp 0.75 不变）；新增 CAB_west_bookcase (5.82,-9.575,1.30)→(3.82,-9.575,1.30) lens28 exp1.80 shift_y-0.15。其余机位参数不动。
+- 几何/灯光变更详见 decisions_log D-058（西墙柜真腔+清玻璃门+灯带、露台休闲椅、厨房灶下抽屉/短拉手/洗碗机对缝）。
+- 验收：qa_r2fix2 23 PASS / 0 FAIL；qa.py 238/0；qa_coplanar 0；变体 kitchen_lower_olive 日志 14 objs ≥ 场景计数。

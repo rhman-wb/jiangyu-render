@@ -254,10 +254,10 @@ def check_counts():
         log('FAIL', 'floors mismatch missing=%s extra=%s' %
             (expect_floors - floor_ids, floor_ids - expect_floors))
     ncam = len([o for o in bpy.data.objects if o.type == 'CAMERA'])
-    if ncam == 28:   # REWORK：23 + 16b + CAL + R2FIX M1 柜门特写 ×3
+    if ncam == 29:   # REWORK：23 + 16b + CAL + R2FIX M1 柜门特写 ×3 + R2FIX2 N1 西墙柜特写
         log('PASS', 'cameras %d' % ncam)
     else:
-        log('FAIL', 'cameras %d != 28' % ncam)
+        log('FAIL', 'cameras %d != 29' % ncam)
     markers = [o.name for o in bpy.data.objects if 'marker' in o.name.lower()]
     if markers:
         log('FAIL', 'marker objects built: %s' % markers[:3])

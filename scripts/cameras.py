@@ -42,10 +42,11 @@ CAM_OVERRIDES = {
     '17_public_bath_dry': {'exposure': 1.90},
     '19_master_bath': {'exposure': 2.10},
     '20_terrace': {'exposure': 0.75,
-                   # R2FIX m3：东栏杆外回拍——双藤椅+圆桌居中入画（原机位 plant_03
-                   # 投影叠在椅/桌上，且藤椅不入画）；俯角 18.8°（qa 投影验证）
-                   'location': (13.70, -11.60, 1.50), 'look_at': (10.80, -11.20, 0.50),
-                   'lens': 24, 'tilt_deg': 18.8, 'shift_y': -0.10},
+                   # R2FIX2 N2：相机移入露台范围内（工单定值 (9.65,-10.5,1.5) 望
+                   # (11.6,-11.7,0.6)，lens 18；plant_01 (9.6,-10.5) 在机位下方不碰；
+                   # 前景栏杆穿画与"悬空机位"废弃。俯视目标由 shift_y 机制自动承担）
+                   'location': (9.65, -10.5, 1.5), 'look_at': (11.6, -11.7, 0.6),
+                   'lens': 18},
     'P1_living_A_pano': {'exposure': 1.75},
     'P2_living_B_pano': {'exposure': 1.75},
     'P3_master_pano': {'exposure': 1.95},
@@ -159,7 +160,12 @@ def build_all(coll):
         ('CAB_B_wall', (6.55, -7.75, 1.30), (9.20, -7.75, 1.30), 24, 'B', 1.80),
         # 玄关端景柜前皮 y≈-6.20，全宽 1.45（含上下段与中段开放格）
         ('CAB_foyer', (2.675, -4.90, 1.70), (2.675, -6.20, 1.70), 24, 'A', 2.10),
+        # R2FIX2 N1：西墙实木组合柜特写（工单：正对柜中心、距 2.0m、高 1.3m、lens 28；
+        # shift_y -0.15 让底部矮台 3 抽屉入画——否则竖向画面 z0.58..2.02 装不下 z0.45
+        # 的矮台，柜顶 0.4m 相应出画，如实记录）
+        ('CAB_west_bookcase', (5.82, -9.575, 1.30), (3.82, -9.575, 1.30), 28, 'A', 1.80),
     ]
+    cab_shift = {'CAB_west_bookcase': -0.15}
     for nm, loc, look, lens, sch, exp in cab_specs:
         cd = bpy.data.cameras.new('cd_' + nm)
         cd.sensor_fit = 'HORIZONTAL'
@@ -172,6 +178,8 @@ def build_all(coll):
         cam.location = loc
         yaw = math.atan2(-(look[0] - loc[0]), look[1] - loc[1])
         cam.rotation_euler = (math.radians(90), 0.0, yaw)   # 水平，竖线竖直
+        if nm in cab_shift:
+            cd.shift_y = cab_shift[nm]   # R2FIX2 N1：竖向构图微调（记录在案）
         cam['cam_id'] = nm
         cam['scheme'] = sch
         cam['cam_type'] = 'PERSP'

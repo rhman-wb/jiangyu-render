@@ -217,12 +217,44 @@ def make_compare():
     return out
 
 
+def make_cab_west_compare():
+    """REWORK_R2FIX2 N1：CAB_west_bookcase_compare.png = 西墙组合柜特写渲染 +
+    refs/livingroom_cabinet.jpg 全图并排对照。"""
+    imgs = load_imgs_map('preview')
+    cab = imgs.get('CAB_west_bookcase')
+    refp = os.path.join(os.path.dirname(config.RENDER_DIR), 'refs', 'livingroom_cabinet.jpg')
+    if cab is None or not os.path.isfile(refp):
+        print('[sheet][warn] CAB west compare missing inputs (%s, %s)' % (cab, refp))
+        return None
+    W = MARGIN * 2 + 2 * TILE_W + GAP
+    H = TITLE_H + TILE_H + CAP_H + MARGIN
+    sheet = Image.new('RGB', (W, H), BG)
+    d = ImageDraw.Draw(sheet)
+    d.text((MARGIN, 26), 'N1 西墙实木组合柜：渲染特写 vs 实体店参考（整体）', font=font(30), fill=FG)
+    tiles = [(cab, 'CAB_west_bookcase 渲染'),
+             (refp, '实体店参考 livingroom_cabinet.jpg')]
+    for i, (path, label) in enumerate(tiles):
+        x = MARGIN + i * (TILE_W + GAP)
+        y = TITLE_H
+        tile = _fill_tile(path, (TILE_W, TILE_H))
+        sheet.paste(tile, (x, y))
+        d.rectangle([x, y, x + TILE_W - 1, y + TILE_H - 1], outline=(210, 205, 198), width=1)
+        hexc = '#%02X%02X%02X' % _avg_rgb(tile)
+        d.text((x, y + TILE_H + 8), '%s 实测 %s' % (label, hexc), font=font(20), fill=ACCENT)
+    out = os.path.join(config.RENDER_DIR, 'preview', 'CAB_west_bookcase_compare.png')
+    sheet.save(out, 'PNG')
+    print('[sheet] %s' % out)
+    return out
+
+
 if __name__ == '__main__':
     args = sys.argv[1:]
     if '--compare' in args:
         make_compare()
     if '--calcompare' in args:
         make_cal_compare()
-    if '--compare' not in args and '--calcompare' not in args:
+    if '--cabwest' in args:
+        make_cab_west_compare()
+    if not any(a in args for a in ('--compare', '--calcompare', '--cabwest')):
         mode = 'final' if '--mode' in args and 'final' in args else 'preview'
         make_sheet(mode)

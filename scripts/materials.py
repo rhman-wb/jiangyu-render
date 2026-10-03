@@ -709,7 +709,8 @@ def build_all_materials():
     mats['plant_pot'] = mats['ceramic_brick']
     mats['gap_dark'] = base_mat('gap_dark', '3A3530', 0.85)   # R2FIX M1 门缝深色背板
     # R2 #14 藤编单椅：藤色 + 两组正交细密 Wave 叠加成编织 bump
-    mats['rattan'] = base_mat('rattan', 'B49B72', 0.75)
+    # （R2FIX2 N2：基色按工单改浅藤色 C9B08A）
+    mats['rattan'] = base_mat('rattan', 'C9B08A', 0.75)
     rb = _bsdf(mats['rattan'])
     rtc = _node(mats['rattan'], 'ShaderNodeTexCoord', -800, 100)
     rw1 = _node(mats['rattan'], 'ShaderNodeTexWave', -620, 140)

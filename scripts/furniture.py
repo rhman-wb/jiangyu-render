@@ -363,19 +363,55 @@ def build_lounge_chair(item, mats, coll):
     """中古单椅（A 墨绿面料 + 胡桃木框，REWORK 2.4）/ 露台藤编单椅。"""
     cid = item['id']
     if item.get('shape') == 'cylinder':
-        # R2 #14：露台藤编单椅——座/背挂 rattan（编织 bump，白模阶段回退 wood），背为弧段
+        # R2FIX2 N2：露台椅改中古休闲椅——弧形靠背（三段渐斜板拼弧）+ 扶手 +
+        # 低座（座高 0.38）+ 藤编织座背（rattan 双 Wave 编织凹凸，#C9B08A）+
+        # 燕麦坐垫；朝向面向圆桌（由布局内建：x<10.9 朝东，x>10.9 朝西）。
+        # 全部部件落在 layout 包络圆 r=0.28 内、总高 ≤0.48（h0.45+3cm 容差）。
         c, r, z0, h = item['center'], item['radius'], item.get('z_base', 0.0), item['height']
         root = R(item, mats, coll)
         rmat = mats.get('rattan', mats['wood'])
-        cyl(root, cid + '_seat', c, r * 0.92, z0 + 0.32, z0 + 0.42, coll,
-            rmat, role='rattan')
-        cyl(root, cid + '_back', (c[0], c[1] + r * 0.30), r * 0.6, z0 + 0.40, z0 + h,
-            coll, rmat, role='rattan')
+        sgn = 1.0 if c[0] < 10.9 else -1.0        # 朝桌方向（椅1 东、椅2 西）
+
+        def P(du, dv):                             # 局部(朝桌向 du, 侧向 dv) -> 世界
+            return (c[0] + du * sgn, c[1] + dv)
+
+        def PB(nm, du0, dv0, zl, du1, dv1, zh, mat, bev=None, role=None):
+            """局部盒 -> 世界盒；sgn=-1 时角点自动排序（防 min>max 被丢弃）。"""
+            ax, ay = P(du0, dv0)
+            bx, by = P(du1, dv1)
+            box(root, nm, (min(ax, bx), min(ay, by), zl),
+                (max(ax, bx), max(ay, by), zh), coll, mat, bevel=bev, role=role)
+
+        seat_h = 0.38
+        # 座框（藤面）+ 燕麦坐垫（外沿 ±0.92r 贴合包络圆，qa 边缘 ±2cm 内）
+        PB(cid + '_seat', -r * 0.92, -r * 0.92, z0 + seat_h - 0.05,
+           r * 0.92, r * 0.92, z0 + seat_h, rmat, bev=0.012, role='rattan')
+        PB(cid + '_cushion', -r * 0.70, -r * 0.70, z0 + seat_h,
+           r * 0.70, r * 0.70, z0 + seat_h + 0.035, mats.get('oat'),
+           bev=0.015, role='fabric_oat')
+        # 弧形靠背：三段渐斜板拼弧（在椅后 du≈-0.88r，底段起于座面，总高 ≤0.48 容差）
+        for i, dz in enumerate((seat_h, seat_h + 0.045, seat_h + 0.08)):
+            lean = 0.050 - i * 0.018               # 底段最靠后，上段前移 -> 弧
+            du_b = -r * 0.88 + lean * (i + 1) / 3.0
+            PB('%s_back%d' % (cid, i), du_b - 0.026, -r * 0.74, z0 + dz,
+               du_b + 0.026, r * 0.74, min(h + 0.03, dz + 0.09), rmat,
+               bev=0.008, role='rattan')
+        # 扶手 ×2：侧藤立板 + 木扶手面（dv ±0.83r..0.93r；顶 ≤0.48 容差）
+        for sd in (-1, 1):
+            PB('%s_arm%d' % (cid, sd), -r * 0.66, sd * r * 0.78 - 0.02 * sd, z0 + seat_h,
+               r * 0.36, sd * r * 0.78 + 0.02 * sd, z0 + seat_h + 0.075, rmat,
+               bev=0.008, role='rattan')
+            PB('%s_armp%d' % (cid, sd), -r * 0.68, sd * r * 0.83 - 0.028 * sd, z0 + seat_h + 0.075,
+               r * 0.38, sd * r * 0.83 + 0.028 * sd, z0 + 0.48, mats['wood'],
+               bev=0.008, role='wood')
+        # 四锥形木腿（座下）
         for i in range(4):
             a = math.radians(90 * i + 45)
-            px, py = c[0] + math.cos(a) * r * 0.6, c[1] + math.sin(a) * r * 0.6
-            box(root, '%s_leg%d' % (cid, i), (px - 0.02, py - 0.02, z0),
-                (px + 0.02, py + 0.02, z0 + 0.32), coll, mats['wood'], role='wood')
+            du, dv = math.cos(a) * r * 0.62, math.sin(a) * r * 0.62
+            px, py = P(du, dv)
+            box(root, '%s_leg%d' % (cid, i), (px - 0.022, py - 0.022, z0),
+                (px + 0.022, py + 0.022, z0 + seat_h - 0.05), coll, mats['wood'],
+                role='wood')
         return
     bmin, bmax = item['bbox']['min'], item['bbox']['max']
     root = R(item, mats, coll)
@@ -981,14 +1017,64 @@ def _fx_props(mats, colls):
     # 岛台台面：托盘
     box(None, 'fx_island_tray', (4.7, -5.6, 0.9), (5.1, -5.2, 0.915), c,
         mats['wood'], bevel=0.006, role='wood')
-    # 实木组合柜开放格：书 + 唱片 + 陶罐（每层 1-3 件；COMMON 物件）
-    for i, z in enumerate((1.45, 1.85)):
-        for j, y in enumerate((-9.8, -9.55, -9.3)):
-            box(None, 'fx_bc_book%d%d' % (i, j), (3.55, y - 0.09, z), (3.72, y + 0.09, z + 0.22),
-                c, mats['white' if (i + j) % 2 else 'wood'], role='book')
-    box(None, 'fx_bc_record', (3.55, -9.75, 1.85), (3.60, -9.62, 2.07), c,
+    # R2FIX2 N1：西墙实木组合柜真腔摆件（与 builtins.build_bookcase 新腔体配对）。
+    # 开放格内净空 x 3.44..3.77 / y -9.84..-9.265，层板面 z=0.47/0.85/1.21/1.57/1.93；
+    # 书+陶罐+唱片+小相框，每层 1-2 组留白。玻璃展示柜内 y -10.355..-9.89，
+    # 层板面 z=0.47/1.17/1.71。
+    spine_roles = ('fabric_oat', 'leather_caramel', 'fabric_olive', 'pillow_brick')
+    # — 开放格 L0（z0.47）：书组 5 直立 + 2 平放
+    for k in range(5):
+        bh = 0.20 + 0.02 * (k % 3)
+        yy = -9.72 + k * 0.034
+        box(None, 'fx_bc_b0_%d' % k, (3.50, yy, 0.47), (3.70, yy + 0.034, 0.47 + bh),
+            c, mats['white'], role=spine_roles[k % 4])
+    for k in range(2):
+        box(None, 'fx_bc_b0f_%d' % k, (3.52, -9.55 + k * 0.014, 0.47 + 0.24 + k * 0.034),
+            (3.68, -9.32 - k * 0.02, 0.47 + 0.24 + (k + 1) * 0.034), c,
+            mats['white'], role=spine_roles[(k + 1) % 4])
+    # — 开放格 L1（z0.85）：砖红陶罐（三段旋转体）+ 小相框
+    cyl(None, 'fx_bc_pot', (3.62, -9.60), 0.075, 0.85, 0.99, c, mats['white'],
+        verts=20, role='ceramic_brick')
+    cyl(None, 'fx_bc_potneck', (3.62, -9.60), 0.040, 0.99, 1.075, c, mats['white'],
+        verts=20, role='ceramic_brick')
+    cyl(None, 'fx_bc_potlip', (3.62, -9.60), 0.055, 1.075, 1.098, c, mats['white'],
+        verts=20, role='ceramic_brick')
+    box(None, 'fx_bc_frame', (3.50, -9.44, 0.85), (3.66, -9.422, 1.07), c,
         mats['dark'], role='metal_black')
-    sph(None, 'fx_bc_pot', (3.62, -9.4, 1.96), 0.06, c, mats['white'], role='vase_white')
+    box(None, 'fx_bc_framein', (3.506, -9.416, 0.886), (3.654, -9.410, 1.034), c,
+        mats['white'], role='fabric_oat')
+    # — 开放格 L2（z1.21）：唱片立盘 x3 + 支架（盘心 1.335 = 支架面 1.235 + 半径 0.10）
+    for k in range(3):
+        d = cyl(None, 'fx_bc_rec%d' % k, (3.62, -9.68 + k * 0.05), 0.10, 1.332, 1.338,
+                c, mats['dark'], verts=24, role='metal_black')
+        d.rotation_euler = (0.0, math.radians(90), 0.0)
+    box(None, 'fx_bc_recstand', (3.50, -9.74, 1.21), (3.74, -9.52, 1.235), c,
+        mats['white'], role='wood')
+    # — 开放格 L3（z1.57）：小书组 3 本 + 乳白小球罐
+    for k in range(3):
+        bh = 0.19 + 0.015 * (k % 2)
+        yy = -9.56 + k * 0.034
+        box(None, 'fx_bc_b3_%d' % k, (3.52, yy, 1.57), (3.70, yy + 0.034, 1.57 + bh),
+            c, mats['white'], role=spine_roles[(k + 2) % 4])
+    sph(None, 'fx_bc_jar3', (3.62, -9.38, 1.655), 0.055, c, mats['white'],
+        role='vase_white')
+    # — 开放格 L4（z1.93）：留白 + 小白罐
+    cyl(None, 'fx_bc_pot4', (3.62, -9.66), 0.045, 1.93, 2.045, c, mats['white'],
+        verts=20, role='vase_white')
+    # — 玻璃展示柜内（透过清玻璃可见）：底层书堆+小罐 / 中层书排 / 顶层陶罐
+    for k in range(3):
+        box(None, 'fx_bc_g0_%d' % k, (3.50, -10.26 + k * 0.05, 0.47),
+            (3.70, -10.06 + k * 0.05, 0.47 + 0.05), c, mats['white'],
+            role=spine_roles[k % 4])
+    cyl(None, 'fx_bc_gpot', (3.62, -9.95, 0.47), 0.05, 0.47, 0.60, c, mats['white'],
+        verts=20, role='vase_white')
+    for k in range(4):
+        bh = 0.19 + 0.02 * (k % 3)
+        yy = -10.24 + k * 0.034
+        box(None, 'fx_bc_g1_%d' % k, (3.50, yy, 1.17), (3.70, yy + 0.034, 1.17 + bh),
+            c, mats['white'], role=spine_roles[(k + 1) % 4])
+    cyl(None, 'fx_bc_gpot2', (3.60, -10.10, 1.71), 0.055, 1.71, 1.83, c, mats['white'],
+        verts=20, role='ceramic_brick')
     # B 整墙柜开放格：书 + 孩子作品（REWORK #2 → SCHEME_B）
     cb = colls['scheme_b']
     # R2FIX m1：B 开放格摆件重做——彩色方块换成可辨识物件：
