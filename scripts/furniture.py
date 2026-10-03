@@ -150,8 +150,15 @@ def build_sofa(item, mats, coll):
     back_top = z1 + 0.36 if parts_hi else z1 - 0.01
     seat_top = z1 + 0.05 if parts_hi else z1 - 0.01
     sofa_role = 'leather_caramel' if item.get('group') == 'A' else 'sofa_b_fabric'
-    box(root, cid + '_base', (x0, y0, 0.03), (x1, y1, z1 - 0.14), coll,
-        mats['white'], role=sofa_role)
+    if item.get('group') == 'A':
+        # R2 #14：A 皮沙发 5cm 实木细腿（替换贴地箱体，规格 5.2）
+        box(root, cid + '_base', (x0, y0, 0.05), (x1, y1, z1 - 0.14), coll,
+            mats['white'], role=sofa_role)
+        legs(root, cid, (x0 + 0.02, y0 + 0.02, 0.0), (x1 - 0.02, y1 - 0.02, 0.05),
+             coll, mats['wood'], n=6, h=0.05, s=0.05, inset=0.06, role='wood')
+    else:
+        box(root, cid + '_base', (x0, y0, 0.03), (x1, y1, z1 - 0.14), coll,
+            mats['white'], role=sofa_role)
     # 靠背（分块）
     n = max(2, round((y1 - y0) / 0.9))
     w = (y1 - y0) / n
@@ -312,14 +319,22 @@ def build_dining_chair(item, mats, coll):
         coll, mats['white'], bevel=0.02, role='seat_oat')
     box(root, cid + '_back', (x0 + 0.02, by0, 0.47), (x1 - 0.02, by1, z1 - 0.015),
         coll, mats['wood'], bevel=0.025, role='wood')
+    # R2 #14：收分腿（上粗下细两段）
     for i, (lx, ly) in enumerate(((x0 + 0.035, y0 + 0.035), (x1 - 0.035, y0 + 0.035),
                                   (x0 + 0.035, y1 - 0.035), (x1 - 0.035, y1 - 0.035))):
-        box(root, '%s_leg%d' % (cid, i), (lx - 0.018, ly - 0.018, 0.0),
+        box(root, '%s_leg%d' % (cid, i), (lx - 0.018, ly - 0.018, 0.20),
             (lx + 0.018, ly + 0.018, 0.40), coll, mats['wood'], role='wood')
-    # 弧形扶手（两侧细弯条，白模用斜杆示意）
+        box(root, '%s_legt%d' % (cid, i), (lx - 0.012, ly - 0.012, 0.0),
+            (lx + 0.012, ly + 0.012, 0.20), coll, mats['wood'], role='wood')
+    # 弧形扶手（两侧两段折线，前端下俯模拟弧线）
     for j, ax in ((0, x0 + 0.05), (1, x1 - 0.05)):
         box(root, '%s_arm%d' % (cid, j), (ax - 0.018, y0 + 0.06, 0.62),
             (ax + 0.018, y1 - 0.06, 0.66), coll, mats['wood'], bevel=0.01,
+            role='wood')
+        ay = y1 - 0.06 if back_south else y0 + 0.06
+        ay2 = (ay - 0.25) if back_south else (ay + 0.25)
+        box(root, '%s_armf%d' % (cid, j), (ax - 0.016, min(ay, ay2), 0.575),
+            (ax + 0.016, max(ay, ay2), 0.625), coll, mats['wood'], bevel=0.012,
             role='wood')
 
 
@@ -348,12 +363,14 @@ def build_lounge_chair(item, mats, coll):
     """中古单椅（A 墨绿面料 + 胡桃木框，REWORK 2.4）/ 露台藤编单椅。"""
     cid = item['id']
     if item.get('shape') == 'cylinder':
+        # R2 #14：露台藤编单椅——座/背挂 rattan（编织 bump，白模阶段回退 wood），背为弧段
         c, r, z0, h = item['center'], item['radius'], item.get('z_base', 0.0), item['height']
         root = R(item, mats, coll)
+        rmat = mats.get('rattan', mats['wood'])
         cyl(root, cid + '_seat', c, r * 0.92, z0 + 0.32, z0 + 0.42, coll,
-            mats['wood'], role='wood')
+            rmat, role='rattan')
         cyl(root, cid + '_back', (c[0], c[1] + r * 0.30), r * 0.6, z0 + 0.40, z0 + h,
-            coll, mats['wood'], role='wood')
+            coll, rmat, role='rattan')
         for i in range(4):
             a = math.radians(90 * i + 45)
             px, py = c[0] + math.cos(a) * r * 0.6, c[1] + math.sin(a) * r * 0.6
@@ -489,7 +506,8 @@ def build_floor_lamp(item, mats, coll):
 def build_tv(item, mats, coll):
     """电视：A 悬空电视柜上方固定 85 寸 / B 移动电视（可推移支架）。
     REWORK #9：B 移动电视渲染时停放在东墙北段柜前，中心 (8.25,-6.0)、屏幕朝西，
-    豁免 layout 位置铁律（decisions_log）。支架细杆化属 #14/R2，本轮保持方墩。"""
+    豁免 layout 位置铁律（decisions_log）。
+    R2 #14：B 支架细杆化——Ø24mm 单立杆 + 三斜撑 + 250mm 圆盘底座（黑色细杆，禁方墩）。"""
     cid = item['id']
     bmin, bmax = item['bbox']['min'], item['bbox']['max']
     root = R(item, mats, coll)
@@ -501,8 +519,18 @@ def build_tv(item, mats, coll):
         sbmax = (cx + 0.05, cy + sw / 2, 0.60 + sh_)
         box(root, cid + '_screen', sbmin, sbmax, coll, mats['dark'], bevel=0.004,
             role='black_glass')
-        box(root, cid + '_stand', (cx - 0.14, cy - 0.20, 0.0),
-            (cx + 0.14, cy + 0.20, 0.60), coll, mats['dark'], role='metal_black')
+        # 细杆立杆（中心，屏后）
+        cyl(root, cid + '_pole', (cx + 0.03, cy), 0.012, 0.10, 0.62, coll,
+            mats['dark'], role='metal_black')
+        # 三斜撑（杆底向外张）
+        for i, (dx, dy) in enumerate(((0.16, 0.0), (-0.10, 0.12), (-0.10, -0.12))):
+            box(root, cid + '_brace%d' % i,
+                (min(cx + 0.03, cx + dx) - 0.008, min(cy, cy + dy) - 0.008, 0.0),
+                (max(cx + 0.03, cx + dx) + 0.008, max(cy, cy + dy) + 0.008, 0.10),
+                coll, mats['dark'], role='metal_black')
+        # 圆盘底座
+        cyl(root, cid + '_base', (cx + 0.04, cy), 0.125, 0.0, 0.018, coll,
+            mats['dark'], role='metal_black')
         return root
     box(root, cid + '_screen', bmin, bmax, coll, mats['dark'], bevel=0.004,
         role='black_glass')
@@ -840,8 +868,10 @@ def _fx_curtains(mats, colls):
     pleated_panel('fx_curt_master_bo_e', 11.7, 12.4, -10.22, 0.02, 2.28, 0.05, 0.14,
                   c, blackout, role='curtain_blackout')
     # 父母房飘窗（W23 x0.55..2.95）：纱帘 + 卷帘箱
-    pleated_panel('fx_curt_parents_sheer', 0.55, 2.95, -10.36, 0.50, 2.28, 0.03, 0.14, c, sheer)
-    box(None, 'fx_curt_parents_roller', (0.55, -10.40, 2.28), (2.95, -10.34, 2.36),
+    # R2 #20：帘改窗洞内挂——x 收进两端矮书格之间（0.85..2.65），底边离坐榻面 2cm（0.47），
+    # 不再横穿坐榻与书格
+    pleated_panel('fx_curt_parents_sheer', 0.85, 2.65, -10.36, 0.47, 2.28, 0.03, 0.14, c, sheer)
+    box(None, 'fx_curt_parents_roller', (0.85, -10.40, 2.28), (2.65, -10.34, 2.36),
         c, mats['white'], role='cabinet_white')
     # 孩子房北窗（W01/W06）：双层帘（REWORK 2.3 女儿房遮光帘带雾粉）
     pleated_panel('fx_curt_daughter_sheer', 6.55, 8.75, -0.32, 0.92, 2.36, 0.03, 0.14,
@@ -861,12 +891,13 @@ def _fx_curtains(mats, colls):
             (13.586, -3.8, 0.87 + i * 0.12), c, mats['white'], role='blind')
 
 
-def _fx_lights(mats, coll):
+def _fx_lights(mats, coll, ceil_coll=None):
     c = coll
-    # 卧室吸顶灯（薄款乳白）
+    ceil = ceil_coll if ceil_coll is not None else c
+    # 卧室吸顶灯（薄款乳白）——R2 #16：顶面安装件入 COL_CEILINGS（鸟瞰藏顶不悬浮）
     for rid, (cx, cy) in {'master_bedroom': (11.0, -7.7), 'parents_room': (1.75, -8.3),
                           'daughter_room': (7.65, -2.05), 'son_room': (12.2, -1.8)}.items():
-        cyl(None, 'fx_ceiling_%s' % rid, (cx, cy), 0.24, 2.79, 2.85, c,
+        cyl(None, 'fx_ceiling_%s' % rid, (cx, cy), 0.24, 2.79, 2.85, ceil,
             mats['glass'], role='opal_glass')
     # 客餐厅边吊筒灯（底面 2.60，间距约 1.1，避开东带出风口）
     spots = []
@@ -877,16 +908,16 @@ def _fx_lights(mats, coll):
     for y in (-10.9, -6.9, -5.6):
         spots += [(9.02, y)]
     for i, (x, y) in enumerate(spots):
-        cyl(None, 'fx_spot_living%02d' % i, (x, y), 0.0375, 2.575, 2.60, c,
+        cyl(None, 'fx_spot_living%02d' % i, (x, y), 0.0375, 2.575, 2.60, ceil,
             mats['glass'], role='spot_glass')
-        cyl(None, 'fx_spot_living%02d_r' % i, (x, y), 0.05, 2.60, 2.615, c,
+        cyl(None, 'fx_spot_living%02d_r' % i, (x, y), 0.05, 2.60, 2.615, ceil,
             mats['white'], role='spot_ring')
     # 卧室/过道筒灯
     for i, (x, y, z) in enumerate([(11.0, -8.8, 2.85), (11.0, -6.6, 2.85),
                                    (1.75, -9.5, 2.85), (7.65, -3.0, 2.85),
                                    (12.2, -2.9, 2.85), (9.9, -4.4, 2.60),
                                    (10.6, -3.0, 2.60), (2.7, -5.7, 2.85)]):
-        cyl(None, 'fx_spot_room%d' % i, (x, y), 0.0375, z - 0.025, z, c,
+        cyl(None, 'fx_spot_room%d' % i, (x, y), 0.0375, z - 0.025, z, ceil,
             mats['glass'], role='spot_glass')
     # 床头壁灯（主卧两侧 + 父母房床头）
     for i, (x, y) in enumerate([(12.68, -7.0), (12.68, -9.2), (0.24, -8.65)]):
@@ -953,7 +984,7 @@ def build_extras(mats, colls):
     """规格补充软装：窗帘、吸顶灯/筒灯/壁灯几何、摆件、琴叶榕。
     REWORK #2：fx_ 对象按所属方案/房间挂对应集合。"""
     _fx_curtains(mats, colls)
-    _fx_lights(mats, colls['common'])
+    _fx_lights(mats, colls['common'], colls.get('ceilings'))
     _fx_props(mats, colls)
     print('[furniture] extras done')
 

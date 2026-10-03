@@ -20,12 +20,11 @@ CAM_OVERRIDES = {
                  'exposure': 1.70},   # 同时看到端景柜和西墙镜面门
     '16_son_room': {'location': (11.3, -2.6, 1.45), 'exposure': 1.95},
     '16b_son_room_blue': {'location': (11.3, -2.6, 1.45), 'exposure': 1.95},
-    '18_public_bath_wet': {'location': (10.55, -2.3, 1.45),  # F5：REWORK_R1FIX 指定机位（z 1.6->1.45 许可内微调）
-                           'look_at': (9.35, -1.2, 0.6), 'lens': 16,
-                           # 指定 look_at 俯角 31.5° + 16mm 下两点透视容不下马桶包络（qa 投影出界
-                           # u0.12-0.57 / v-0.92..0.27）。参数搜索（tilt x shift x loc）定案：
-                           # 俯 15° + shift -0.25，9 点全入画边距 5.5%（D-046）。
-                           'tilt_deg': 15, 'shift_y': -0.25,
+    '18_public_bath_wet': {'location': (10.60, -2.20, 0.75),  # R2 追加2：水平相机（D-056 参数搜索定案）
+                           'look_at': (9.35, -1.2, 0.75), 'lens': 10,
+                           # 水平+低机位+10mm 超广角：9 点投影最小边距 0.230（马桶 8 角+隔断中心），
+                           # 竖线竖直（无俯仰）。旧俯拍方案（tilt 15）废弃。
+                           'shift_y': -0.10,
                            'exposure': 2.25},
     # --- 曝光初值（其余机位）---
     '01_aerial_A': {'exposure': 0.85},

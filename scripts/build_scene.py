@@ -46,6 +46,7 @@ def make_white_materials():
         'wood': base('clay_wood', 'B4A99C', 0.85),      # 木作示意
         'mirror': base('clay_mirror', 'AEBEC8', 0.15),  # 镜面示意
         'kfront': base('clay_kfront', 'A79E92', 0.7),   # 厨房下柜门板（独立实例，橄榄绿变体挂载点）
+        'gap_dark': base('clay_gapdark', '3A3632', 0.8),  # R2 #10 门缝深背板（正式版走 role）
     }
 
 

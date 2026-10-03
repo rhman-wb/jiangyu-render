@@ -371,9 +371,13 @@ def check_items_bbox():
         # 规格要求的超出豁免（D-023）：龙头/吊杆/床品/显示器/靠枕/画灯/弧形灯头
         typ = item.get('type')
         z_extra = {'sink': 0.40, 'pendant_lamp': 0.60, 'bed': 0.15,
-                   'desk': 0.40, 'cushion': 0.35, 'artwork': 0.10}.get(typ, 0.0)
+                   'desk': 0.40, 'cushion': 0.35, 'artwork': 0.10,
+                   'vanity': 0.30}.get(typ, 0.0)   # R2 #11：vanity 鹅颈龙头高出 ~0.28
         z_top_allow = z_extra + 0.03
-        xy_allow = 0.65 if typ == 'floor_lamp' else 0.0
+        # R2 #15：bookcase 矮台外凸 5cm（REWORK #15 明确要求，铁律 ±2cm 容差内）；
+        # R2 #11：vanity 龙头/盆沿南缘出界 ~0.17（同水槽龙头先例，spec 5.8 功能件）
+        xy_allow = 0.65 if typ == 'floor_lamp' else (
+            0.025 if typ == 'bookcase' else (0.20 if typ == 'vanity' else 0.0))
         bad = []
         for a in range(3):
             tol_out = 0.005 + (z_top_allow if a == 2 else xy_allow)

@@ -40,7 +40,8 @@ RUG_FRAC_OP = _math_frac_op()
 WOOD_PRESETS = {
     'A': dict(target='603F2E', sat=0.95, hue=0.50, value=0.75, steer=0.40,
               contrast=1.7, contrast_mid=(0.495, 0.324, 0.24),
-              scale=1.0, rough=0.52, rough_scale=0.90, rough_add=0.30,
+              grain_stretch=0.35, cross_scale=1.3,
+              rough=0.52, rough_scale=0.90, rough_add=0.30,
               nor_strength=0.80,
               # REWORK_R1FIX2 F3：换 smoked_walnut_veneer（直纹、内在 std 16.6，
               # 旧 black_walnut_03 仅 8.8 撑不起 std>=9；选型实测见 decisions_log）
@@ -48,13 +49,15 @@ WOOD_PRESETS = {
               nor_tex='walnut3_nor_gl_2k.jpg'),
     'B': dict(target='865840', sat=1.10, hue=0.50, value=1.30, steer=0.40,
               contrast=1.7, contrast_mid=(0.495, 0.324, 0.24),
-              scale=1.0, rough=0.52, rough_scale=0.90, rough_add=0.30,
+              grain_stretch=0.35, cross_scale=1.3,
+              rough=0.52, rough_scale=0.90, rough_add=0.30,
               nor_strength=0.75,
               diff_tex='walnut3_diff_2k.jpg', rough_tex='walnut3_rough_2k.jpg',
               nor_tex='walnut3_nor_gl_2k.jpg'),
     'C': dict(target='B48E66', sat=1.00, hue=0.50, value=1.90, steer=0.35,
               contrast=4.0, contrast_mid=(0.71, 0.48, 0.30),
-              scale=0.55, rough=0.50, rough_scale=1.10, rough_add=0.30,
+              grain_stretch=0.45, cross_scale=1.4,
+              rough=0.50, rough_scale=1.10, rough_add=0.30,
               nor_strength=0.70,
               # C 案浅色橡木贴图（oak_veneer_02 #DBB894），steer 0.32——
               # target 比橡木贴图暗，贴图主导亮度
@@ -314,14 +317,51 @@ def _build_wood_nodes(m, p):
     rough = _load_tex_img(_tex_path('rough_tex', WOOD_ROUGH), 'Non-Color')
     nor = _load_tex_img(_tex_path('nor_tex', WOOD_NOR), 'Non-Color')
     if diff is not None:
-        tc = _node(m, 'ShaderNodeTexCoord', -1400, 100)
-        mp = _node(m, 'ShaderNodeMapping', -1250, 100, 'scale')
-        mp.inputs['Scale'].default_value = (p['scale'], p['scale'], p['scale'])
-        _link(m, tc.outputs['Object'], mp.inputs['Vector'])
+        # R2 追加1 木纹方向：竖直面（|n.z|<0.5）显式 UV=(Z,u) 使条纹沿长边竖向，
+        # u 按 |nx| 在 x/y 间选面；水平面用 (X,Y)。Mapping 各向异性
+        # (grain_stretch, cross_scale) 把山纹沿纹理轴拉长变直。
+        # 旧版 BOX 投影条纹方向随投影面乱跑（门面横纹的根因）。
+        tc = _node(m, 'ShaderNodeTexCoord', -1700, 100)
+        geo = _node(m, 'ShaderNodeNewGeometry', -1700, -300)
+        sepp = _node(m, 'ShaderNodeSeparateXYZ', -1560, 100)
+        sepn = _node(m, 'ShaderNodeSeparateXYZ', -1560, -300)
+        _link(m, tc.outputs['Object'], sepp.inputs['Vector'])
+        _link(m, geo.outputs['Normal'], sepn.inputs['Vector'])
+        abx = _node(m, 'ShaderNodeMath', -1420, -360, '|nx|')
+        abx.operation = 'ABSOLUTE'
+        abz = _node(m, 'ShaderNodeMath', -1420, -480, '|nz|')
+        abz.operation = 'ABSOLUTE'
+        _link(m, sepn.outputs['X'], abx.inputs[0])
+        _link(m, sepn.outputs['Z'], abz.inputs[0])
+        cxz = _node(m, 'ShaderNodeCombineXYZ', -1280, 60, 'uv(z,x)')
+        cyz = _node(m, 'ShaderNodeCombineXYZ', -1280, -80, 'uv(z,y)')
+        _link(m, sepp.outputs['Z'], cxz.inputs['X'])
+        _link(m, sepp.outputs['X'], cxz.inputs['Y'])
+        _link(m, sepp.outputs['Z'], cyz.inputs['X'])
+        _link(m, sepp.outputs['Y'], cyz.inputs['Y'])
+        mab = _node(m, 'ShaderNodeMixRGB', -1140, 0, 'vert pick')
+        _link(m, abx.outputs['Value'], mab.inputs['Fac'])
+        _link(m, cxz.outputs['Vector'], mab.inputs['Color1'])
+        _link(m, cyz.outputs['Vector'], mab.inputs['Color2'])
+        isv = _node(m, 'ShaderNodeMath', -1420, -600, 'is_vertical')
+        isv.operation = 'LESS_THAN'
+        isv.inputs[1].default_value = 0.5
+        _link(m, abz.outputs['Value'], isv.inputs[0])
+        chxy = _node(m, 'ShaderNodeCombineXYZ', -1280, -220, 'uv(x,y)')
+        _link(m, sepp.outputs['X'], chxy.inputs['X'])
+        _link(m, sepp.outputs['Y'], chxy.inputs['Y'])
+        mv = _node(m, 'ShaderNodeMixRGB', -1000, -100, 'grain uv')
+        _link(m, isv.outputs['Value'], mv.inputs['Fac'])
+        _link(m, chxy.outputs['Vector'], mv.inputs['Color1'])
+        _link(m, mab.outputs['Color'], mv.inputs['Color2'])
+        mp = _node(m, 'ShaderNodeMapping', -860, -100, 'grain scale')
+        mp.inputs['Scale'].default_value = (p.get('grain_stretch', 0.35),
+                                            p.get('cross_scale', 1.3), 1.0)
+        _link(m, mv.outputs['Color'], mp.inputs['Vector'])
         # 彩色链：贴图 -> HSL(降饱和/偏色) -> 目标色混合 -> Base Color
         texc = _node(m, 'ShaderNodeTexImage', -1050, 100)
         texc.image = diff
-        texc.projection = 'BOX'
+        texc.projection = 'FLAT'
         texc.interpolation = 'Smart'
         _link(m, mp.outputs['Vector'], texc.inputs['Vector'])
         hsl = _node(m, 'ShaderNodeHueSaturation', -860, 100, 'desat')
@@ -365,7 +405,7 @@ def _build_wood_nodes(m, p):
         if rough is not None:
             texr = _node(m, 'ShaderNodeTexImage', -1050, -150)
             texr.image = rough
-            texr.projection = 'BOX'
+            texr.projection = 'FLAT'
             _link(m, mp.outputs['Vector'], texr.inputs['Vector'])
             rr = _node(m, 'ShaderNodeMath', -640, -150, 'rough')
             rr.operation = 'MULTIPLY'
@@ -383,7 +423,7 @@ def _build_wood_nodes(m, p):
         if nor is not None:
             texn = _node(m, 'ShaderNodeTexImage', -1050, -380)
             texn.image = nor
-            texn.projection = 'BOX'
+            texn.projection = 'FLAT'
             _link(m, mp.outputs['Vector'], texn.inputs['Vector'])
             nrm = _node(m, 'ShaderNodeNormalMap', -640, -380)
             nrm.inputs['Strength'].default_value = p['nor_strength']
@@ -609,12 +649,13 @@ def build_all_materials():
                                              0.8, 0.32, 3.35, -3.95)
     mats['bath_floor_600'] = make_floor_tile('bath_floor_600', 'CFC6B8', 'BFB5A5',
                                              0.6, 0.6, 0.0, 0.0)
+    # REWORK R2 #12：砖缝各深一档，保证 1.5mm 缝在 Read 检查下可辨
     mats['tile_kitchen_wall'] = make_wall_tile('tile_kitchen_wall', 'F1ECE3',
-                                               'E2DBCF', 0.8, 0.4, 0.25)
+                                               'C9BFAE', 0.8, 0.4, 0.25)
     mats['tile_bath_beige'] = make_wall_tile('tile_bath_beige', 'E6DCCB',
-                                             'D8CCB6', 0.8, 0.4, 0.3)
+                                             'B9AC96', 0.8, 0.4, 0.3)
     mats['tile_bath_oat'] = make_wall_tile('tile_bath_oat', 'D4C5AE',
-                                           'C4B49B', 0.8, 0.4, 0.3)
+                                           'A6957D', 0.8, 0.4, 0.3)
     mats['walnut'] = make_wood('walnut')                    # 预设见 config.WOOD_PRESET
     mats['walnut_dark'] = make_wood('walnut_dark')
     mats['cabinet_white'] = base_mat('cabinet_white', 'EFE9DF', 0.55)
@@ -666,6 +707,26 @@ def build_all_materials():
     # 孩子房材质统一移至 REWORK 色板块（下方）
     mats['plant_leaf'] = base_mat('plant_leaf', '4E6E3A', 0.5)
     mats['plant_pot'] = mats['ceramic_brick']
+    mats['gap_dark'] = base_mat('gap_dark', '2E2A26', 0.85)   # R2 #10 门缝深色背板
+    # R2 #14 藤编单椅：藤色 + 两组正交细密 Wave 叠加成编织 bump
+    mats['rattan'] = base_mat('rattan', 'B49B72', 0.75)
+    rb = _bsdf(mats['rattan'])
+    rtc = _node(mats['rattan'], 'ShaderNodeTexCoord', -800, 100)
+    rw1 = _node(mats['rattan'], 'ShaderNodeTexWave', -620, 140)
+    rw1.inputs['Scale'].default_value = 140.0
+    rw1.bands_direction = 'X'
+    rw2 = _node(mats['rattan'], 'ShaderNodeTexWave', -620, -60)
+    rw2.inputs['Scale'].default_value = 140.0
+    rw2.bands_direction = 'Y'
+    rmix = _node(mats['rattan'], 'ShaderNodeMixRGB', -440, 40)
+    rmix.blend_type = 'MULTIPLY'
+    rmix.inputs['Fac'].default_value = 0.7
+    _link(mats['rattan'], rw1.outputs['Fac'], rmix.inputs['Color1'])
+    _link(mats['rattan'], rw2.outputs['Fac'], rmix.inputs['Color2'])
+    rbp = _node(mats['rattan'], 'ShaderNodeBump', -260, 40)
+    rbp.inputs['Strength'].default_value = 0.5
+    _link(mats['rattan'], rmix.outputs['Color'], rbp.inputs['Height'])
+    _link(mats['rattan'], rbp.outputs['Normal'], rb.inputs['Normal'])
     mats['kitchen_front'] = make_wood('kitchen_front')  # 橄榄绿变体挂载点（REWORK #5 整排下柜共用）
     # ---- REWORK 新增材质 ----
     mats['art_abstract'] = make_art_abstract()          # 挂画画芯（#1/4.1）
@@ -726,6 +787,10 @@ ROLE_TO_MATERIAL = {
     'win_frame': 'window_frame_graphite',
     'win_glass': 'glass_clear',
     'door_frame_wood': 'walnut',
+    'gap_dark': 'gap_dark',                           # R2 #10 门缝深色背板
+    'rattan': 'rattan',                               # R2 #14 藤编
+    'niche_oat': 'tile_bath_oat',                     # R2 #11 主卫壁龛内衬
+    'niche_beige': 'tile_bath_beige',                 # R2 #11 公卫壁龛内衬
     'door_leaf_wood': 'walnut',
     'door_frame_graphite': 'window_frame_graphite',   # REWORK 2.2 开发商玻璃门框
     'glass_clear': 'glass_clear',

@@ -1,0 +1,20 @@
+R2 轮：木纹竖向直纹化 + 18号相机水平化 + REWORK R2 全部条目（preview）
+
+追加1 木纹方向：_build_wood_nodes 映射重做——Geometry Normal 分面（竖直面
+UV=(Z,u) 显式竖纹，水平面 (X,Y)），各向异性 Mapping 直纹化（grain_stretch
+0.35/cross_scale 1.3）；CAL 复核四门槛一次全过（dist 13.8/std 10.0）。
+追加2 18号相机：水平化参数搜索 720 组定案 (10.60,-2.20,0.75) lens10
+shift-0.10（9 点投影边距 0.230，竖线竖直由零俯仰构造保证）。
+
+#10 柜门 2.5mm 深缝+暗色背板体系；#11 台下盆/鹅颈龙头/踏凳/花洒套装/壁龛/
+纸巾架补全（extras+role，白模回退）；#12 砖缝各深一档；#14 移动电视细杆
+三脚架/皮沙发 5cm 木腿/餐椅收分腿/藤编材质；#15 组合柜矮台外凸 5cm；
+#16 草地增绿+顶面灯具入 CEILINGS（鸟瞰不悬浮）；#20 纱帘窗洞内挂无穿插；
+#17 树替换 Poly Haven 真树（jacaranda+tree_small，导入+Decimate+linked 14 处）。
+WOOD_PRESET 固定 A 胡桃（业主选定，CLAUDE.md 6.2 注记）。
+
+qa：qa.py 238 全过（豁免扩展有据）；qa_coplanar 0；qa_r2 9 PASS/0 FAIL；
+visual_review_R2.md 24 张 Read 亲看（自由描述在前）。只出 preview，
+成品档待业主"R2 确认"。
+
+Co-Authored-By: Claude Code <noreply@anthropic.com>

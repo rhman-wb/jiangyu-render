@@ -72,3 +72,15 @@
 - F6 地毯定稿：间距 25cm / 线宽 4mm / 基色提亮 #CDBEA4->#DBCFBA（同深度实测补偿，规格 6.3 微调条款，D-051）；04 右框（复核方指定）S 0.161 / dist 25.4 / std 10.1 全过。04 左框落在焦糖皮脚凳上（复核方指定坐标，构图自 R1 未变，证据 rug_box_04_reviewer.png）；05 自选框处茶几阴影带（同深度裸地砖参照 dist 49.1）——两框如实报 FAIL 附证据，交复核方裁定。
 - F4：qa_coplanar 16->0；12/13 号两门间 3x 放大裁片（review/screenshots/f4_check_12/13.png）亲看为连续白墙。
 - 机位微调：无（CAL 为新增校准机位，非交付机位）。
+
+
+## R2 轮（2026-10-03 上午，业主"R1 确认"后）
+
+- 设备 oneAPI GPU ｜ preview 960x540（全景 2048x1024）｜ 64 samples ｜ OIDN ｜ AgX Base Contrast ｜ gamma 0.90 ｜ PNG 8bit RGB ｜ seed 42 ｜ 日志 renders/preview/render_r2.log（零 0 objs/warn；变体 13/21 objs）
+- 全量重渲 24 机位 + CAL（256smp）。**只出 preview**；成品档待"R2 确认"。
+- 追加1 木纹方向：_build_wood_nodes 映射重做（Normal 分面竖纹 + 各向异性直纹化 grain_stretch 0.35 / cross_scale 1.3）；CAL 复核一次过四门槛（dist 13.8 / RG 1.56 / RB 2.69 / std 10.0；qa_r2 复测 11.6/1.55/2.65/10.1）。
+- 追加2 18 号相机：水平化参数搜索 720 组定案 pos(10.60,-2.20,0.75) lens10 shift-0.10（9 点边距 0.230）；qa_r2 断言水平+9 点入画。
+- #10 门缝 2.5mm+深色背板（白模阶段需占位材质，正式版 role 分配）；#11 台下盆/鹅颈龙头/踏凳/花洒套装/壁龛/纸巾架（extras，白模回退+role）；#12 砖缝各深一档；#14 移动电视细杆/沙发木腿/餐椅收分/藤编材质；#15 组合柜矮台外凸 5cm（bbox 容差内）；#16 草地增绿+顶面灯具入 COL_CEILINGS；#20 纱帘窗洞内挂。
+- #17 树：Poly Haven jacaranda_tree + tree_small_02（MCP 搜索/预览目选；glTF 1k 入 assets/trees/，gitignore）；构建期导入+Decimate（0.12/0.18，LOD0 3.9M/2.0M tri -> 背景用量）+ linked 复用 14 处。
+- 坑位记录：PS5.1 `>>` 重定向日志为 UTF-16LE——qa 读日志须按 BOM 自适应（qa_r2 已修）；builtins/furniture 白模阶段无正式材质——新增构建件一律 role+白模回退；主卫淋浴套装初版挂错"假墙"（x=12.68 无墙）+壁龛穿窗——按 W10 实墙/避窗重排（混水阀南段 y-5.15..-5.02、壁龛窗下 z0.60-1.12）；公卫同因避窗西移；壁龛背板初版全黑读作"黑板"——改五面砖色内衬。
+- qa.py 238 全过（豁免扩展：vanity 龙头/盆 z+xy、bookcase 外凸 xy——均规格要求）；qa_coplanar 0；qa_r2 9 PASS/0 FAIL。

@@ -203,7 +203,8 @@ def build_outdoor(mats_unused, colls):
     common = colls['common']
     out = util.get_collection('OUTDOOR', parent=common)
     Z = -6.0
-    grass = _outdoor_mat('out_grass', '7E8F63', 0.95, noise_scale=8.0, noise_mix=0.35)
+    # R2 #16：草地更"草地"（旧 7E8F63 在鸟瞰曝光下读作沥青灰）
+    grass = _outdoor_mat('out_grass', '8CA465', 0.95, noise_scale=8.0, noise_mix=0.35)
     path = _outdoor_mat('out_path', 'C9C2B4', 0.85, noise_scale=40.0, noise_mix=0.10)
     canopy = _outdoor_mat('out_canopy', '5A7048', 0.9, noise_scale=6.0, noise_mix=0.45)
     trunk = _outdoor_mat('out_trunk', '6B5A48', 0.9, noise_scale=60.0, noise_mix=0.2)
@@ -217,38 +218,66 @@ def build_outdoor(mats_unused, colls):
     util.make_box('out_path_n', (0.0, 5.5, Z), (26.0, 6.8, Z + 0.02),
                   coll=out, mat=path, role='outdoor')
 
+    # R2 #17：Poly Haven 真树替换低多边形球冠——Jacaranda（阔冠，南 8 棵）+
+    # Tree Small 02（直干庭院树，北 6 棵）。glTF(1k 纹理) 导入后 decimate 减面
+    # （LOD0 约 3.9M/2.0M tri，背景 15-25m 用量），linked duplicate 复用 14 处。
     import random
+    import bmesh
     rnd = random.Random(20261002)   # 可复现
-    # 树：南侧（阳台/露台外 5-15m）与北侧（孩子房/厨卫外），冠高 6-10m
     spots_s = [(-8.0, -20.5), (-2.5, -23.0), (5.0, -21.0), (12.0, -24.0),
                (18.5, -20.0), (25.0, -22.5), (-14.0, -17.5), (30.0, -18.0)]
     spots_n = [(0.0, 8.5), (6.5, 11.0), (13.0, 9.0), (20.0, 12.5), (-6.0, 11.5),
                (27.0, 8.0)]
-    ti = 0
-    for (px, py) in spots_s + spots_n:
-        h = 6.0 + rnd.random() * 4.0          # 冠高 6-10m
-        ct = Z + h                             # 冠顶世界 Z ≈ 0..4（窗齐平）
-        cr = 1.6 + rnd.random() * 1.2
-        util.make_box('out_trunk%02d' % ti, (px - 0.18, py - 0.18, Z),
-                      (px + 0.18, py + 0.18, ct - cr * 0.8), coll=out,
-                      mat=trunk, role='outdoor')
-        for j, (dx, dy, dz, rr) in enumerate(((0, 0, 0, 1.0), (0.9, 0.5, -0.8, 0.75),
-                                              (-0.8, -0.6, -0.7, 0.7), (0.3, -0.9, -0.4, 0.6))):
-            r = cr * rr
-            cz = ct - cr * 0.7 + dz * cr * 0.5
-            o = bpy.data.meshes.new('out_canopy%02d_%d_mesh' % (ti, j))
-            import bmesh
-            bm = bmesh.new()
-            bmesh.ops.create_uvsphere(bm, u_segments=16, v_segments=12, radius=r)
-            bm.to_mesh(o)
-            bm.free()
-            ob = bpy.data.objects.new('out_canopy%02d_%d' % (ti, j), o)
-            ob.location = (px + dx * cr, py + dy * cr, cz)
-            ob.scale = (1.0, 1.0, 0.82)
-            ob.data.materials.append(canopy)
-            ob['role'] = 'outdoor'
-            out.objects.link(ob)
-        ti += 1
+    tree_specs = [('jacaranda_tree_1k', 0.40, 0.12, spots_s),
+                  ('tree_small_02_1k', 1.9, 0.18, spots_n)]
+    for aid, sc, dec_ratio, spots in tree_specs:
+        path = os.path.join(config.ASSET_DIR, 'trees', aid, aid + '.gltf')
+        if not os.path.isfile(path):
+            print('[lighting][warn] tree asset missing: %s' % path)
+            continue
+        before = set(bpy.data.objects)
+        bpy.ops.import_scene.gltf(filepath=path)
+        imported = list(set(bpy.data.objects) - before)
+        mesh_objs = [o for o in imported if o.type == 'MESH']
+        for o in imported:                      # 非网格（空节点）直接删
+            if o.type != 'MESH':
+                bpy.data.objects.remove(o)
+        if not mesh_objs:
+            print('[lighting][warn] no mesh imported from %s' % aid)
+            continue
+        tmpl = mesh_objs[0]
+        tmpl.select_set(True)
+        bpy.context.view_layer.objects.active = tmpl
+        bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
+        dec = tmpl.modifiers.new('dec', 'DECIMATE')
+        dec.ratio = dec_ratio
+        bpy.ops.object.modifier_apply(modifier='dec')
+        # 原点归树底：包围盒最低点移到 Z
+        zs = [tmpl.matrix_world @ v.co for v in tmpl.data.vertices]
+        z_base = min(v.z for v in zs)
+        for v in tmpl.data.vertices:
+            v.co.z -= z_base
+        tmpl.data.update()
+        for o in mesh_objs[1:]:
+            bpy.data.objects.remove(o)
+        for o in mesh_objs:
+            o['role'] = 'outdoor'
+            o.select_set(False)
+        # 14 处布点由两品种分担：linked duplicate（共享网格数据）
+        for i, (px, py) in enumerate(spots):
+            dup = tmpl.copy()                   # 共享网格（linked）
+            s = sc * (0.9 + rnd.random() * 0.25)
+            dup.location = (px, py, Z)
+            dup.scale = (s, s, s)
+            dup.rotation_euler = (0.0, 0.0, rnd.random() * 6.28)
+            dup['role'] = 'outdoor'
+            out.objects.link(dup)
+        # 模板本体隐藏（仅作数据源）
+        tmpl.location = (0.0, 0.0, -30.0)
+        tmpl.hide_render = True
+        tmpl.hide_viewport = True
+        tmpl['role'] = 'outdoor'
+        out.objects.link(tmpl)
 
     # 远处浅色住宅楼体块（南北各一，隔花园相望）
     util.make_box('out_bldg_s', (10.0, -48.0, Z), (26.0, -32.0, Z + 34.0),

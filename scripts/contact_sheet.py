@@ -84,10 +84,10 @@ def make_sheet(mode='preview'):
     H = TITLE_H + rows * (TILE_H + CAP_H + 18) + MARGIN
     sheet = Image.new('RGB', (W, H), BG)
     d = ImageDraw.Draw(sheet)
-    title = ('江语云庭 143㎡ 效果图 · 轻中古 —— 预览总览（R1FIX2）' if mode == 'preview'
+    title = ('江语云庭 143㎡ 效果图 · 轻中古 —— 预览总览（R2）' if mode == 'preview'
              else '江语云庭 143㎡ 效果图 · 轻中古')
     d.text((MARGIN, 26), title, font=font(34), fill=FG)
-    d.text((MARGIN, 68), 'R1FIX2 轮 preview 档 · 木色 A（默认）· 孩子房家具仅示意见标注' if mode == 'preview'
+    d.text((MARGIN, 68), 'R2 轮 preview 档 · 木色已选定 A 胡桃 · 孩子房家具仅示意见标注' if mode == 'preview'
            else '成品档 1920x1080 / 全景 4096x2048', font=font(17), fill=(120, 112, 104))
     for i, (cid, path, desc, kids) in enumerate(tiles):
         r, cix = divmod(i, COLS)
