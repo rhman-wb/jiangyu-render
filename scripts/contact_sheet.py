@@ -84,10 +84,10 @@ def make_sheet(mode='preview'):
     H = TITLE_H + rows * (TILE_H + CAP_H + 18) + MARGIN
     sheet = Image.new('RGB', (W, H), BG)
     d = ImageDraw.Draw(sheet)
-    title = ('江语云庭 143㎡ 效果图 · 轻中古 —— 预览总览（R1）' if mode == 'preview'
+    title = ('江语云庭 143㎡ 效果图 · 轻中古 —— 预览总览（R1FIX2）' if mode == 'preview'
              else '江语云庭 143㎡ 效果图 · 轻中古')
     d.text((MARGIN, 26), title, font=font(34), fill=FG)
-    d.text((MARGIN, 68), '返工 R1 轮 preview 档 · 木色 A（默认）· 孩子房家具仅示意见标注' if mode == 'preview'
+    d.text((MARGIN, 68), 'R1FIX2 轮 preview 档 · 木色 A（默认）· 孩子房家具仅示意见标注' if mode == 'preview'
            else '成品档 1920x1080 / 全景 4096x2048', font=font(17), fill=(120, 112, 104))
     for i, (cid, path, desc, kids) in enumerate(tiles):
         r, cix = divmod(i, COLS)
@@ -101,6 +101,56 @@ def make_sheet(mode='preview'):
     out = os.path.join(config.RENDER_DIR, mode, 'contact_sheet_%s.png' % mode)
     sheet.save(out, 'PNG')
     print('[sheet] %s (%dx%d, %d tiles)' % (out, W, H, len(tiles)))
+    return out
+
+
+def _avg_rgb(im):
+    """图片平均色 -> (r, g, b)。"""
+    px = list(im.convert('RGB').getdata())
+    n = len(px)
+    return (sum(p[0] for p in px) // n, sum(p[1] for p in px) // n,
+            sum(p[2] for p in px) // n)
+
+
+def _fill_tile(path, size):
+    """裁剪填充到 size（保持覆盖，不变形）。"""
+    im = Image.open(path).convert('RGB')
+    sw, sh = size
+    scale = max(sw / im.width, sh / im.height)
+    im = im.resize((max(1, int(im.width * scale + 0.5)),
+                    max(1, int(im.height * scale + 0.5))), Image.LANCZOS)
+    x = (im.width - sw) // 2
+    y = (im.height - sh) // 2
+    return im.crop((x, y, x + sw, y + sh))
+
+
+def make_cal_compare():
+    """REWORK_R1FIX2 F3：CAL_wood_compare.png = CAL 门面渲染 + 实体店门板
+    裁剪（像素 300,260,600,700，复核方指定）并排对照，标注实测平均色。"""
+    imgs = load_imgs_map('preview')
+    cal = imgs.get('CAL_wood_door')
+    refp = os.path.join(os.path.dirname(config.RENDER_DIR), 'refs', 'livingroom_cabinet.jpg')
+    if cal is None or not os.path.isfile(refp):
+        print('[sheet][warn] CAL compare missing inputs (%s, %s)' % (cal, refp))
+        return None
+    W = MARGIN * 2 + 2 * TILE_W + GAP
+    H = TITLE_H + TILE_H + CAP_H + MARGIN
+    sheet = Image.new('RGB', (W, H), BG)
+    d = ImageDraw.Draw(sheet)
+    d.text((MARGIN, 26), 'A 案木色校准对照：CAL 门面渲染 vs 实体店参考', font=font(30), fill=FG)
+    tiles = [(cal, 'CAL 渲染门面'),
+             (refp, '实体店参考（裁 300,260,600,700）')]
+    for i, (path, label) in enumerate(tiles):
+        x = MARGIN + i * (TILE_W + GAP)
+        y = TITLE_H
+        tile = _fill_tile(path, (TILE_W, TILE_H))
+        sheet.paste(tile, (x, y))
+        d.rectangle([x, y, x + TILE_W - 1, y + TILE_H - 1], outline=(210, 205, 198), width=1)
+        hexc = '#%02X%02X%02X' % _avg_rgb(tile)
+        d.text((x, y + TILE_H + 8), '%s 实测 %s' % (label, hexc), font=font(20), fill=ACCENT)
+    out = os.path.join(config.RENDER_DIR, 'preview', 'CAL_wood_compare.png')
+    sheet.save(out, 'PNG')
+    print('[sheet] %s' % out)
     return out
 
 
@@ -149,18 +199,13 @@ def make_compare():
     y = TITLE_H
     if os.path.isfile(refp):
         ref = Image.open(refp).convert('RGB')
-        rx = (0.22, 0.42, 0.35, 0.78)   # 左列平开门整块门板（视觉选定，避拉手反光）
-        crop = ref.crop((int(rx[0] * ref.width), int(rx[1] * ref.height),
-                         int(rx[2] * ref.width), int(rx[3] * ref.height)))
+        rx = (300, 260, 600, 700)   # 复核方指定像素框：左侧双开门门板区域（不得改动）
+        crop = ref.crop(rx)
+        hexref = '#%02X%02X%02X' % _avg_rgb(crop)
         crop.thumbnail((TILE_W, TILE_H), Image.LANCZOS)
         cv = Image.new('RGB', (TILE_W, TILE_H), (238, 236, 232))
         cv.paste(crop, ((TILE_W - crop.width) // 2, (TILE_H - crop.height) // 2))
         sheet.paste(cv, (x, y))
-        px = list(cv.getdata())
-        npx = len(px)
-        hexref = '#%02X%02X%02X' % (sum(p[0] for p in px) // npx,
-                                    sum(p[1] for p in px) // npx,
-                                    sum(p[2] for p in px) // npx)
     else:
         hexref = '-'
         print('[sheet][warn] missing refs/livingroom_cabinet.jpg')
@@ -176,6 +221,8 @@ if __name__ == '__main__':
     args = sys.argv[1:]
     if '--compare' in args:
         make_compare()
-    else:
+    if '--calcompare' in args:
+        make_cal_compare()
+    if '--compare' not in args and '--calcompare' not in args:
         mode = 'final' if '--mode' in args and 'final' in args else 'preview'
         make_sheet(mode)

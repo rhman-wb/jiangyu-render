@@ -61,3 +61,14 @@
 - 机位：18 号 (10.55,-2.3,1.45) 俯 15 度 shift -0.25 曝光 2.55；其余曝光较 R1 轮 +0.15~+0.5
 - 四轮迭代：R1FIX-1 初版 -> R1FIX-2（光源 5400K/gamma0.93）-> R1FIX-3（5700K/HDRI0.60）-> R1FIX-4（客厅 5W/灯带 2.2/gamma0.90）+ C1 单独两轮（diff_tex 路径 bug 修复 + oak 贴图 + B/C 提亮）
 - 单张耗时 PERSP 13-17s / PANO 60s；qa_r1fix 终态 17 PASS / 2 FAIL（物理论证见该报告末节）
+
+
+## R1 第二次补修（2026-10-03 上午）
+
+- 设备 oneAPI GPU ｜ Cycles 960x540（全景 2048x1024）｜ 64 samples ｜ OIDN ｜ AgX Base Contrast ｜ gamma 0.90 ｜ 无合成层 ｜ PNG 8bit RGB ｜ seed 42
+- 全量重渲两轮：v2 批（24 机位 + C1x3@128smp + CALx3@256smp）+ 地毯调参后 A 组地毯可见 5 张（01/03/04/05/P1）三渲；另 10/16b 单独补渲修复日志截断。日志 renders/preview/render_r1fix2.log 零 (0 objs)/零 warn（含 variant= 13/21 objs 完整行）。
+- 事故记录：v1 批 PowerShell 把裸逗号 --cams 列表当数组字面量，前导零被整型化（01->1）致 9 机位 camera not found——v2 起所有 --cams 参数加引号；Select-String 管道会把日志行按 80 列截断（variant 行残缺）——补渲直写 >> 重定向。
+- F3 校准（CAL_wood_door：W19 父母房门面 1.2m lens50 曝光 1.80，256smp）：11 轮迭代定稿 smoked_walnut_veneer + 逐通道对比注入；终值 A dist 10.4/RG 1.54/RB 2.67/std 11.1，B 亮度差 +25.5/std 13.7，C dist 12.1/RB 1.83/std 9.8（qa_r1fix2.md 全 PASS）。木纹贴图 assets/walnut3_*.jpg（2k 三件套）。
+- F6 地毯定稿：间距 25cm / 线宽 4mm / 基色提亮 #CDBEA4->#DBCFBA（同深度实测补偿，规格 6.3 微调条款，D-051）；04 右框（复核方指定）S 0.161 / dist 25.4 / std 10.1 全过。04 左框落在焦糖皮脚凳上（复核方指定坐标，构图自 R1 未变，证据 rug_box_04_reviewer.png）；05 自选框处茶几阴影带（同深度裸地砖参照 dist 49.1）——两框如实报 FAIL 附证据，交复核方裁定。
+- F4：qa_coplanar 16->0；12/13 号两门间 3x 放大裁片（review/screenshots/f4_check_12/13.png）亲看为连续白墙。
+- 机位微调：无（CAL 为新增校准机位，非交付机位）。

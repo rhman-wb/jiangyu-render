@@ -41,6 +41,34 @@ FLUTED_DOORS = {('W08', 0), ('W14', 1)}
 
 
 # ================================================================ 墙体几何
+def _wall_thick(o):
+    """墙厚（外墙 0.20 / 内墙 0.14）。"""
+    return config.WALL_T_EXT if o['id'] in EXT_WALLS else config.WALL_T
+
+
+def _wall_vcenter(o):
+    """墙 B 的实际盒体中心（外墙向外偏 0.03，见 wall_geo）。"""
+    n = EXT_WALLS.get(o['id'])
+    if not n:
+        return o['y'] if o['axis'] == 'x' else o['x']
+    return (o['y'] + 0.03 * n[1]) if o['axis'] == 'x' else (o['x'] + 0.03 * n[0])
+
+
+def _collinear_covers(b, junction, walls):
+    """是否存在与 b 同轴同线、跨度覆盖交界点 junction 的墙（b 的直墙链延续）。"""
+    vb = b['y'] if b['axis'] == 'x' else b['x']
+    for o in walls:
+        if o is b or o['axis'] != b['axis']:
+            continue
+        vo = o['y'] if o['axis'] == 'x' else o['x']
+        if abs(vo - vb) > 0.02:
+            continue
+        lo, hi = sorted((o['start'], o['end']))
+        if lo - 0.06 <= junction <= hi + 0.06:
+            return True
+    return False
+
+
 def wall_geo(w, walls):
     """返回墙的几何参数 dict：axis, u0e/u1e(延伸后跨), v(中心线), v_center(盒体中心), t, ext"""
     axis = w['axis']
@@ -51,24 +79,47 @@ def wall_geo(w, walls):
     v_center = v + 0.03 * nv if n else v
 
     def extend_end(u_end, direction):
-        """端点落在垂直墙中心线上时，延伸到对方远面（A 组外侧 0.13 / 其余 0.07）。"""
+        """REWORK_R1FIX2 F4：墙端规则（替换旧"一律延伸到对方远面"——旧规则把端面
+        推到贯通墙室内面同一平面产生闪烁，且在直墙链节点伸进同线邻墙体）：
+        1. 本墙端点处有同轴同线墙延续（直墙链相接，如 W01/W05/W06、W12/W13）
+           -> 不延伸，端帽与邻墙端帽对接（法线相反，无重合面）；
+        2. 垂直墙 B 在端点 ±(t_B/2+2cm) 内：
+           - B 于交界处被同轴线墙延续（链节点），或 B 贯穿本墙（T 交）
+             -> 对接 B 近面（端点落在 B 板内时回缩，回缩段由 B 实体覆盖）；
+           - 真 L 角（互为端点、双方均无链延续，如 W14/W10）：厚度大者
+             （同厚 id 小者）贯穿到 B 远面内 2mm 补全角部，另一侧对接近面。
+        所有交接零体积重叠（贯穿者与对接者足迹相隔一个墙面）-> qa_coplanar 为空。"""
         wv = w['y'] if axis == 'x' else w['x']  # 本墙固定坐标（在对方墙跨度轴上的位置）
+        # 1) 同轴延续
+        for o in walls:
+            if o is w or o['axis'] != axis:
+                continue
+            ov = o['y'] if o['axis'] == 'x' else o['x']
+            if abs(ov - v) > 0.02:
+                continue
+            lo, hi = sorted((o['start'], o['end']))
+            if lo - 0.06 <= u_end <= hi + 0.06:
+                return u_end
+        # 2) 垂直墙
         for o in walls:
             if o is w or o['axis'] == axis:
                 continue
             ov = o['y'] if o['axis'] == 'x' else o['x']
-            if abs(ov - u_end) > 0.02:
+            t_o = _wall_thick(o)
+            if abs(ov - u_end) > t_o / 2 + 0.02:
                 continue
             lo, hi = sorted((o['start'], o['end']))
             if not (lo - 0.06 <= wv <= hi + 0.06):
                 continue
-            n_o = EXT_WALLS.get(o['id'])
-            if n_o:
-                n_ou = n_o[0] if axis == 'x' else n_o[1]
-                ext = 0.13 if n_ou * direction > 0 else 0.07
-            else:
-                ext = 0.07
-            return u_end + direction * ext
+            c_o = _wall_vcenter(o)
+            mutual = (abs(wv - lo) <= 0.06) or (abs(wv - hi) <= 0.06)
+            # 对方在交界处有链延续（或 T 交）-> 对接近面
+            if not mutual or _collinear_covers(o, wv, walls):
+                return c_o - direction * (t_o / 2)
+            t_w = config.WALL_T_EXT if n else config.WALL_T
+            if (t_w, w['id']) > (t_o, o['id']):
+                return c_o + direction * (t_o / 2 - 0.002)
+            return c_o - direction * (t_o / 2)
         return u_end
 
     return {

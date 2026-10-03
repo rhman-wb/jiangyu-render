@@ -15,20 +15,49 @@ WOOD_DIFF = os.path.join(ASSET, 'walnut2_diff_2k.jpg')
 WOOD_ROUGH = os.path.join(ASSET, 'walnut2_rough_2k.jpg')
 WOOD_NOR = os.path.join(ASSET, 'walnut2_nor_gl_2k.jpg')
 
+
+def _math_frac_op():
+    """Blender Math 节点 Fraction 的枚举名探测（版本拼写防御）。"""
+    try:
+        ids = [i.identifier for i in
+               bpy.types.ShaderNodeMath.bl_rna.properties['operation'].enum_items]
+    except Exception:
+        return 'FRACTION'
+    for cand in ('FRACTION', 'FRACT'):
+        if cand in ids:
+            return cand
+    return 'FRACTION'
+
+
+RUG_FRAC_OP = _math_frac_op()
+
 # REWORK 2.1 木色预设：A 胡桃默认(#5E4330 中深棕/直纹/低饱和/哑光)，
 # B 浅胡桃(#7A5C43)，C 橡木(#B48E66)。diff/rough/nor 可按预设换贴图。
+# REWORK_R1FIX2 F3：以实物门面 (96,63,46)/std13.5 为基准校准；
+# contrast/contrast_mid = 贴图线性域对比注入 (c-m)*k+m——steer 目标色混合
+# 会拉平纹理，先放大对比保住门面亮度 std>=9（木纹可见）。终值经
+# CAL_wood_door 校准循环迭代，定版记录 render_log / decisions_log。
 WOOD_PRESETS = {
-    'A': dict(target='5E4330', sat=0.88, hue=0.53, value=0.66, steer=0.42,
-              scale=2.4, rough=0.52, rough_scale=0.35, rough_add=0.45,
-              nor_strength=0.45),
-    'B': dict(target='7A5C43', sat=0.88, hue=0.55, value=1.55, steer=0.42,
-              scale=2.4, rough=0.52, rough_scale=0.35, rough_add=0.45,
-              nor_strength=0.40),
-    'C': dict(target='B48E66', sat=0.92, hue=0.57, value=1.36, steer=0.32,
-              scale=1.8, rough=0.50, rough_scale=0.35, rough_add=0.42,
-              nor_strength=0.40,
-              # R1FIX F3：C 案换浅色橡木贴图（oak_veneer_02 #DBB894），
-              # steer 降到 0.32 —— target 比橡木贴图暗，贴图主导亮度
+    'A': dict(target='603F2E', sat=0.95, hue=0.50, value=0.75, steer=0.40,
+              contrast=1.7, contrast_mid=(0.495, 0.324, 0.24),
+              scale=1.0, rough=0.52, rough_scale=0.90, rough_add=0.30,
+              nor_strength=0.80,
+              # REWORK_R1FIX2 F3：换 smoked_walnut_veneer（直纹、内在 std 16.6，
+              # 旧 black_walnut_03 仅 8.8 撑不起 std>=9；选型实测见 decisions_log）
+              diff_tex='walnut3_diff_2k.jpg', rough_tex='walnut3_rough_2k.jpg',
+              nor_tex='walnut3_nor_gl_2k.jpg'),
+    'B': dict(target='865840', sat=1.10, hue=0.50, value=1.30, steer=0.40,
+              contrast=1.7, contrast_mid=(0.495, 0.324, 0.24),
+              scale=1.0, rough=0.52, rough_scale=0.90, rough_add=0.30,
+              nor_strength=0.75,
+              diff_tex='walnut3_diff_2k.jpg', rough_tex='walnut3_rough_2k.jpg',
+              nor_tex='walnut3_nor_gl_2k.jpg'),
+    'C': dict(target='B48E66', sat=1.00, hue=0.50, value=1.90, steer=0.35,
+              contrast=4.0, contrast_mid=(0.71, 0.48, 0.30),
+              scale=0.55, rough=0.50, rough_scale=1.10, rough_add=0.30,
+              nor_strength=0.70,
+              # C 案浅色橡木贴图（oak_veneer_02 #DBB894），steer 0.32——
+              # target 比橡木贴图暗，贴图主导亮度
               diff_tex='oak2_diff_2k.jpg', rough_tex='oak2_rough_2k.jpg',
               nor_tex='oak2_nor_gl_2k.jpg'),
 }
@@ -300,7 +329,33 @@ def _build_wood_nodes(m, p):
         hsl.inputs['Saturation'].default_value = p['sat']
         hsl.inputs['Value'].default_value = p['value']
         hsl.inputs['Fac'].default_value = 1.0
-        _link(m, texc.outputs['Color'], hsl.inputs['Color'])
+        # REWORK_R1FIX2 F3：对比度注入 c' = m + (c-m)*k（m 为逐通道贴图均值、
+        # 线性域，负值截 0）——steer 目标色混合会拉平纹理，先放大贴图对比
+        # 保住门面亮度 std>=9；逐通道 m 避免单标量把蓝通道压碎
+        ck = float(p.get('contrast', 1.0))
+        if abs(ck - 1.0) > 1e-3:
+            cm = p.get('contrast_mid', (0.3, 0.3, 0.3))
+            if not isinstance(cm, (tuple, list)):
+                cm = (cm, cm, cm)
+            vsub = _node(m, 'ShaderNodeVectorMath', -950, 60, 'contrast sub')
+            vsub.operation = 'SUBTRACT'
+            vsub.inputs[1].default_value = tuple(cm)
+            vsc = _node(m, 'ShaderNodeVectorMath', -950, -60, 'contrast k')
+            vsc.operation = 'SCALE'
+            vsc.inputs['Scale'].default_value = ck
+            vadd = _node(m, 'ShaderNodeVectorMath', -950, -220, 'contrast add')
+            vadd.operation = 'ADD'
+            vadd.inputs[1].default_value = tuple(cm)
+            vmax = _node(m, 'ShaderNodeVectorMath', -950, -380, 'clamp0')
+            vmax.operation = 'MAXIMUM'
+            vmax.inputs[1].default_value = (0.0, 0.0, 0.0)
+            _link(m, texc.outputs['Color'], vsub.inputs[0])
+            _link(m, vsub.outputs['Vector'], vsc.inputs[0])
+            _link(m, vsc.outputs['Vector'], vadd.inputs[0])
+            _link(m, vadd.outputs['Vector'], vmax.inputs[0])
+            _link(m, vmax.outputs['Vector'], hsl.inputs['Color'])
+        else:
+            _link(m, texc.outputs['Color'], hsl.inputs['Color'])
         mixt = _node(m, 'ShaderNodeMixRGB', -640, 100, 'target mix')
         mixt.blend_type = 'MIX'
         mixt.inputs['Fac'].default_value = p['steer']
@@ -366,55 +421,58 @@ def apply_wood_preset(preset):
 
 
 def make_rug_geo():
-    """几何纹地毯（F6 重写）：燕麦底 CDBEA4 + 墨绿/砖红交替细线。
-    Wave(间距 0.2/0.22m) -> ColorRamp 硬边窄条带(带宽 3.6% 周期 ≈ 7-8mm 线宽)
-    -> 两组线叠加，线条覆盖面积 ≈ 2x3.6% = 7.2% <= 8%。替换旧版宽波带混色
-    （旧版大面积红绿格子观感，REWORK_R1FIX F6）。"""
+    """几何纹地毯（REWORK_R1FIX2 F6 重写）：燕麦底 CDBEA4 + 墨绿/砖红稀疏细线。
+    旧版 Wave->双元素 CONSTANT ColorRamp 的 CONSTANT 语义把 Fac>=0.518 全部
+    出线（线宽≈半个周期），渲成密集红绿格子（复核实测格子边长 ~5cm）。
+    新版 FRACT 数学直算：周期 SPACING、线宽 WIDTH，X 向线墨绿、Y 向线砖红，
+    双向覆盖 = 2*WIDTH/SPACING ≈ 5% <= 8%；远看燕麦色、近看细线。"""
+    SPACING = 0.25   # 线距 25cm（规格带 15-25cm 内取最稀，远读作纯燕麦底）
+    WIDTH = 0.004    # 线宽 4mm（规格带 4-8mm 内取最细）
     m = bpy.data.materials.new('rug_geo')
     m.use_nodes = True
     b = _bsdf(m)
-    _set(b, 'Base Color', (*lin('CDBEA4'), 1.0))
+    _set(b, 'Base Color', (*lin('DBCFBA'), 1.0))
     _set(b, 'Roughness', 0.95)
-    tc = _node(m, 'ShaderNodeTexCoord', -900, 100)
-    # 两组正交 Wave：X 向线（墨绿）与 Y 向线（砖红），间距 15-25cm
-    w1 = _node(m, 'ShaderNodeTexWave', -720, 150)
-    w1.inputs['Scale'].default_value = 5.0    # 周期 0.2m
-    w1.inputs['Distortion'].default_value = 0.0
-    w1.bands_direction = 'X'
-    w2 = _node(m, 'ShaderNodeTexWave', -720, -80)
-    w2.inputs['Scale'].default_value = 4.5    # 周期 0.22m
-    w2.inputs['Distortion'].default_value = 0.0
-    w2.bands_direction = 'Y'
-    # ColorRamp 硬边窄条带：只在波峰 0.482-0.518 出线（CONSTANT 插值）
-    r1 = _node(m, 'ShaderNodeValToRGB', -540, 150)
-    r1.color_ramp.interpolation = 'CONSTANT'
-    r1.color_ramp.elements[0].position = 0.482
-    r1.color_ramp.elements[0].color = (0, 0, 0, 1)
-    r1.color_ramp.elements[1].position = 0.518
-    r1.color_ramp.elements[1].color = (1, 1, 1, 1)
-    r2 = _node(m, 'ShaderNodeValToRGB', -540, -80)
-    r2.color_ramp.interpolation = 'CONSTANT'
-    r2.color_ramp.elements[0].position = 0.482
-    r2.color_ramp.elements[0].color = (0, 0, 0, 1)
-    r2.color_ramp.elements[1].position = 0.518
-    r2.color_ramp.elements[1].color = (1, 1, 1, 1)
-    # 底色 -> 混墨绿线（X 向） -> 混砖红线（Y 向）
-    m1 = _node(m, 'ShaderNodeMixRGB', -340, 150)
+    tc = _node(m, 'ShaderNodeTexCoord', -1000, 100)
+    sep = _node(m, 'ShaderNodeSeparateXYZ', -860, 100)
+    _link(m, tc.outputs['Object'], sep.inputs['Vector'])
+
+    def line_mask(tag, coord, y):
+        """|frac(coord/SPACING) - 0.5| < 半线宽比 -> 线（1）。"""
+        div = _node(m, 'ShaderNodeMath', -700, y, tag + '/spacing')
+        div.operation = 'DIVIDE'
+        div.inputs[1].default_value = SPACING
+        fr = _node(m, 'ShaderNodeMath', -560, y, tag + '/frac')
+        fr.operation = RUG_FRAC_OP
+        half = _node(m, 'ShaderNodeMath', -420, y, tag + '-0.5')
+        half.operation = 'SUBTRACT'
+        half.inputs[1].default_value = 0.5
+        ab = _node(m, 'ShaderNodeMath', -300, y, tag + '/abs')
+        ab.operation = 'ABSOLUTE'
+        lt = _node(m, 'ShaderNodeMath', -160, y, tag + '/line')
+        lt.operation = 'LESS_THAN'
+        lt.inputs[1].default_value = (WIDTH / SPACING) / 2.0
+        _link(m, sep.outputs[coord], div.inputs[0])
+        _link(m, div.outputs['Value'], fr.inputs[0])
+        _link(m, fr.outputs['Value'], half.inputs[0])
+        _link(m, half.outputs['Value'], ab.inputs[0])
+        _link(m, ab.outputs['Value'], lt.inputs[0])
+        return lt
+
+    mx = line_mask('X', 'X', 160)   # X 向线 -> 墨绿
+    my = line_mask('Y', 'Y', -60)   # Y 向线 -> 砖红
+    m1 = _node(m, 'ShaderNodeMixRGB', 40, 160)
     m1.blend_type = 'MIX'
-    m1.inputs['Color1'].default_value = (*lin('CDBEA4'), 1.0)
+    m1.inputs['Color1'].default_value = (*lin('DBCFBA'), 1.0)
     m1.inputs['Color2'].default_value = (*lin('5F6B45'), 1.0)
-    m2 = _node(m, 'ShaderNodeMixRGB', -180, 60)
+    m2 = _node(m, 'ShaderNodeMixRGB', 200, 60)
     m2.blend_type = 'MIX'
     m2.inputs['Color2'].default_value = (*lin('A5533F'), 1.0)
-    _link(m, tc.outputs['Object'], w1.inputs['Vector'])
-    _link(m, tc.outputs['Object'], w2.inputs['Vector'])
-    _link(m, w1.outputs['Fac'], r1.inputs['Fac'])
-    _link(m, w2.outputs['Fac'], r2.inputs['Fac'])
-    _link(m, r1.outputs['Color'], m1.inputs['Fac'])
+    _link(m, mx.outputs['Value'], m1.inputs['Fac'])
     _link(m, m1.outputs['Color'], m2.inputs['Color1'])
-    _link(m, r2.outputs['Color'], m2.inputs['Fac'])
+    _link(m, my.outputs['Value'], m2.inputs['Fac'])
     _link(m, m2.outputs['Color'], b.inputs['Base Color'])
-    m.diffuse_color = (*lin('CDBEA4'), 1.0)
+    m.diffuse_color = (*lin('DBCFBA'), 1.0)
     return m
 
 
@@ -757,13 +815,17 @@ def _resolve_role(role, n, root):
 
 
 def _assign_wall_tile(o, mats, role):
-    """贴砖墙：wall_paint + tile 双材质，朝湿区/厨房质心的面贴砖（沿用 M4 面分配）。"""
+    """贴砖墙：wall_paint + tile 双材质，朝湿区/厨房质心的面贴砖（沿用 M4 面分配）。
+    REWORK_R1FIX2 F4：端帽面（法线沿墙长轴）一律 wall_paint——砖只能出现在
+    朝湿区/厨房的长向面上，不得出现在端面或朝卧室/过道/客厅的面。"""
     zone = WALL_TILE_ZONE[role]
     tile_name, cen = zone
     o.data.materials.clear()
     o.data.materials.append(mats['wall_paint'])
     o.data.materials.append(mats[tile_name])
     from mathutils import Vector
+    dims = o.dimensions
+    long_x = abs(dims.x) >= abs(dims.y)   # 墙长轴方向
     for p in o.data.polygons:
         c = Vector((0.0, 0.0, 0.0))
         for vi in p.vertices:
@@ -772,6 +834,9 @@ def _assign_wall_tile(o, mats, role):
         w = o.matrix_world @ c
         nrm = p.normal.copy()
         nrm.rotate(o.matrix_world)
+        if (long_x and abs(nrm.x) > 0.9) or ((not long_x) and abs(nrm.y) > 0.9):
+            p.material_index = 0   # 端帽面不贴砖
+            continue
         to_zone = Vector((cen[0] - w.x, cen[1] - w.y, 0.0))
         p.material_index = 1 if nrm.dot(to_zone) > 0 else 0
 

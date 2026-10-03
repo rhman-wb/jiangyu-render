@@ -126,4 +126,25 @@ def build_all(coll):
         if abs(shift_raw) > SHIFT_LIMIT:
             cam['shift_clamped'] = True
         made.append(cam)
+
+    # REWORK_R1FIX2 F3：木色校准机位（不在 cameras.json）——正对客厅西墙 W19
+    # 父母房木门扇面（门洞 y -8.6..-7.75，门扇面 x=3.361），距门面 1.2m、lens 50，
+    # 画面覆盖 0.864x0.486m，门板占画面 ~89%（复核单要求 >=70%）。
+    # 渲染：render.py --cams CAL --preset preview --samples 256 --wood A|B|C
+    cd = bpy.data.cameras.new('cd_CAL_wood_door')
+    cam = bpy.data.objects.new('cam_CAL_wood_door', cd)
+    coll.objects.link(cam)
+    cam.location = (4.561, -8.175, 1.05)
+    cam.rotation_euler = (math.radians(90), 0.0, math.radians(90.0))
+    cd.sensor_fit = 'HORIZONTAL'
+    cd.sensor_width = 36.0
+    cd.lens = 50.0
+    cd.clip_start = 0.02
+    cd.clip_end = 300.0
+    cam['cam_id'] = 'CAL_wood_door'
+    cam['scheme'] = 'A'
+    cam['cam_type'] = 'PERSP'
+    cam['description'] = 'F3 wood calibration: W19 parents door face at 1.2m lens50'
+    cam['exposure'] = 1.80   # 校准定版后记录 render_log
+    made.append(cam)
     return made

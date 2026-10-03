@@ -37,7 +37,8 @@ def _base_name(m):
 def parse_args():
     argv = sys.argv[sys.argv.index('--') + 1:] if '--' in sys.argv else []
     opts = {'white': '--white' in argv, 'cams': [], 'scheme': 'A',
-            'preset': None, 'variant': None, 'wood': None, 'out': None}
+            'preset': None, 'variant': None, 'wood': None, 'out': None,
+            'samples': None}
     if '--cams' in argv:
         opts['cams'] = [c.strip() for c in argv[argv.index('--cams') + 1].split(',') if c.strip()]
     if '--scheme' in argv:
@@ -50,6 +51,8 @@ def parse_args():
         opts['wood'] = argv[argv.index('--wood') + 1].upper()
     if '--out' in argv:
         opts['out'] = argv[argv.index('--out') + 1]
+    if '--samples' in argv:   # REWORK_R1FIX2 F3：CAL=256 / C1=128（降噪抹木纹的补救）
+        opts['samples'] = int(argv[argv.index('--samples') + 1])
     return opts
 
 
@@ -195,7 +198,11 @@ def main():
     else:
         preset = opts['preset'] or 'preview'
         dev = setup_cycles(scene, preset)
-        print('[render] preset=%s device=%s look=%s' % (preset, dev, config.AGX_LOOK))
+        if opts['samples']:
+            scene.cycles.samples = opts['samples']
+        print('[render] preset=%s device=%s look=%s%s' %
+              (preset, dev, config.AGX_LOOK,
+               (' samples=%d' % opts['samples']) if opts['samples'] else ''))
         outdir = os.path.join(config.RENDER_DIR,
                               'final' if preset == 'final' else
                               ('pano' if preset == 'pano_final' else 'preview'))

@@ -2,7 +2,7 @@
 
 blend: D:\ClaudeCodeProject2026\jiangyu-render\blend\jiangyu.blend
 
-汇总: PASS 238 / FAIL 0 / WARN 0 / INFO 90
+汇总: PASS 238 / FAIL 0 / WARN 0 / INFO 84
 
 - **PASS** closure living_dining_balcony W
 - **PASS** closure living_dining_balcony E
@@ -101,7 +101,7 @@ blend: D:\ClaudeCodeProject2026\jiangyu-render\blend\jiangyu.blend
 - **PASS** opening counts {'window': 7, 'door': 8, 'glass_door': 2, 'full_opening': 1}
 - **PASS** wall dims all 71 segs (top 2.85, t=0.14/0.20)
 - **PASS** floors 12 built
-- **PASS** cameras 24
+- **PASS** cameras 25
 - **PASS** no marker objects
 - **PASS** ceiling_box bbox ((2.3500001430511475, -7.400000095367432, 2.5), (3.299999952316284, -6.62000036239624, 2.8000001907348633))
 - **PASS** ray W01 window visible (fx_curt_daughter_sheer)
@@ -246,13 +246,10 @@ blend: D:\ClaudeCodeProject2026\jiangyu-render\blend\jiangyu.blend
 - **INFO** item common_living_dining_balcony_cabinet_01 tucks into W12_s01 (data-confirmed)
 - **INFO** item common_living_dining_balcony_cabinet_01 tucks into W28_s00 (data-confirmed)
 - **INFO** item common_living_dining_balcony_cabinet_01 tucks into W29_s00 (data-confirmed)
-- **INFO** item common_foyer_cabinet_01 tucks into W19_s02 (data-confirmed)
 - **INFO** item common_foyer_cabinet_01 tucks into W20_s00 (data-confirmed)
 - **INFO** item common_foyer_cabinet_01 tucks into W26_s00 (data-confirmed)
-- **INFO** item common_foyer_open_niche_01 tucks into W19_s02 (data-confirmed)
 - **INFO** item common_foyer_open_niche_01 tucks into W20_s00 (data-confirmed)
 - **INFO** item common_foyer_open_niche_01 tucks into W26_s00 (data-confirmed)
-- **INFO** item common_foyer_cabinet_02 tucks into W19_s02 (data-confirmed)
 - **INFO** item common_foyer_cabinet_02 tucks into W20_s00 (data-confirmed)
 - **INFO** item common_foyer_cabinet_02 tucks into W26_s00 (data-confirmed)
 - **INFO** item common_foyer_mirror_door_01 tucks into W26_s00 (data-confirmed)
@@ -286,12 +283,9 @@ blend: D:\ClaudeCodeProject2026\jiangyu-render\blend\jiangyu.blend
 - **INFO** item common_parents_room_bed_01 tucks into W21_s00 (data-confirmed)
 - **INFO** item common_parents_room_nightstand_01 tucks into W21_s00 (data-confirmed)
 - **INFO** item common_parents_room_nightstand_01 tucks into W22_s00 (data-confirmed)
-- **INFO** item common_parents_room_bay_seat_01 tucks into W23_s00 (data-confirmed)
 - **INFO** item common_parents_room_bay_seat_01 tucks into W23_s01 (data-confirmed)
-- **INFO** item common_parents_room_bay_seat_01 tucks into W23_s03 (data-confirmed)
 - **INFO** item common_parents_room_bay_seat_01 tucks into W24_s00 (data-confirmed)
 - **INFO** item common_parents_room_bay_seat_01 tucks into W25_s00 (data-confirmed)
-- **INFO** item common_parents_room_shelf_01 tucks into W23_s00 (data-confirmed)
 - **INFO** item common_parents_room_shelf_01 tucks into W24_s00 (data-confirmed)
 - **INFO** item common_parents_room_shelf_02 tucks into W25_s00 (data-confirmed)
 - **INFO** item common_parents_room_ceiling_box_01 tucks into W19_s02 (data-confirmed)

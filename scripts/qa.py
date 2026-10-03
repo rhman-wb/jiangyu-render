@@ -112,32 +112,44 @@ def check_closure():
             need = [(a, b)]
             for p, q in iv_merge(open_iv):
                 need = iv_sub(need, p, q)
-            # 生成墙段的覆盖
+            # 生成墙段的覆盖（REWORK_R1FIX2 F4：足迹包含边线即算实覆盖——
+            # 对接规则下角部 7cm 由垂直/贯穿墙的板体补全，平行轴限制会误报）
             cov = []
             for n in wall_seg_names:
                 wid = n.split('_')[0]
                 g = GEO[wid]
                 u0, u1, z0, z1, v0, v1 = seg_uvz(n)
                 if tag in ('W', 'E'):
-                    if g['axis'] != 'y':
-                        continue
-                    if abs((v0 + v1) / 2 - fixed) > 0.12:
-                        continue
+                    # 边线 x=fixed，覆盖区间沿 y
+                    if g['axis'] == 'y':
+                        if not (v0 - 1e-4 <= fixed <= v1 + 1e-4):
+                            continue
+                        iv = [(u0, u1)]
+                    else:
+                        if not (u0 - 1e-4 <= fixed <= u1 + 1e-4):
+                            continue
+                        iv = [(v0, v1)]
                 else:
-                    if g['axis'] != 'x':
-                        continue
-                    if abs((v0 + v1) / 2 - fixed) > 0.12:
-                        continue
-                # full_opening 区间从覆盖里扣除
-                sub = []
-                for op in WALLS[wid].get('openings', []):
-                    if op['type'] == 'full_opening':
-                        sub.append((op['start'], op['end']))
-                c = [(u0, u1)]
-                for p, q in sub:
-                    c = iv_sub(c, p, q)
-                for p, q in c:
-                    cov.append((max(p, a), min(q, b)))
+                    # 边线 y=fixed，覆盖区间沿 x
+                    if g['axis'] == 'x':
+                        if not (v0 - 1e-4 <= fixed <= v1 + 1e-4):
+                            continue
+                        iv = [(u0, u1)]
+                    else:
+                        if not (u0 - 1e-4 <= fixed <= u1 + 1e-4):
+                            continue
+                        iv = [(v0, v1)]
+                # full_opening 区间从平行墙自身覆盖里扣除
+                if (tag in ('W', 'E')) == (g['axis'] == 'y'):
+                    sub = []
+                    for op in WALLS[wid].get('openings', []):
+                        if op['type'] == 'full_opening':
+                            sub.append((op['start'], op['end']))
+                    for p, q in sub:
+                        iv = iv_sub(iv, p, q)
+                p2, q2 = max(iv[0][0], a), min(iv[0][1], b)
+                if q2 > p2:
+                    cov.append((p2, q2))
             gaps = [(a2, b2) for a2, b2 in need]
             for p, q in iv_merge(cov):
                 gaps = iv_sub(gaps, p, q)
@@ -242,10 +254,10 @@ def check_counts():
         log('FAIL', 'floors mismatch missing=%s extra=%s' %
             (expect_floors - floor_ids, floor_ids - expect_floors))
     ncam = len([o for o in bpy.data.objects if o.type == 'CAMERA'])
-    if ncam == 24:   # REWORK：23 + 新增 16b_son_room_blue
+    if ncam == 25:   # REWORK：23 + 16b 对比 + REWORK_R1FIX2 F3 CAL_wood_door 校准机位
         log('PASS', 'cameras %d' % ncam)
     else:
-        log('FAIL', 'cameras %d != 24' % ncam)
+        log('FAIL', 'cameras %d != 25' % ncam)
     markers = [o.name for o in bpy.data.objects if 'marker' in o.name.lower()]
     if markers:
         log('FAIL', 'marker objects built: %s' % markers[:3])

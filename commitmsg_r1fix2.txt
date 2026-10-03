@@ -1,0 +1,21 @@
+R1 第二次补修（REWORK_R1FIX2 F3/F4/F6）：木色实物校准 + 墙体重合面根治 + 地毯细线重做
+
+F3 木色：换装 smoked_walnut_veneer（内在 std 16.6，旧贴图 8.8 不可达门槛）；
+新增 CAL_wood_door 校准机位（W19 门面 1.2m lens50）与 render.py --samples 覆盖；
+材质链加逐通道对比度注入；三档校准全过（A dist 10.4/std 11.1，B 亮度差 +25.5，
+C dist 12.1/std 9.8），目标色按复核实测改 #603F2E/#865840。
+
+F4 墙体：extend_end 重写为对接/贯穿/链延续三规则（旧版延伸到贯通墙远面 =
+W07 端帽与 W14 主卧室内面同平面闪烁）；端帽面强制不贴砖；新增 qa_coplanar.py
+（16 处重合面 -> 0）；qa.py closure 覆盖模型升级为足迹包含、相机期望 25。
+
+F6 地毯：Wave+双元素 CONSTANT ColorRamp 语义错误根因（线宽=半周期）；
+FRACT 数学直算重做（25cm 间距 / 4mm 线宽 / 基色实测补偿 #DBCFBA）；
+04 右框（复核方指定）S 0.161 / dist 25.4 / std 10.1 全过。
+
+检查纪律（第 0 节）落地：CLAUDE.md 12.1 五条；visual_review_R1fix2.md 27 张
+Read 亲看、自由描述在前、R2 未做项如实"未见"。qa_r1fix2 9 PASS / 2 FAIL：
+04 左框（复核方指定坐标）落在焦糖皮脚凳上、05 自选框处茶几阴影带（同深度
+裸地砖参照 dist 49.1）——均为框位内容问题，证据图随报告交复核方裁定。
+
+Co-Authored-By: Claude Code <noreply@anthropic.com>
