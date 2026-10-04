@@ -287,3 +287,11 @@
 - **N3 厨房下柜**：东台面读 layout hob 包络划灶下区间做 3 层抽屉面（add_fronts 新增 drawer_stack=n：整幅按 z 等分、共享缝背板）；全部厨房门列拉手 0.30→0.12 黑短拉手（吊柜经 build_cabinet 的 common_kitchen 分支同步统一，工单"与上柜统一"授权）；北台面门列起点改 4.70 与洗碗机独立面板（4.10–4.70）左右对缝，西侧 13cm 固定窄门补齐。新门板全部 role='kitchen_front' → 变体自动圈定（日志替换数 17 ≥ 场景计数）。
 - **回归修复记录**：slot 拉手槽首版轴向写反（run/depth 对调）产生跨屋坏盒体（qa 22 FAIL）——已修；qa.py 相机期望 28→29。
 - **渲染范围**：仅工单清单 03/04/07/P1/P2/20/09/10 + CAB_west_bookcase（07 为 B 方案机位按 --scheme B 渲染）；contact_sheet_preview 已重生成。
+
+## D-059 成品档渲染轮（业主「R2 确认」后）
+- **交付**：final 20 张（1920×1080/256smp）+ pano_final 3 张（4096×2048/256smp）+ renders/final/contact_sheet.png（23 格）；16b/CAL/CAB 不跑成品（16b 为对比机位不占交付数）。
+- **三处小改**：① contact_sheet final 输出名 contact_sheet_final.png→contact_sheet.png（规格命名）；② caption 截断 [:30]→[:60]（15/16 格"（家具仅示意，以实际选购为准）"此前被截断）；③ render.py 成品档启用 OIDN Albedo+Normal 输入通道 + ACCURATE prefilter（第 9 章写法）。
+- **旧成品清空**：renders/final、renders/pano 的 Oct 1 旧 M6 产物全部删除后重渲（git 历史即存档），防新旧混杂。
+- **全景超时偏差**：P1/P2/P3 256smp 单张 961/968/990s，超第 9 章 900s 线。预案（192smp+0.03）启动后跨夜任务中断；比对后保留已完成的 256smp 版本（重渲仅降质），如实记录不重渲的理由。
+- **分辨率断言**：新建 scripts/qa_final.py（纯文件读 IHDR）——20 张 final=1920×1080、3 张 pano=4096×2048、colortype=2、contact_sheet 存在 → review/qa_final.md 3/0。render.py 内联 assert_output_size 每张渲后即验（REWORK #7 既有）。
+- **成品 contact_sheet**：23 格（16b 自动缺席跳过）；15/16 格 caption 含完整 KIDS_NOTE（截断上限放宽后完整可读）。

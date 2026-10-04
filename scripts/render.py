@@ -117,6 +117,13 @@ def setup_cycles(scene, preset):
         cy.denoiser = 'OPENIMAGEDENOISE'
     except TypeError:
         pass
+    if preset in ('final', 'pano_final'):
+        # 成品档：OIDN Albedo+Normal 输入通道（CLAUDE.md 第 9 章）
+        try:
+            cy.denoising_input_passes = 'RGB_ALBEDO_NORMAL'
+            cy.denoising_prefilter = 'ACCURATE'
+        except TypeError:
+            pass
     lp = config.LIGHT_PATHS
     cy.max_bounces = lp['max_bounces']
     cy.diffuse_bounces = lp['diffuse']

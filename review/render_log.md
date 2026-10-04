@@ -100,3 +100,12 @@
 - 机位变更：20 号按工单移入露台 (9.65,-10.5,1.5)→(11.6,-11.7,0.6) lens18（exp 0.75 不变）；新增 CAB_west_bookcase (5.82,-9.575,1.30)→(3.82,-9.575,1.30) lens28 exp1.80 shift_y-0.15。其余机位参数不动。
 - 几何/灯光变更详见 decisions_log D-058（西墙柜真腔+清玻璃门+灯带、露台休闲椅、厨房灶下抽屉/短拉手/洗碗机对缝）。
 - 验收：qa_r2fix2 23 PASS / 0 FAIL；qa.py 238/0；qa_coplanar 0；变体 kitchen_lower_olive 日志 14 objs ≥ 场景计数。
+
+## 成品档（2026-10-04 凌晨，业主「R2 确认」后）
+
+- 设备 oneAPI Arc 核显 ｜ Cycles ｜ final 1920×1080 / 256smp / 阈值 0.02；pano_final 4096×2048 / 256smp ｜ **OIDN Albedo+Normal（本轮起启用 denoising_input_passes）** ｜ AgX Base Contrast ｜ 8bit RGB ｜ seed 42
+- 交付：renders/final/01–20（20 张）+ renders/pano/P1–P3（3 张）+ renders/final/contact_sheet.png（23 格，16b 不占交付数）
+- 分批：final-A（16 张 scheme A）21:19–00:15；final-B（4 张 scheme B）00:15–00:36；pano（P1/P3/P2）00:37–01:23。final 单张 3–10 分钟（01 最快 3 分钟、09/12/15 等重内景 8–10 分钟）。
+- 全景超时记录：P1 960.8s / P3 989.6s / P2 967.9s，均超第 9 章 900s 线。已启动 192smp 预案重渲，跨夜任务中断未产出；**保留 256smp 版本交付**（更高采样，重渲仅增噪点），偏差如实记录（D-059）。
+- 曝光沿用各轮定值；机位参数与 R2FIX2 终版一致，未做任何改动。
+- 验收：qa_final 3/0（存在/分辨率/8bit RGB）；visual_review_final 23 张全过。

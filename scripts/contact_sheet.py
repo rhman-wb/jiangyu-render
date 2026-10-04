@@ -65,7 +65,8 @@ def draw_caption(d, x, y, w, line1, line2, kids=False):
     d.text((x, y), line1, font=font(21), fill=FG)
     if kids:
         line2 = line2 + KIDS_NOTE
-    d.text((x, y + 27), line2[:30], font=font(16), fill=(120, 112, 104))
+    # 成品轮修正：[:30] 会把 15/16 格的"（家具仅示意，以实际选购为准）"截断
+    d.text((x, y + 27), line2[:60], font=font(16), fill=(120, 112, 104))
 
 
 def make_sheet(mode='preview'):
@@ -98,7 +99,9 @@ def make_sheet(mode='preview'):
         num = cid.split('_')[0]
         name = cid[len(num) + 1:].replace('_', ' ')
         draw_caption(d, x, y + TILE_H + 6, TILE_W, '%s · %s' % (num, name), desc, kids)
-    out = os.path.join(config.RENDER_DIR, mode, 'contact_sheet_%s.png' % mode)
+    out = os.path.join(config.RENDER_DIR, mode,
+                       'contact_sheet.png' if mode == 'final'
+                       else 'contact_sheet_%s.png' % mode)
     sheet.save(out, 'PNG')
     print('[sheet] %s (%dx%d, %d tiles)' % (out, W, H, len(tiles)))
     return out
