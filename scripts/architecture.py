@@ -260,6 +260,10 @@ def build_windows(layout, mats, coll):
 
 
 # ================================================================ 门
+# FINAL1 D2：卧室门（业主选 C1 燕麦）——(墙id, 洞序号) 集合
+BEDROOM_DOORS = {('W14', 0), ('W19', 0), ('W13', 0), ('W07', 0)}
+
+
 def _panel_frame(name_prefix, g, ua, ub, z0, z1, mats, coll, glass=False,
                  frame_role='door_frame_wood', glass_role='glass_clear'):
     """一块门扇：边框梃 + 芯板（玻璃或实心）。role 由调用方给（REWORK 2.2）。"""
@@ -393,10 +397,16 @@ def build_doors(layout, mats, coll):
                 # REWORK 2.2：公卫门 / 主卫门 -> 长虹玻璃平开门
                 _fluted_door(w['id'], k, g, a, b, head, mats, coll)
             elif typ == 'door':
-                # 室内木门 / 入户门：门套（三边窄线条）+ 关闭门扇 + 黑色竖拉手
+                # 室内木门 / 入户门：门套（三边窄线条+衬里）+ 关闭门扇 + 黑色竖拉手
+                # FINAL1 D2：卧室门（主卧/父母房/女儿/儿子）独立 role ->
+                # door_oat 燕麦平板门；玻璃门细框保持 walnut 不受影响
                 fw = 0.04
                 c = g['v_center']
-                _jamb_lines(w['id'], k, g, a, b, head, mats, coll)
+                bedroom = (w['id'], k) in BEDROOM_DOORS
+                leaf_role = 'door_leaf_bedroom' if bedroom else 'door_leaf_wood'
+                frame_role = 'door_frame_bedroom' if bedroom else 'door_frame_wood'
+                _jamb_lines(w['id'], k, g, a, b, head, mats, coll,
+                            frame_role=frame_role)
                 # 门扇（关），铰链在 start 端
                 lw = (b - a) - 2 * fw
                 if g['axis'] == 'x':
@@ -404,7 +414,7 @@ def build_doors(layout, mats, coll):
                 else:
                     bmin, bmax = (c - 0.022, a + fw, 0.01), (c + 0.022, a + fw + lw, head - fw)
                 util.make_box('door_%s_%dleaf' % (w['id'], k), bmin, bmax,
-                              coll=coll, mat=mats['white'], role='door_leaf_wood')
+                              coll=coll, mat=mats['white'], role=leaf_role)
                 # 黑色细长竖拉手（自由边）
                 _door_handle('door_%s_%dhdl' % (w['id'], k), g,
                              a + fw + lw - fw, mats, coll)

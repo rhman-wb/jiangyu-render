@@ -1,0 +1,25 @@
+BlenderMCP addon registered
+[builtins] bath extras done (shower sets / niches / paper holder / stool)
+[builtins] built=44 skipped_m3=70
+[furniture] built=66 skipped=4
+[furniture] extras done
+[materials] applied by role: 1600 assigned, 0 missing role
+[materials] appendix-A walnut reduced: 49 slots (01->cabinet_white:6 01->cabinet_white:4 01->cabinet_white:8 01->cabinet_white:4 01->cabinet_white:8 01->fabric_oat:1 01->cabinet_white:8 01->cabinet_white:1 01->fabric_oat:1 ->cabinet_white:8)
+[lighting] done
+16:44:51 | INFO: Data are loaded, start creating Blender stuff
+16:44:51 | INFO: Blender create Mesh node tree.016
+16:45:02 | INFO: glTF import finished in 10.88s
+16:47:06 | INFO: Data are loaded, start creating Blender stuff
+16:47:06 | INFO: Blender create Mesh node BezierCurve.002
+16:47:10 | INFO: glTF import finished in 4.19s
+[lighting] outdoor env done
+[build] variant groups: kitchen_lower_olive=16 son_blue=21
+[build] ceiling_mounted tagged: 80
+Info: Saved as "jiangyu.blend"
+[build] scheme sweep: common=1277 A=139 B=273 bad=0 
+[build] device=GPU objects=1835 faces=7533482 cameras=30
+[build] saved D:\ClaudeCodeProject2026\jiangyu-render\blend\jiangyu.blend
+BlenderMCP addon unregistered
+Blender 4.5.10 LTS (hash 6dc0b208d1b5 built 2026-05-19 01:33:42)
+
+Blender quit

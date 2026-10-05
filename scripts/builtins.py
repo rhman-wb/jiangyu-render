@@ -205,6 +205,20 @@ def add_fronts(root, cid, coll, mat, axis, face, inward, a0, a1, z0, z1, tag,
             else:
                 hl = min(pull_len, (zout - zin) * 0.6)
                 zc = (zin + zout) / 2
+                if pull_style == 'knob':
+                    # FINAL1 D10：小圆钮拉手（18mm 方倒角读作圆钮，门缘居中）
+                    ku = (ua + 0.04) if (i % 2 == 0) else (ub - 0.04)
+                    if axis == 'y':
+                        child(root, '%s_%s_kn%d' % (cid, tag, i),
+                              (ku - 0.009, p_lo, zc - 0.009),
+                              (ku + 0.009, p_hi, zc + 0.009), coll, pm,
+                              role=pull_role)
+                    else:
+                        child(root, '%s_%s_kn%d' % (cid, tag, i),
+                              (p_lo, ku - 0.009, zc - 0.009),
+                              (p_hi, ku + 0.009, zc + 0.009), coll, pm,
+                              role=pull_role)
+                    continue
                 upos = (ub - 0.03) if (i < len(cells) // 2 or len(cells) == 1) else (ua + 0.03)
                 if axis == 'y':
                     child(root, '%s_%s_p%d' % (cid, tag, i),
@@ -297,6 +311,11 @@ def build_wardrobe(item, mats, coll, box_role='cabinet_box', front_role='cabinet
         add_fronts(root, cid, coll, mats['white'], axis, face, inward, a0, a1,
                    0.05, bmax[2] - 0.04, 'door', max_w=0.42, framed=True,
                    pull_mat=mats['dark'], role=front_role)
+    elif item['room'] == 'daughter_room':
+        # FINAL1 D10：女儿房 L 型衣柜画出分门（0.40-0.50m + 小圆钮拉手）
+        add_fronts(root, cid, coll, mats['white'], axis, face, inward, a0, a1,
+                   0.05, bmax[2] - 0.04, 'door', max_w=0.45, framed=False,
+                   pull_mat=mats['dark'], role=front_role, pull_style='knob')
     else:  # 父母房推拉门：双轨两排（前后错开，无缝无背板）
         f_in = face + 0.023 * inward
         add_fronts(root, cid, coll, mats['white'], axis, face, inward, a0, a1,
@@ -315,6 +334,24 @@ def build_cabinet(item, mats, coll, params=None):
     mat = params.get('mat', mats['white'])
     box_role = params.get('box_role', 'cabinet_box')
     front_role = params.get('front_role', 'cabinet_front')
+    if cid == 'common_kitchen_cabinet_02':
+        # FINAL1 D6（R4 批复）：西墙浅吊柜改 0.35m 深通高储物柜 z0-2.30，
+        # 云白门分上下两段（中带 1.10-1.45 结构带）。layout bbox 不改。
+        bmin = [bmin[0], bmin[1], 0.0]
+        bmax = [bmax[0], bmax[1], bmax[2]]
+        axis, face, inward = _front_plane((bmin[0], bmin[1], 1.4), bmax, item.get('room'))
+        bmin_r, bmax_r = _recess_front(tuple(bmin), tuple(bmax), axis, face, inward)
+        child(root, cid + '_body', bmin_r, bmax_r, coll, mat, role=box_role)
+        a0, a1 = (bmin[1], bmax[1]) if axis == 'x' else (bmin[0], bmax[0])
+        add_fronts(root, cid, coll, mat, axis, face, inward, a0, a1,
+                   0.05, 1.10, 'doorLo', max_w=0.40, framed=True,
+                   pull_len=0.12, pulls=True, pull_mat=mats.get('dark'),
+                   role=front_role)
+        add_fronts(root, cid, coll, mat, axis, face, inward, a0, a1,
+                   1.45, 2.28, 'doorHi', max_w=0.40, framed=True,
+                   pull_len=0.12, pulls=True, pull_mat=mats.get('dark'),
+                   role=front_role)
+        return
     axis, face, inward = _front_plane(bmin, bmax, item.get('room'))
     bmin, bmax = _recess_front(bmin, bmax, axis, face, inward)
     child(root, cid + '_body', bmin, bmax, coll, mat, role=box_role)
@@ -366,11 +403,12 @@ def build_open_niche(item, mats, coll):
     s0 = cheek_out - (0.02 if front_at_n1 else -0.02)
     e0, e1 = sorted((back0, s0))
     zs = _shelf_zs(bmin[2] + t + 0.04, bmax[2] - t - 0.04, 0.35)
+    st = 0.025 if 'foyer' in cid else t   # FINAL1 D7：玄关层板单块 25mm
     for i, z in enumerate(zs):
-        box_un('sh%d' % i, u0 + t + 0.005, u1 - t - 0.005, e0, e1, z, z + t,
+        box_un('sh%d' % i, u0 + t + 0.005, u1 - t - 0.005, e0, e1, z, z + st,
                mats['wood'], 'wood')
     # FINAL1 F9：层板顶面 z 写入根自定义属性（furniture._fx_props 摆件落地读取）
-    root['shelf_top_zs'] = [round(z + t, 4) for z in zs]
+    root['shelf_top_zs'] = [round(z + st, 4) for z in zs]
 
 
 def build_island(item, mats, coll):
@@ -413,8 +451,28 @@ def build_kitchen_counter(item, mats, coll):
     # 东段写死贴墙侧 bmax[0]，两段门板/抽屉从未可见（R2FIX2 N3 实未生效）。
     axis, face, inward = _front_plane(obmin, obmax, item.get('room'))
     bmin, bmax = _recess_front(obmin, obmax, axis, face, inward)
-    child(root, cid + '_body', bmin, (bmax[0], bmax[1], bmax[2] - 0.04), coll,
+    # FINAL1 D6：下柜门板底边抬到 z0.10，柜体底部退 0.06m 内凹踢脚
+    kz = 0.06
+    body0 = list(bmin)
+    body0[2] = bmin[2] + kz
+    child(root, cid + '_body', tuple(body0), (bmax[0], bmax[1], bmax[2] - 0.04), coll,
           mats['wood'], role='kitchen_front')
+    if axis == 'y':
+        kb0 = [bmin[0], bmin[1], bmin[2]]
+        kb1 = [bmax[0], bmax[1], bmin[2] + kz]
+        if inward > 0:
+            kb0[1] = bmin[1] + 0.06
+        else:
+            kb1[1] = bmax[1] - 0.06
+    else:
+        kb0 = [bmin[0], bmin[1], bmin[2]]
+        kb1 = [bmax[0], bmax[1], bmin[2] + kz]
+        if inward > 0:
+            kb0[0] = bmin[0] + 0.06
+        else:
+            kb1[0] = bmax[0] - 0.06
+    child(root, cid + '_kick', tuple(kb0), tuple(kb1), coll, mats['wood'],
+          role='kitchen_front')
     for p in item.get('parts', []):
         tmin, tmax = tuple(p['bbox']['min']), tuple(p['bbox']['max'])
         # R2FIX M3：北台面在水槽位开洞（洞 0.70x0.42，台面分段）
@@ -435,11 +493,11 @@ def build_kitchen_counter(item, mats, coll):
         # R2FIX2 N3：洗碗机独立面板（x 4.10..4.70）左右对缝——西侧 13cm 固定窄门、
         # 东侧门列从 4.70 起；拉手统一黑短拉手 120mm
         add_fronts(root, cid, coll, mats['kfront'], 'y', face, inward,
-                   bmin[0] + 0.02, 4.10, 0.12, bmax[2] - 0.06, 'drwW',
+                   bmin[0] + 0.02, 4.10, 0.10, bmax[2] - 0.06, 'drwW',
                    max_w=0.13, pulls=True, pull_len=0.12, pull_mat=mats['dark'],
                    role='kitchen_front')
         add_fronts(root, cid, coll, mats['kfront'], 'y', face, inward,
-                   4.70, bmax[0] - 0.02, 0.12, bmax[2] - 0.06, 'drw',
+                   4.70, bmax[0] - 0.02, 0.10, bmax[2] - 0.06, 'drw',
                    max_w=0.45, pulls=True, pull_len=0.12, pull_mat=mats['dark'],
                    role='kitchen_front')
     else:  # 东台面，贴东墙、门朝西（-X 厨房内侧）
@@ -454,16 +512,16 @@ def build_kitchen_counter(item, mats, coll):
         if h0 is None or not (bmin[1] + 0.15 < h0 < h1 < bmax[1] - 0.15):
             h0 = h1 = (bmin[1] + bmax[1]) / 2      # 兜底：中置一段抽屉列
         add_fronts(root, cid, coll, mats['kfront'], 'x', face, inward,
-                   bmin[1] + 0.02, h0, 0.12, bmax[2] - 0.06, 'drwS',
+                   bmin[1] + 0.02, h0, 0.10, bmax[2] - 0.06, 'drwS',
                    max_w=0.45, pulls=True, pull_len=0.12, pull_mat=mats['dark'],
                    role='kitchen_front')
         add_fronts(root, cid, coll, mats['kfront'], 'x', face, inward,
-                   h0, h1, 0.12, bmax[2] - 0.06, 'drwH',
+                   h0, h1, 0.10, bmax[2] - 0.06, 'drwH',
                    pulls=True, pull_len=0.12, pull_mat=mats['dark'],
                    role='kitchen_front', pull_style='slot', drawer_stack=3,
                    drawer_heights=[0.17, 0.25, 0.30])
         add_fronts(root, cid, coll, mats['kfront'], 'x', face, inward,
-                   h1, bmax[1] - 0.02, 0.12, bmax[2] - 0.06, 'drwN',
+                   h1, bmax[1] - 0.02, 0.10, bmax[2] - 0.06, 'drwN',
                    max_w=0.45, pulls=True, pull_len=0.12, pull_mat=mats['dark'],
                    role='kitchen_front')
 
@@ -513,11 +571,15 @@ def build_range_hood(item, mats, coll):
     cid = item['id']
     bmin, bmax = item['bbox']['min'], item['bbox']['max']
     root = item_root(item, coll)
+    # FINAL1 D6：保留侧吸造型；外壳 cabinet_white（与吊柜同色）、吸烟面板深灰
     child(root, cid + '_topbox', (bmin[0], bmin[1], bmax[2] - 0.16),
-          (bmax[0], bmax[1], bmax[2]), coll, mats['dark'], role='metal_black')
-    child(root, cid + '_slant', (bmin[0], bmin[1], bmin[2]),
-          (bmax[0], bmax[1] - 0.12, bmax[2] - 0.16), coll, mats['dark'],
-          role='metal_black')
+          (bmax[0], bmax[1], bmax[2]), coll, mats['white'], role='cabinet_white')
+    child(root, cid + '_slant', (bmin[0] + 0.03, bmin[1], bmin[2]),
+          (bmax[0], bmax[1] - 0.12, bmax[2] - 0.16), coll, mats['white'],
+          role='cabinet_white')
+    child(root, cid + '_panel', (bmin[0], bmin[1], bmin[2]),
+          (bmin[0] + 0.03, bmax[1] - 0.12, bmax[2] - 0.16), coll, mats['dark'],
+          role='metal_graphite')
 
 
 def build_vanity(item, mats, coll):
@@ -654,7 +716,7 @@ def build_glass_partition(item, mats, coll):
     cid = item['id']
     bmin, bmax = item['bbox']['min'], item['bbox']['max']
     root = item_root(item, coll)
-    fr = 0.03
+    fr = 0.02   # FINAL1 D12：深灰细框 ≤20mm
     child(root, cid + '_glass', (bmin[0] + fr, bmin[1] + fr, fr),
           (bmax[0] - fr, bmax[1] - fr, bmax[2] - fr), coll, mats['glass'],
           glass=True, role='glass_clear')
@@ -830,9 +892,11 @@ def build_glass_sliding_door(item, mats, coll):
     bmin, bmax = item['bbox']['min'], item['bbox']['max']
     root = item_root(item, coll)
     st = 0.03
+    # FINAL1 D6：厨房四联动门芯改长虹玻璃（其余滑动门保持清玻）
+    core_role = 'glass_fluted' if 'kitchen' in cid else 'glass_clear'
     child(root, cid + '_glass', (bmin[0] + st, bmin[1] + 0.004, 0.05),
           (bmax[0] - st, bmax[1] - 0.004, bmax[2] - 0.05), coll, mats['glass'],
-          glass=True, role='glass_clear')
+          glass=True, role=core_role)
     parts = {'stL': ((bmin[0], bmin[1], 0.02), (bmin[0] + st, bmax[1], bmax[2])),
              'stR': ((bmax[0] - st, bmin[1], 0.02), (bmax[0], bmax[1], bmax[2])),
              'stT': ((bmin[0], bmin[1], bmax[2] - st), (bmax[0], bmax[1], bmax[2])),
@@ -845,7 +909,7 @@ def build_shower_floor(item, mats, coll):
     cid = item['id']
     bmin, bmax = item['bbox']['min'], item['bbox']['max']
     root = item_root(item, coll)
-    child(root, cid + '_pan', bmin, bmax, coll, mats['white'], role='ceramic_white')
+    child(root, cid + '_pan', bmin, bmax, coll, mats['white'], role='floor_anti_slip')   # FINAL1 D11 防滑
     child(root, cid + '_drain', (bmin[0] + 0.15, bmin[1] + 0.12, bmax[2] - 0.004),
           (bmin[0] + 0.75, bmin[1] + 0.17, bmax[2] + 0.001), coll, mats['dark'],
           role='metal_graphite')

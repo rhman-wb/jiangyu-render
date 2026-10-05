@@ -2,7 +2,7 @@
 
 blend: D:\ClaudeCodeProject2026\jiangyu-render\blend\jiangyu.blend
 
-汇总: PASS 238 / FAIL 0 / WARN 0 / INFO 84
+汇总: PASS 236 / FAIL 0 / WARN 0 / INFO 84
 
 - **PASS** closure living_dining_balcony W
 - **PASS** closure living_dining_balcony E
@@ -101,7 +101,7 @@ blend: D:\ClaudeCodeProject2026\jiangyu-render\blend\jiangyu.blend
 - **PASS** opening counts {'window': 7, 'door': 8, 'glass_door': 2, 'full_opening': 1}
 - **PASS** wall dims all 71 segs (top 2.85, t=0.14/0.20)
 - **PASS** floors 12 built
-- **PASS** cameras 29
+- **PASS** cameras 30
 - **PASS** no marker objects
 - **PASS** ceiling_box bbox ((2.3500001430511475, -7.400000095367432, 2.5), (3.299999952316284, -6.62000036239624, 2.8000001907348633))
 - **PASS** ray W01 window visible (fx_curt_daughter_sheer)
@@ -112,15 +112,15 @@ blend: D:\ClaudeCodeProject2026\jiangyu-render\blend\jiangyu.blend
 - **PASS** ray W18 window visible (fx_curt_living_sheer_A)
 - **PASS** ray W23 window visible (fx_curt_parents_sheer)
 - **PASS** no floor overlap (13 slabs)
-- **PASS** item common_kitchen_dishwasher_01 bbox ok (17 parts)
+- **PASS** item common_kitchen_dishwasher_01 bbox ok (18 parts)
 - **PASS** item common_kitchen_sink_01 bbox ok (5 parts)
 - **INFO** item common_kitchen_sink_01 tap rises 0.25m above bbox (spec 5.4)
 - **PASS** item common_kitchen_dishwasher_02 bbox ok (2 parts)
-- **PASS** item common_kitchen_kitchen_counter_01 bbox ok (17 parts)
+- **PASS** item common_kitchen_kitchen_counter_01 bbox ok (18 parts)
 - **PASS** item common_kitchen_hob_01 bbox ok (3 parts)
-- **PASS** item common_kitchen_range_hood_01 bbox ok (2 parts)
+- **PASS** item common_kitchen_range_hood_01 bbox ok (3 parts)
 - **PASS** item common_kitchen_cabinet_01 bbox ok (20 parts)
-- **PASS** item common_kitchen_cabinet_02 bbox ok (20 parts)
+- **PASS** item common_kitchen_cabinet_02 bbox ok (51 parts)
 - **PASS** item common_kitchen_glass_sliding_door_01 bbox ok (5 parts)
 - **PASS** item common_living_dining_balcony_glass_sliding_door_01 bbox ok (5 parts)
 - **PASS** item common_living_dining_balcony_glass_sliding_door_02 bbox ok (5 parts)
@@ -131,7 +131,6 @@ blend: D:\ClaudeCodeProject2026\jiangyu-render\blend\jiangyu.blend
 - **PASS** item common_foyer_open_niche_01 bbox ok (6 parts)
 - **PASS** item common_foyer_cabinet_02 bbox ok (20 parts)
 - **PASS** item common_foyer_mirror_door_01 bbox ok (6 parts)
-- **PASS** item common_foyer_stool_01 bbox ok (5 parts)
 - **PASS** item common_elevator_hall_cabinet_01 bbox ok (8 parts)
 - **PASS** item common_living_dining_balcony_bookcase_01 bbox ok (8 parts)
 - **PASS** item common_living_dining_balcony_bookcase_02 bbox ok (22 parts)
@@ -141,7 +140,7 @@ blend: D:\ClaudeCodeProject2026\jiangyu-render\blend\jiangyu.blend
 - **PASS** item common_living_dining_balcony_artwork_01 bbox ok (2 parts)
 - **PASS** item common_living_dining_balcony_laundry_cabinet_01 bbox ok (14 parts)
 - **PASS** item common_master_bedroom_wardrobe_01 bbox ok (44 parts)
-- **PASS** item common_master_bedroom_dressing_table_01 bbox ok (30 parts)
+- **PASS** item common_master_bedroom_dressing_table_01 bbox ok (31 parts)
 - **PASS** item common_master_bedroom_stool_01 bbox ok (5 parts)
 - **PASS** item common_master_bedroom_bed_01 bbox ok (8 parts)
 - **PASS** item common_master_bedroom_headboard_01 bbox ok (1 parts)
@@ -170,14 +169,14 @@ blend: D:\ClaudeCodeProject2026\jiangyu-render\blend\jiangyu.blend
 - **PASS** item common_terrace_plant_04 bbox ok (8 parts)
 - **PASS** item common_parents_room_wardrobe_01 bbox ok (7 parts)
 - **PASS** item common_parents_room_bed_01 bbox ok (9 parts)
-- **PASS** item common_parents_room_nightstand_01 bbox ok (8 parts)
+- **PASS** item common_parents_room_nightstand_01 bbox ok (5 parts)
 - **INFO** item common_parents_room_bay_seat_01 covered by architecture object
 - **PASS** item common_parents_room_cushion_01 bbox ok (3 parts)
 - **PASS** item common_parents_room_shelf_01 bbox ok (4 parts)
 - **PASS** item common_parents_room_shelf_02 bbox ok (4 parts)
 - **INFO** item common_parents_room_ceiling_box_01 covered by architecture object
-- **PASS** item common_daughter_room_wardrobe_01 bbox ok (5 parts)
-- **PASS** item common_daughter_room_wardrobe_02 bbox ok (5 parts)
+- **PASS** item common_daughter_room_wardrobe_01 bbox ok (10 parts)
+- **PASS** item common_daughter_room_wardrobe_02 bbox ok (8 parts)
 - **PASS** item common_daughter_room_bed_01 bbox ok (10 parts)
 - **PASS** item common_daughter_room_shelf_01 bbox ok (5 parts)
 - **PASS** item common_daughter_room_desk_01 bbox ok (6 parts)
@@ -192,11 +191,10 @@ blend: D:\ClaudeCodeProject2026\jiangyu-render\blend\jiangyu.blend
 - **PASS** item A_living_dining_balcony_pendant_lamp_01 bbox ok (2 parts)
 - **PASS** item A_living_dining_balcony_island_02 bbox ok (5 parts)
 - **PASS** item A_living_dining_balcony_pendant_lamp_02 bbox ok (2 parts)
-- **PASS** item A_living_dining_balcony_dining_chair_01 bbox ok (14 parts)
-- **PASS** item A_living_dining_balcony_dining_chair_02 bbox ok (14 parts)
-- **PASS** item A_living_dining_balcony_dining_chair_03 bbox ok (14 parts)
-- **PASS** item A_living_dining_balcony_dining_chair_04 bbox ok (14 parts)
-- **PASS** item A_living_dining_balcony_dining_chair_05 bbox ok (14 parts)
+- **PASS** item A_living_dining_balcony_dining_chair_01 bbox ok (7 parts)
+- **PASS** item A_living_dining_balcony_dining_chair_02 bbox ok (7 parts)
+- **PASS** item A_living_dining_balcony_dining_chair_03 bbox ok (7 parts)
+- **PASS** item A_living_dining_balcony_dining_chair_04 bbox ok (7 parts)
 - **PASS** item A_living_dining_balcony_sofa_01 bbox ok (15 parts)
 - **PASS** item A_living_dining_balcony_ottoman_01 bbox ok (2 parts)
 - **PASS** item A_living_dining_balcony_coffee_table_01 bbox ok (4 parts)
@@ -209,12 +207,12 @@ blend: D:\ClaudeCodeProject2026\jiangyu-render\blend\jiangyu.blend
 - **PASS** item B_living_dining_balcony_island_02 bbox ok (3 parts)
 - **PASS** item B_living_dining_balcony_pendant_lamp_01 bbox ok (2 parts)
 - **PASS** item B_living_dining_balcony_pendant_lamp_02 bbox ok (2 parts)
-- **PASS** item B_living_dining_balcony_dining_chair_01 bbox ok (14 parts)
-- **PASS** item B_living_dining_balcony_dining_chair_02 bbox ok (14 parts)
-- **PASS** item B_living_dining_balcony_dining_chair_03 bbox ok (14 parts)
-- **PASS** item B_living_dining_balcony_dining_chair_04 bbox ok (14 parts)
-- **PASS** item B_living_dining_balcony_dining_chair_05 bbox ok (14 parts)
-- **PASS** item B_living_dining_balcony_dining_chair_06 bbox ok (14 parts)
+- **PASS** item B_living_dining_balcony_dining_chair_01 bbox ok (7 parts)
+- **PASS** item B_living_dining_balcony_dining_chair_02 bbox ok (7 parts)
+- **PASS** item B_living_dining_balcony_dining_chair_03 bbox ok (7 parts)
+- **PASS** item B_living_dining_balcony_dining_chair_04 bbox ok (7 parts)
+- **PASS** item B_living_dining_balcony_dining_chair_05 bbox ok (7 parts)
+- **PASS** item B_living_dining_balcony_dining_chair_06 bbox ok (7 parts)
 - **PASS** item B_living_dining_balcony_sofa_01 bbox ok (11 parts)
 - **PASS** item B_living_dining_balcony_sofa_02 bbox ok (7 parts)
 - **PASS** item B_living_dining_balcony_side_table_01 bbox ok (4 parts)
@@ -225,7 +223,7 @@ blend: D:\ClaudeCodeProject2026\jiangyu-render\blend\jiangyu.blend
 - **INFO** item B_living_dining_balcony_tv_01 at REWORK#9 exempt position (8.25,-6.0)
 - **PASS** item B_living_dining_balcony_floor_lamp_01 bbox ok (2 parts)
 - **PASS** item common_master_bedroom_screen_01 bbox ok (20 parts)
-- **INFO** items built=112, pending(M3)=1
+- **INFO** items built=110, pending(M3)=3
 - **INFO** item common_kitchen_dishwasher_01 tucks into W02_s00 (data-confirmed)
 - **INFO** item common_kitchen_dishwasher_01 tucks into W02_s01 (data-confirmed)
 - **INFO** item common_kitchen_dishwasher_01 tucks into W02_s03 (data-confirmed)
@@ -314,9 +312,9 @@ blend: D:\ClaudeCodeProject2026\jiangyu-render\blend\jiangyu.blend
 - **PASS** door swing W19 side 0 clear
 - **PASS** door swing W27 side 0 clear
 - **PASS** scheme collections correct
-- **PASS** all 112 items built, none missing
+- **PASS** all 108 items built, none missing
 - **PASS** no floating furniture
-- **PASS** all 1563 meshes have role
+- **PASS** all 1640 meshes have role
 - **PASS** all roles resolvable
 - **PASS** no wood material on forbidden roles (2.4)
 - **PASS** all meshes/lights in exactly one scheme collection

@@ -317,61 +317,78 @@ def _table_center(group):
     return _TABLE_CENTER_CACHE[group]
 
 
+# FINAL1 D5：A 方案 6 餐位——chair_05 删除，01–04 重排 3+3（x 三等分桌长）
+# （layout.json 不动，位置在建模器覆盖；椅心 x = 6.02/6.55/7.08）
+CHAIR_OVERRIDE = {
+    'A_living_dining_balcony_dining_chair_01': (5.82, -4.95, 6.22, -4.55),
+    'A_living_dining_balcony_dining_chair_02': (5.82, -6.25, 6.22, -5.85),
+    'A_living_dining_balcony_dining_chair_03': (6.35, -4.95, 6.75, -4.55),
+    'A_living_dining_balcony_dining_chair_04': (6.35, -6.25, 6.75, -5.85),
+    'A_living_dining_balcony_dining_chair_05': None,          # 删除（R3）
+    'A_living_dining_balcony_dining_chair_06': (6.88, -4.95, 7.28, -4.55),
+    'A_living_dining_balcony_dining_chair_07': (6.88, -6.25, 7.28, -5.85),
+}
+# FINAL1 D5：B 方案椅色——北侧中间一把墨绿（03）、南侧西端一把砖红（02），其余燕麦
+CHAIR_COLOR = {
+    'B_living_dining_balcony_dining_chair_03': 'fabric_olive',
+    'B_living_dining_balcony_dining_chair_02': 'pillow_brick',
+}
+
+
 def build_dining_chair(item, mats, coll):
-    """中古弧形扶手餐椅 / 混搭椅：座垫 + 薄弧背 + 四腿 + 扶手条。
-    FINAL1 F10：靠背按椅心-桌心四向（±x/±y）判定，端椅（x 向）不再把靠背
-    做成横贯全宽的 0.32m 实心块；背板厚一律 ≤4cm。椅型/材质留 D5。"""
+    """FINAL1 D5 新椅型：后腿延伸 + 弧形薄靠背板(2cm) + 软包座面 +
+    Ø18mm 黑细腿×4；座面燕麦（B 椅一绿一砖红点缀）。取代旧中古扶手椅。
+    F10 四向朝向逻辑保留（椅心-桌心）。"""
     cid = item['id']
-    bmin, bmax = item['bbox']['min'], item['bbox']['max']
+    ov = CHAIR_OVERRIDE.get(cid)
+    if ov is None and cid in CHAIR_OVERRIDE:
+        return None                       # chair_05：R3 批复删除
+    if ov:
+        x0, y0, x1, y1 = ov
+    else:
+        b = item['bbox']
+        x0, y0, x1, y1 = b['min'][0], b['min'][1], b['max'][0], b['max'][1]
+    z1 = 0.80
     root = R(item, mats, coll)
-    x0, y0, z0 = bmin
-    x1, y1, z1 = bmax
     cx, cy = (x0 + x1) / 2, (y0 + y1) / 2
     tc = _table_center(item.get('group'))
     dx = cx - tc[0] if tc else 0.0
     dy = cy - tc[1] if tc else 1.0
-    back_x = abs(dx) > abs(dy)          # 靠背在 x 远桌侧（端椅）
-    bt = 0.04                            # 背板厚 ≤4cm
+    back_x = abs(dx) > abs(dy)
+    seat_role = CHAIR_COLOR.get(cid, 'seat_oat')
+    # 座面（软包，fabric_oat 系）
+    box(root, cid + '_seat', (x0 + 0.03, y0 + 0.03, 0.44), (x1 - 0.03, y1 - 0.03, 0.50),
+        coll, mats['white'], bevel=0.02, role=seat_role)
+    # 弧形靠背板：厚 2cm，微曲（三段折），顶 0.78
+    bt = 0.02
     if back_x:
-        bu0, bu1 = ((x1 - bt, x1) if dx > 0 else (x0, x0 + bt))
-        box(root, cid + '_back', (bu0, y0 + 0.02, 0.47), (bu1, y1 - 0.02, z1 - 0.015),
-            coll, mats['wood'], bevel=0.012, role='wood')
+        bu = (x1 - bt) if dx > 0 else x0
+        for k, (v0, v1, zt) in enumerate(((y0 + 0.03, y1 - 0.03, 0.78),
+                                          (y0 + 0.06, y1 - 0.06, 0.66))):
+            box(root, '%s_back%d' % (cid, k), (bu, v0, zt - 0.12), (bu + bt, v1, zt),
+                coll, mats['white'], bevel=0.008, role=seat_role)
+        lxs = ((x0 + 0.05, x1 - 0.05) if dx > 0 else (x1 - 0.05, x0 + 0.05))
     else:
-        bv0, bv1 = ((y1 - bt, y1) if dy > 0 else (y0, y0 + bt))
-        box(root, cid + '_back', (x0 + 0.02, bv0, 0.47), (x1 - 0.02, bv1, z1 - 0.015),
-            coll, mats['wood'], bevel=0.012, role='wood')
-    box(root, cid + '_seat', (x0 + 0.02, y0 + 0.02, 0.40), (x1 - 0.02, y1 - 0.02, 0.47),
-        coll, mats['white'], bevel=0.02, role='seat_oat')
-    # R2 #14：收分腿（上粗下细两段）
-    for i, (lx, ly) in enumerate(((x0 + 0.035, y0 + 0.035), (x1 - 0.035, y0 + 0.035),
-                                  (x0 + 0.035, y1 - 0.035), (x1 - 0.035, y1 - 0.035))):
-        box(root, '%s_leg%d' % (cid, i), (lx - 0.018, ly - 0.018, 0.20),
-            (lx + 0.018, ly + 0.018, 0.40), coll, mats['wood'], role='wood')
-        box(root, '%s_legt%d' % (cid, i), (lx - 0.012, ly - 0.012, 0.0),
-            (lx + 0.012, ly + 0.012, 0.20), coll, mats['wood'], role='wood')
-    # 扶手：两根侧轨平行于朝桌方向 + 前端下俯支撑
+        bv = (y1 - bt) if dy > 0 else y0
+        for k, (u0, u1, zt) in enumerate(((x0 + 0.03, x1 - 0.03, 0.78),
+                                          (x0 + 0.06, x1 - 0.06, 0.66))):
+            box(root, '%s_back%d' % (cid, k), (u0, bv, zt - 0.12), (u1, bv + bt, zt),
+                coll, mats['white'], bevel=0.008, role=seat_role)
+        lys = ((y0 + 0.05, y1 - 0.05) if dy > 0 else (y1 - 0.05, y0 + 0.05))
+    # 四腿 Ø18mm 黑细钢：后腿延伸到靠背、前腿到座面下
     if back_x:
-        for j, ay in ((0, y0 + 0.05), (1, y1 - 0.05)):
-            box(root, '%s_arm%d' % (cid, j), (x0 + 0.06, ay - 0.018, 0.62),
-                (x1 - 0.06, ay + 0.018, 0.66), coll, mats['wood'], bevel=0.01,
-                role='wood')
-            axf = (x0 + 0.31) if dx > 0 else (x1 - 0.31)
-            ax2 = axf - (0.25 if dx > 0 else -0.25)   # 向桌侧收（不出 bbox）
-            box(root, '%s_armf%d' % (cid, j),
-                (min(axf, ax2), ay - 0.016, 0.575),
-                (max(axf, ax2), ay + 0.016, 0.625),
-                coll, mats['wood'], bevel=0.012, role='wood')
+        for i, lx in enumerate(lxs):
+            for ly in (y0 + 0.06, y1 - 0.06):
+                top = 0.76 if lx == lxs[0] else 0.44
+                cyl(root, '%s_leg%d%d' % (cid, i, ly > y0), (lx, ly), 0.009, 0.0, top,
+                    coll, mats['dark'], role='metal_black')
     else:
-        for j, ax in ((0, x0 + 0.05), (1, x1 - 0.05)):
-            box(root, '%s_arm%d' % (cid, j), (ax - 0.018, y0 + 0.06, 0.62),
-                (ax + 0.018, y1 - 0.06, 0.66), coll, mats['wood'], bevel=0.01,
-                role='wood')
-            ayf = (y0 + 0.31) if dy > 0 else (y1 - 0.31)
-            ay2 = ayf - (0.25 if dy > 0 else -0.25)   # 向桌侧收（不出 bbox）
-            box(root, '%s_armf%d' % (cid, j), (ax - 0.016,
-                min(ayf, ay2), 0.575),
-                (ax + 0.016, max(ayf, ay2), 0.625),
-                coll, mats['wood'], bevel=0.012, role='wood')
+        for i, ly in enumerate(lys):
+            for lx in (x0 + 0.06, x1 - 0.06):
+                top = 0.76 if ly == lys[0] else 0.44
+                cyl(root, '%s_leg%d%d' % (cid, i, lx > x0), (lx, ly), 0.009, 0.0, top,
+                    coll, mats['dark'], role='metal_black')
+    return root
 
 
 def build_chair(item, mats, coll):
@@ -821,10 +838,37 @@ def build_screen_fallback(item, mats, coll):
 
 
 def build_nightstand(item, mats, coll):
-    """床头柜：箱体 + 单抽屉面板 + 短腿。"""
+    """床头柜。FINAL1 D8：主卧两只改 cabinet_white + 圆角（bevel 0.03）。
+    FINAL1 D9：父母房改壁挂（z 0.45–0.85 悬挂小柜 + 墙侧挂板，无腿）。"""
     cid = item['id']
     bmin, bmax = item['bbox']['min'], item['bbox']['max']
     root = R(item, mats, coll)
+    if 'master' in cid:
+        box(root, cid + '_body', (bmin[0], bmin[1], 0.10),
+            (bmax[0], bmax[1], bmax[2] - 0.02), coll, mats['white'],
+            bevel=0.03, role='cabinet_white')
+        axis, face, inward = B._front_plane(bmin, bmax, item.get('room'))
+        a0, a1 = (bmin[1], bmax[1]) if axis == 'x' else (bmin[0], bmax[0])
+        B.add_fronts(root, cid, coll, mats['white'], axis, face, inward, a0, a1,
+                     0.12, bmax[2] - 0.06, 'drw', max_w=0.5, pulls=True,
+                     pull_mat=mats['dark'], role='cabinet_front')
+        legs(root, cid, (bmin[0], bmin[1], 0.0), (bmax[0], bmax[1], 0.10), coll,
+             mats['white'], h=0.10, s=0.03, inset=0.05, role='cabinet_white')
+        return root
+    if 'parents' in cid:
+        # D9 壁挂：柜体抬到 z0.45–0.85，挂板贴西墙，下留空
+        box(root, cid + '_rail', (bmin[0], bmin[1], 0.45),
+            (bmin[0] + 0.03, bmax[1], 0.85), coll, mats['white'],
+            role='cabinet_white')
+        box(root, cid + '_body', (bmin[0] + 0.03, bmin[1], 0.45),
+            (bmax[0], bmax[1], 0.85), coll, mats['white'],
+            bevel=0.02, role='cabinet_white')
+        axis, face, inward = B._front_plane(bmin, bmax, item.get('room'))
+        a0, a1 = (bmin[1], bmax[1]) if axis == 'x' else (bmin[0], bmax[0])
+        B.add_fronts(root, cid, coll, mats['white'], axis, face, inward, a0, a1,
+                     0.48, 0.82, 'drw', max_w=0.5, pulls=True,
+                     pull_mat=mats['dark'], role='cabinet_front')
+        return root
     box(root, cid + '_body', (bmin[0], bmin[1], 0.10), (bmax[0], bmax[1], bmax[2] - 0.02),
         coll, mats['wood'], role='wood')
     axis, face, inward = B._front_plane(bmin, bmax, item.get('room'))
@@ -837,31 +881,31 @@ def build_nightstand(item, mats, coll):
 
 
 def build_dressing_table(item, mats, coll):
-    """主卧一体梳妆台：胡桃木台面 + 侧板 + 奶白小吊柜(parts) + 镜子。
-    FINAL1 F4：旧版 side0/side1 立在 x 两端（贴墙面 + 朝房正面），把台面下正面
-    封死（13 号看不到容膝空腔）；中横板 _shelf 也挡膝。现侧板移到 y 两端，
-    删中横板，台面下挂 0.08m 薄抽屉（容膝净高 ≥0.62 硬门槛优先于工单 0.12，
-    偏差记 qa_final1）。本轮不改材质（D1 处理）。"""
+    """主卧一体梳妆台。FINAL1 D8：柜体/台面改 cabinet_white，台面前缘留 4cm
+    胡桃线（Appendix A"可留 4cm 胡桃台面线"）；F4 容膝结构保留。"""
     cid = item['id']
     bmin, bmax = item['bbox']['min'], item['bbox']['max']
     root = R(item, mats, coll)
     x0, y0 = bmin[0], bmin[1]
     x1, y1 = bmax[0], bmax[1]
-    box(root, cid + '_top', (x0, y0, 0.70), (x1, y1, 0.75), coll, mats['wood'],
-        bevel=0.01, role='wood')
+    box(root, cid + '_top', (x0, y0, 0.70), (x1, y1, 0.75), coll, mats['white'],
+        bevel=0.01, role='cabinet_white')
+    # 4cm 胡桃台面线（朝房前缘）
+    box(root, cid + '_topl', (x1 - 0.04, y0, 0.70), (x1, y1, 0.75), coll,
+        mats['wood'], bevel=0.006, role='wood')
     box(root, cid + '_side0', (x0, y0, 0.0), (x1, y0 + 0.04, 0.70),
-        coll, mats['wood'], role='wood')
+        coll, mats['white'], role='cabinet_white')
     box(root, cid + '_side1', (x0, y1 - 0.04, 0.0), (x1, y1, 0.70),
-        coll, mats['wood'], role='wood')
+        coll, mats['white'], role='cabinet_white')
     # 薄抽屉：体 + 东侧前脸 + 120mm 短拉手（容膝空腔 y 0.92 / z 0.62）
     box(root, cid + '_drw', (x0 + 0.03, y0 + 0.05, 0.62), (x1 - 0.025, y1 - 0.05, 0.70),
-        coll, mats['wood'], role='wood')
-    B.add_fronts(root, cid + 'drw', coll, mats['wood'], 'x', x1 - 0.005, -1,
+        coll, mats['white'], role='cabinet_white')
+    B.add_fronts(root, cid + 'drw', coll, mats['white'], 'x', x1 - 0.005, -1,
                  y0 + 0.05, y1 - 0.05, 0.625, 0.695, 'drw', max_w=0.5,
-                 pulls=True, pull_len=0.12, pull_mat=mats['dark'], role='wood')
+                 pulls=True, pull_len=0.12, pull_mat=mats['dark'],
+                 role='cabinet_front')
     for p in item.get('parts', []):
         pb = p['bbox']
-        # R2FIX M1-0：吊柜体前脸缩到门板内皮（原 body 前皮盖门板 5mm）
         box(root, cid + '_upper', (pb['min'][0], pb['min'][1], pb['min'][2]),
             (pb['max'][0] - 0.025, pb['max'][1], pb['max'][2]), coll,
             mats['white'], role='cabinet_box')
@@ -1040,8 +1084,9 @@ def _fx_lights(mats, coll, ceil_coll=None):
                                    (10.6, -3.0, 2.60), (2.7, -5.7, 2.85)]):
         cyl(None, 'fx_spot_room%d' % i, (x, y), 0.0375, z - 0.025, z, ceil,
             mats['glass'], role='spot_glass')
-    # 床头壁灯（主卧两侧 + 父母房床头）
-    for i, (x, y) in enumerate([(12.68, -7.0), (12.68, -9.2), (0.24, -8.65)]):
+    # 床头壁灯（主卧两侧 + 父母房阅读壁灯×2，FINAL1 D9 一拆为二）
+    for i, (x, y) in enumerate([(12.68, -7.0), (12.68, -9.2),
+                                (0.24, -9.30), (0.24, -8.00)]):
         box(None, 'fx_wall_lamp%d' % i, (x - 0.02 if x > 6 else x, y - 0.09, 1.35),
             (x + 0.06 if x > 6 else x + 0.08, y + 0.09, 1.55), c, mats['dark'],
             role='metal_black')
@@ -1215,7 +1260,145 @@ def build_extras(mats, colls):
     _fx_curtains(mats, colls)
     _fx_lights(mats, colls['common'], colls.get('ceilings'))
     _fx_props(mats, colls)
+    build_final1_extras(mats, colls)
     print('[furniture] extras done')
+
+
+# ---------------------------------------------------------- FINAL1 第 2 轮 B
+# 被 D 系列方案替换/删除的 layout 项（建模器跳过，由 build_final1_extras 重建）
+SKIP_FINAL1 = {
+    'A_living_dining_balcony_dining_chair_05',   # R3：删除（3+3 后由合成椅补位）
+    'A_living_dining_balcony_tv_cabinet_01',     # R6/D4：3m 柜收窄为 2.4m 居中
+    'common_foyer_stool_01',                     # D7：换鞋凳改带扶手长凳
+    'common_elevator_hall_cabinet_01',           # R2/D7：加长至 1.10m 重建
+}
+
+
+def build_final1_extras(mats, colls):
+    """REWORK_FINAL1 第 2 轮 B：D4 电视墙（方案1+深灰格栅）、D5 第 5/6 把餐椅、
+    D7 玄关鞋柜/长凳/电梯口柜加长、D9 父母房夜灯、D10 孩子房台灯、
+    D11 公卫扶手/折叠凳/挡水、过道地脚灯。layout.json 零改动。"""
+    c = colls['common']
+    ca = colls['scheme_a']
+    # ---- D4 电视墙（C2 方案 1 + C3 深灰格栅）----
+    _box(None, 'f1_tvc_body', (8.83, -9.80, 0.25), (9.15, -7.40, 0.60), ca,
+         mats['white'], role='cabinet_box')
+    _box(None, 'f1_tvc_gap', (8.825, -8.6015, 0.25), (9.15, -8.5985, 0.60), ca,
+         mats['dark'], role='gap_dark')
+    _box(None, 'f1_tvc_topline', (8.83, -9.80, 0.60), (9.15, -7.40, 0.64), ca,
+         mats['wood'], role='wood')
+    _box(None, 'f1_tvc_strip', (8.84, -9.78, 0.242), (9.14, -7.42, 0.255), ca,
+         mats['glass'], role='led_strip')
+    _box(None, 'f1_tvw_panel', (9.121, -10.10, 0.0), (9.151, -7.10, 2.60), ca,
+         mats['white'], role='cabinet_white')
+    _box(None, 'f1_tvw_led_s', (9.121, -10.10, 0.0), (9.131, -10.085, 2.60), ca,
+         mats['glass'], role='led_strip')
+    _box(None, 'f1_tvw_led_n', (9.121, -7.115, 0.0), (9.131, -7.10, 2.60), ca,
+         mats['glass'], role='led_strip')
+    _box(None, 'f1_tvw_led_t', (9.121, -10.10, 2.59), (9.131, -7.10, 2.60), ca,
+         mats['glass'], role='led_strip')
+    for i in range(15):   # 深灰格栅（C3 选型）
+        y0 = -5.95 + i * 0.04
+        _box(None, 'f1_tvw_slat%02d' % i, (9.118, y0, 0.0), (9.148, y0 + 0.02, 2.60),
+             ca, mats['dark'], role='metal_graphite')
+    _box(None, 'f1_tvw_art_frame', (9.148, -7.025, 1.15), (9.152, -6.025, 1.85), ca,
+         mats['wood'], role='wood')
+    _box(None, 'f1_tvw_art', (9.152, -7.005, 1.17), (9.156, -6.045, 1.83), ca,
+         mats['white'], role='art_abstract')
+    # ---- D5 A 方案第 5/6 把椅（合成，layout 只到 05）----
+    for tag, (x0, y0, x1, y1) in (('fx_chair_A6n', (6.88, -4.95, 7.28, -4.55)),
+                                  ('fx_chair_A6s', (6.88, -6.25, 7.28, -5.85))):
+        build_dining_chair({'id': tag, 'group': 'A', 'room': 'living_dining_balcony',
+                            'bbox': {'min': [x0, y0, 0.0], 'max': [x1, y1, 0.8]}},
+                           mats, ca)
+    # ---- D7 玄关户内通高鞋柜（西墙 y-6.20..-5.50，0.35 深，云白门+胡桃侧板）----
+    sx0, sx1 = 1.95, 2.30
+    sy0, sy1 = -6.20, -5.50
+    _box(None, 'f1_shoe_body', (sx0, sy0, 0.15), (sx1, sy1, 2.30), c,
+         mats['white'], role='cabinet_box')
+    _box(None, 'f1_shoe_side_s', (sx0, sy0, 0.15), (sx1, sy0 + 0.018, 2.30), c,
+         mats['wood'], role='wood')
+    _box(None, 'f1_shoe_side_n', (sx0, sy1 - 0.018, 0.15), (sx1, sy1, 2.30), c,
+         mats['wood'], role='wood')
+    B.add_fronts(None, 'f1_shoe_lo', c, mats['white'], 'y', sy1 + 0.005, -1,
+                 sx0 + 0.02, sx1 - 0.02, 0.17, 0.88, 'door', max_w=0.35,
+                 framed=True, pulls=True, pull_len=0.12, pull_mat=mats['dark'],
+                 role='cabinet_front')
+    B.add_fronts(None, 'f1_shoe_hi', c, mats['white'], 'y', sy1 + 0.005, -1,
+                 sx0 + 0.02, sx1 - 0.02, 1.27, 2.28, 'door', max_w=0.35,
+                 framed=True, pulls=True, pull_len=0.12, pull_mat=mats['dark'],
+                 role='cabinet_front')
+    # 中段开放格（0.90-1.25 胡桃内衬）+ 底部 0.15 架空（常穿鞋）+ 感应灯带
+    _box(None, 'f1_shoe_niche_b', (sx0 + 0.018, sy0 + 0.018, 0.90),
+         (sx1 - 0.02, sy1 - 0.018, 0.92), c, mats['wood'], role='wood')
+    _box(None, 'f1_shoe_niche_t', (sx0 + 0.018, sy0 + 0.018, 1.23),
+         (sx1 - 0.02, sy1 - 0.018, 1.25), c, mats['wood'], role='wood')
+    _box(None, 'f1_shoe_niche_back', (sx0 + 0.018, sy1 - 0.04, 0.92),
+         (sx1 - 0.02, sy1 - 0.018, 1.23), c, mats['wood'], role='wood')
+    _box(None, 'f1_shoe_light', (sx0 + 0.03, sy0 + 0.03, 0.155),
+         (sx1 - 0.03, sy1 - 0.03, 0.168), c, mats['glass'], role='led_strip')
+    # ---- D7 电梯口鞋柜加长 1.10m（x2.30..3.40，通高）----
+    ex0, ex1, ey0, ey1 = 2.30, 3.40, -4.35, -4.00
+    _box(None, 'f1_elc_body', (ex0, ey0, 0.10), (ex1, ey1, 2.30), c,
+         mats['white'], role='cabinet_box')
+    B.add_fronts(None, 'f1_elc_lo', c, mats['white'], 'y', ey1 + 0.005, +1,
+                 ex0 + 0.02, ex1 - 0.02, 0.12, 1.15, 'door', max_w=0.40,
+                 framed=True, pulls=True, pull_len=0.12, pull_mat=mats['dark'],
+                 role='cabinet_front')
+    B.add_fronts(None, 'f1_elc_hi', c, mats['white'], 'y', ey1 + 0.005, +1,
+                 ex0 + 0.02, ex1 - 0.02, 1.25, 2.28, 'door', max_w=0.40,
+                 framed=True, pulls=True, pull_len=0.12, pull_mat=mats['dark'],
+                 role='cabinet_front')
+    _box(None, 'f1_elc_plinth', (ex0 + 0.06, ey0, 0.0), (ex1 - 0.06, ey1 - 0.06, 0.10),
+         c, mats['dark'], role='metal_graphite')
+    # ---- D7 换鞋长凳（带扶手，座面燕麦）----
+    bx0, by0, bx1, by1 = 2.20, -5.45, 3.00, -5.10
+    for i, (lx, ly) in enumerate(((bx0 + 0.04, by0 + 0.04), (bx1 - 0.04, by0 + 0.04),
+                                  (bx0 + 0.04, by1 - 0.04), (bx1 - 0.04, by1 - 0.04))):
+        _box(None, 'f1_bench_leg%d' % i, (lx - 0.018, ly - 0.018, 0.0),
+             (lx + 0.018, ly + 0.018, 0.39), c, mats['wood'], role='wood')
+    _box(None, 'f1_bench_seat', (bx0, by0, 0.39), (bx1, by1, 0.45), c,
+         mats['wood'], bevel=0.015, role='fabric_oat')
+    _box(None, 'f1_bench_arm', (bx0, by0 + 0.02, 0.45), (bx0 + 0.05, by1 - 0.02, 0.63),
+         c, mats['wood'], bevel=0.012, role='wood')
+    # ---- D9 父母房床下感应夜灯（3000K 灯带条）----
+    _box(None, 'f1_night_light', (1.15, -9.20, 0.025), (1.45, -8.10, 0.038), c,
+         mats['glass'], role='led_strip')
+    # ---- D10 孩子房书桌台灯（成品示意，家具本色）----
+    for tag, (lx, ly), cc in (('fx_lamp_dau', (8.70, -2.10), colls['common']),
+                              ('fx_lamp_son', (13.40, -2.00), colls['common'])):
+        cyl(None, tag + '_base', (lx, ly), 0.07, 0.75, 0.775, cc, mats['wood'],
+            role='kids_furn')
+        cyl(None, tag + '_stem', (lx, ly), 0.008, 0.775, 0.98, cc, mats['wood'],
+            role='kids_furn')
+        cyl(None, tag + '_head', (lx, ly), 0.055, 0.98, 1.03, cc, mats['wood'],
+            role='kids_furn')
+        cyl(None, tag + '_bulb', (lx, ly), 0.04, 0.975, 0.985, cc, mats['glass'],
+            role='led_strip')
+    # ---- D11 公卫安全设施 ----
+    # 马桶 L 形扶手（水平段离地 0.70，贴西墙）
+    _box(None, 'f1_grab_v', (9.055, -1.95, 0.70), (9.09, -1.915, 1.40), c,
+         mats['dark'], role='metal_graphite')
+    _box(None, 'f1_grab_h', (9.055, -1.95, 0.6825), (9.09, -1.30, 0.7175), c,
+         mats['dark'], role='metal_graphite')
+    # 淋浴折叠凳（座高 0.45，北墙）+ 竖向扶手
+    _box(None, 'f1_fold_seat', (9.95, -0.30, 0.43), (10.30, -0.22, 0.45), c,
+         mats['white'], bevel=0.01, role='ceramic_white')
+    _box(None, 'f1_fold_brk', (10.05, -0.30, 0.30), (10.20, -0.24, 0.43), c,
+         mats['dark'], role='metal_graphite')
+    _box(None, 'f1_bar_v', (10.385, -0.26, 0.80), (10.415, -0.225, 1.80), c,
+         mats['dark'], role='metal_graphite')
+    # 挡水条（隔断干区侧）
+    _box(None, 'f1_waterbar', (9.05, -1.075, 0.0), (10.70, -1.045, 0.025), c,
+         mats['white'], role='quartz_top')
+    # ---- 过道地脚灯 ×3（离地 0.30，3000K）----
+    for i, (gx, gy) in enumerate(((3.42, -8.15), (9.07, -4.60), (9.07, -3.20))):
+        _box(None, 'f1_floorlt%d' % i, (gx - 0.005, gy - 0.06, 0.28),
+             (gx + 0.02, gy + 0.06, 0.32), c, mats['glass'], role='led_strip')
+
+
+def _box(root, name, bmin, bmax, coll, mat, role=None, **kw):
+    return B.child(root, name, bmin, bmax, coll, mat, role=role, **kw)
 
 
 def build_all(mats, colls):
@@ -1225,6 +1408,9 @@ def build_all(mats, colls):
         iid = item['id']
         if bpy.data.objects.get(iid) is not None:
             continue  # M2 已建（含 covered）
+        if iid in SKIP_FINAL1:
+            skipped.append('%s(FINAL1 替换)' % iid)
+            continue
         if typ in ('marker', 'wall_finish'):
             skipped.append(iid)  # wall_finish -> M4 材质阶段
             continue

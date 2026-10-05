@@ -701,9 +701,9 @@ def build_all_materials():
     mats['entry_door_dark'] = base_mat('entry_door_dark', '3A3F45', 0.4, metallic=0.5)
     mats['led_strip'] = base_mat('led_strip', 'FFFFFF', 0.5)
     b = _bsdf(mats['led_strip'])
-    # REWORK 2.5 白平衡收敛：2800K 暖橙 -> 4300K 暖白（17 条 cove 灯带是客厅墙主要暖源）
-    _set(b, 'Emission Color', (1.0, 0.90, 0.78, 1.0))
-    _set(b, 'Emission Strength', 2.2)
+    # FINAL1 D3：灯带归点缀 3000K（真实黑体线性值，附录 B）
+    _set(b, 'Emission Color', (1.0, 0.44, 0.16, 1.0))
+    _set(b, 'Emission Strength', 1.6)   # FINAL1 D3：点缀不主导
     # 孩子房材质统一移至 REWORK 色板块（下方）
     mats['plant_leaf'] = base_mat('plant_leaf', '4E6E3A', 0.5)
     mats['plant_pot'] = mats['ceramic_brick']
@@ -731,6 +731,10 @@ def build_all_materials():
     mats['kitchen_front'] = make_wood('kitchen_front')  # 橄榄绿变体挂载点（REWORK #5 整排下柜共用）
     # ---- REWORK 新增材质 ----
     mats['art_abstract'] = make_art_abstract()          # 挂画画芯（#1/4.1）
+    # FINAL1 D2：卧室门燕麦平板门（C1 选型）；D11：淋浴区防滑地面
+    mats['door_oat'] = base_mat('door_oat', 'D8CBB3', 0.5)
+    mats['floor_anti_slip'] = base_mat('floor_anti_slip', 'CFC6B8', 0.7)
+    _bump_noise(mats['floor_anti_slip'], 0.015, 200)
     mats['glass_fluted'] = make_glass_fluted()          # 长虹玻璃门芯（2.2）
     mats['book_paper'] = base_mat('book_paper', 'EAE2D3', 0.8)
     mats['book_tan'] = base_mat('book_tan', 'B08B64', 0.75)
@@ -827,6 +831,10 @@ ROLE_TO_MATERIAL = {
     'rug_a': 'rug_geo',
     'rug': 'rug_plain',
     'art_abstract': 'art_abstract',
+    # FINAL1 D2/D11：卧室门燕麦（门扇+门套+衬里同 role 跟随）、淋浴防滑地面
+    'door_leaf_bedroom': 'door_oat',
+    'door_frame_bedroom': 'door_oat',
+    'floor_anti_slip': 'floor_anti_slip',
     'vase_white': 'ceramic_white',
     'blind': 'fabric_oat',
     'curtain_sheer': 'linen_sheer',
@@ -949,3 +957,62 @@ def apply_all(mats, colls):
     art.visible_shadow = True
     print('[materials] applied by role: %d assigned, %d missing role' %
           (assigned, len(missing)))
+
+
+# ---------------------------------------------------------------- FINAL1 D1
+# 附录 A 胡桃白名单的补集（业主确认表；C 渲染变体同源逻辑的永久落地版）。
+# 原则：每个房间只留一件"胡桃主角"；名单之外 role 落在 walnut/walnut_dark 的
+# slot 改为 cabinet_white（柜类）或 fabric_oat（床架软包）。
+# 不动：西墙组合柜、B 长桌+开放格内衬、格栅屏风+书桌台面、飘窗台面、浴柜×2、
+#       露台圆几、厨房下柜（kitchen_front）、玄关格、玻璃门胡桃细框。
+APPENDIX_A_RULES = [
+    ('A_living_dining_balcony_tv_cabinet_01', 'cabinet_white'),
+    ('A_living_dining_balcony_coffee_table_01', 'cabinet_white'),
+    ('A_living_dining_balcony_dining_chair_', 'metal_black'),
+    ('A_living_dining_balcony_island_01', 'cabinet_white'),
+    ('common_living_dining_balcony_fridge_01', 'cabinet_white'),   # 附录A：冰箱收口柜（steel 面不在 walnut 基名内不受影响）
+    ('B_living_dining_balcony_side_table_01', 'cabinet_white'),
+    ('B_living_dining_balcony_island_01', 'cabinet_white'),
+    ('B_living_dining_balcony_dining_chair_', 'metal_black'),
+    ('common_master_bedroom_bed_01', 'fabric_oat'),
+    ('common_master_bedroom_nightstand_', 'cabinet_white'),
+    ('common_master_bedroom_open_niche_01', 'cabinet_white'),
+    ('common_master_bedroom_dressing_table_01', 'cabinet_white'),
+    ('common_parents_room_bed_01', 'fabric_oat'),
+    ('common_parents_room_shelf_', 'cabinet_white'),
+    ('common_parents_room_nightstand_01', 'cabinet_white'),
+]
+_SRC_WOOD_BASES = ('walnut', 'walnut_dark')
+
+
+def _base_name(m):
+    n = m.name
+    i = n.rfind('.')
+    return n[:i] if i > 0 and n[i + 1:].isdigit() else n
+
+
+def _root_name(o):
+    while o.parent is not None:
+        o = o.parent
+    return o.name
+
+
+def apply_appendix_a(mats):
+    """FINAL1 D1：材质分配后的胡桃减量（永久，非渲染期变体）。返回替换 slot 数。"""
+    n_total = 0
+    log = []
+    for prefix, dst_name in APPENDIX_A_RULES:
+        dst = mats.get(dst_name) or bpy.data.materials.get(dst_name)
+        n = 0
+        for o in bpy.data.objects:
+            if o.type != 'MESH' or not _root_name(o).startswith(prefix):
+                continue
+            for slot in o.material_slots:
+                if slot.material and _base_name(slot.material) in _SRC_WOOD_BASES:
+                    slot.material = dst
+                    n += 1
+        if n:
+            log.append('%s->%s:%d' % (prefix.split('_')[-1], dst_name, n))
+        n_total += n
+    print('[materials] appendix-A walnut reduced: %d slots (%s)' % (n_total, ' '.join(log)))
+    return n_total

@@ -146,6 +146,7 @@ def main():
     # M4：正式材质 + 灯光 + AgX（规格 6/8 章；REWORK 2.5 Look 从 config 读）
     mats4 = materials.build_all_materials()
     materials.apply_all(mats4, colls)
+    materials.apply_appendix_a(mats4)            # FINAL1 D1：胡桃减量（附录 A 永久落地）
     lighting.build_all(mats4, colls)
     try:
         scene.view_settings.view_transform = 'AgX'

@@ -119,3 +119,12 @@
 - 曝光沿用各轮定值；机位参数未动（D11/D12 的 18/19 机位调整属停 2）。
 - 交付：renders/preview 20 张重渲 + C 系 15 张；review/crops_final1 19 张 F 项裁图 + R1–R7 顶视图；compare_final1 三组拼图。
 - 验收：qa_final1 数值全 PASS（窗区近白 0.0%×4）；visual_review_final1 23 张全过；qa_final1.md F1–F13 逐项达成。
+
+## FINAL1 第 2 轮 B（2026-10-05 傍晚，业主停 1 批复后）
+
+- 设备 oneAPI ｜ preview 960×540（pano 2048×1024）/ 64smp ｜ OIDN ｜ AgX Base Contrast ｜ **View WB 5000K（D3 步骤 4，temperature=场景光源色温语义）** ｜ seed 42
+- 重建 5 次（build7~build13）：D 几何/材质套件 → D3 治理三轮（世界光 1.15/太阳 5.5/HDRI 饱和 0.50/灯带 3000K×1.6）→ 补光 diffuse 修正（历代 fill 首次真正生效）→ 曝光反推 → 冰箱收口柜规则 → 厨房曝光 1.95。
+- 批次：dA 14 张（A 透视）+ dB 4 张 + P1/P3 + P2 + olive（16 objs）+ 11b；fix1 冰箱规则 9 张（01/02/03/04/06/07/11/11b/P1）；fix2 09；fix3 10。
+- 曝光变更：11/11b=2.25、13=2.20、14=1.15、17=2.15、19=2.25、09/10=1.95（缝线对比），其余沿用。
+- 验收：qa_final1 数值全 PASS（D3 六机位 R−B ≤22 全达成）；逐项亲看 04/09（放大 2.2×）/11b/15/18；qa.py 236/0、coplanar 0。
+- contact_sheet_preview 重生成（25 格，含 11b）。

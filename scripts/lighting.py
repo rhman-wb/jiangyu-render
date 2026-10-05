@@ -12,8 +12,8 @@ import util
 # REWORK 2.6：roof_garden（地面层玻璃顶棚花园）弃用，换晴天/薄云、无建筑、天空干净的 HDRI
 # （Poly Haven kloofendal_48d_partly_cloudy_puresky：48° 太阳高度≈上午，纯天空版，选型见 decisions_log）
 HDRI = os.path.join(config.ASSET_DIR, 'kloofendal_48d_partly_cloudy_puresky_4k.hdr')
-K3000 = (1.0, 0.50, 0.25)     # 3000K→3300K 折中（点缀：灯带/壁灯/吊灯；qa_render R-B 超标后收敛）
-K4000 = (1.0, 0.70, 0.44)     # 4000K（厨卫筒灯：无日照房间的摄影补光感，避免整屋偏橙）
+K3000 = (1.00, 0.44, 0.16)  # FINAL1 D3：真实 3000K 线性值（点缀：灯带/壁灯/台灯/吊灯/夜灯/地脚灯）
+K4000 = (1.00, 0.62, 0.38)  # FINAL1 D3：真实 4000K 线性值（主照明/厨卫作业光）
 K6500 = (1.0, 0.99, 0.97)     # 6500K
 K5700 = (1.0, 0.955, 0.925)  # 5700K（R1FIX：白墙 R-B<=22 第三轮）（R1FIX F3：5200K 再提白，白墙 R-B<=22 不靠后期） 主照明（筒灯/吸顶）：REWORK 2.5 白墙 R-B<=18 的硬约束（REWORK 2.5 白平衡收敛：太阳+补光提白压暖）
 
@@ -43,7 +43,8 @@ def _fill_light(name, loc, rot, size, energy, coll, color=K6500):
                 size=size[0], size_y=size[1], spread=math.radians(75))
     lt.rotation_euler = rot
     lt.visible_camera = False
-    lt.visible_diffuse = False
+    # FINAL1 D3 修正：visible_diffuse=False 在 Cycles 里直接关闭漫反射照明
+    # （历代 fill 因此全部无效）——只关相机/镜面/透射可见性，保留照明
     lt.visible_glossy = False
     lt.visible_transmission = False
     return lt
@@ -73,12 +74,12 @@ def build_world():
     else:
         # 干净天空色回退（屋顶花园 HDRI 已弃用，宁缺毋滥）
         bg.inputs['Color'].default_value = (0.52, 0.62, 0.78, 1.0)
-    bg.inputs['Strength'].default_value = 0.7   # 暖 HDRI 降权（R-B 收敛）
+    bg.inputs['Strength'].default_value = 1.15  # FINAL1 D3：日光主导（两轮提权）
 
 
 def build_sun(coll):
     """太阳来自南偏西（光行进方向 ≈ (+0.25,+0.94,down)），5800K，2.5° 柔角。"""
-    s = _light('lt_sun', 'SUN', (0, 0, 10), coll, 4.5, color=K6500,
+    s = _light('lt_sun', 'SUN', (0, 0, 10), coll, 5.5, color=K6500,   # D3：太阳 4.5->5.5
                angle=math.radians(2.5))
     s.rotation_euler = (math.radians(76.7), 0.0, math.radians(-15.4))
     return s
@@ -88,12 +89,12 @@ LIVING_SPOTS = [(4.3, -11.35), (5.4, -11.35), (6.5, -11.35), (7.6, -11.35), (8.4
                 (4.3, -4.20), (5.4, -4.20), (6.5, -4.20), (7.6, -4.20), (8.4, -4.20),
                 (3.57, -10.2), (3.57, -9.1), (3.57, -6.8), (3.57, -5.6),
                 (9.02, -10.9), (9.02, -6.9), (9.02, -5.6)]
-ROOM_SPOTS = [(11.0, -8.8, 2.85, 5.0, K5700), (11.0, -6.6, 2.85, 5.0, K5700),
-              (1.75, -9.5, 2.85, 5.0, K5700), (7.65, -3.0, 2.85, 5.0, K5700),
-              (12.2, -2.9, 2.85, 5.0, K5700), (9.9, -4.4, 2.60, 8.0, K4000),
-              (10.6, -3.0, 2.60, 8.0, K4000), (2.7, -5.7, 2.85, 5.0, K5700),
+ROOM_SPOTS = [(11.0, -8.8, 2.85, 5.0, K4000), (11.0, -6.6, 2.85, 5.0, K4000),
+              (1.75, -9.5, 2.85, 5.0, K4000), (7.65, -3.0, 2.85, 5.0, K4000),
+              (12.2, -2.9, 2.85, 5.0, K4000), (9.9, -4.4, 2.60, 8.0, K4000),
+              (10.6, -3.0, 2.60, 8.0, K4000), (2.7, -5.7, 2.85, 5.0, K4000),
               # 厨房 / 主卫 / 公卫（铝扣板顶筒灯：无日照房间，4000K 摄影补光感）
-              (4.6, -2.6, 2.395, 10.0, (1.0, 0.83, 0.68)), (5.7, -2.6, 2.395, 10.0, (1.0, 0.83, 0.68)),  # R1FIX F1: 厨房筒灯 4700K 让 olive 读作绿
+              (4.6, -2.6, 2.395, 10.0, K4000), (5.7, -2.6, 2.395, 10.0, K4000),  # R1FIX F1: 厨房筒灯 4700K 让 olive 读作绿
               (11.3, -4.9, 2.395, 10.0, K4000), (12.6, -4.6, 2.395, 10.0, K4000),
               (9.5, -1.9, 2.395, 10.0, K4000), (10.4, -0.7, 2.395, 10.0, K4000)]
 CEILING_LAMPS = {'master': (11.0, -7.7, 13.0), 'parents': (1.75, -8.3, 10.0),
@@ -106,18 +107,20 @@ def build_lights(mats, colls):
     build_world()
     build_sun(common)
     for i, (x, y) in enumerate(LIVING_SPOTS):
-        _light('lt_spot_liv%02d' % i, 'SPOT', (x, y, 2.595), common, 5.0, color=K5700,
+        _light('lt_spot_liv%02d' % i, 'SPOT', (x, y, 2.595), common, 5.0, color=K4000,
                spot_size=math.radians(55), shadow_soft_size=0.08)
     for i, (x, y, z, watts, col) in enumerate(ROOM_SPOTS):
         _light('lt_spot_room%d' % i, 'SPOT', (x, y, z), common, watts, color=col,
                spot_size=math.radians(55), shadow_soft_size=0.08)
     for rid, (cx, cy, w) in CEILING_LAMPS.items():
-        _light('lt_ceiling_%s' % rid, 'POINT', (cx, cy, 2.77), common, w, color=K5700,
+        _light('lt_ceiling_%s' % rid, 'POINT', (cx, cy, 2.77), common, w, color=K4000,
                shadow_soft_size=0.15)
     # 床头壁灯
-    for i, (x, y) in enumerate([(12.60, -7.0), (12.60, -9.2), (0.32, -8.65)]):
-        _light('lt_wall%d' % i, 'POINT', (x, y, 1.42), common, 4.0,
-               color=(1.0, 0.80, 0.62), shadow_soft_size=0.10)  # 壁灯 4600K 暖点缀
+    for i, (x, y) in enumerate([(12.60, -7.0), (12.60, -9.2),
+                            (0.32, -9.30), (0.32, -8.00)]):   # D9 阅读壁灯×2
+        _lw = 2.5 if x > 6 else 4.0   # FINAL1 D3：主卧壁灯点缀弱化
+        _light('lt_wall%d' % i, 'POINT', (x, y, 1.42), common, _lw,
+               color=K3000, shadow_soft_size=0.10)  # FINAL1 D3 壁灯 3000K 点缀
     # 吊灯（跟方案走：挂在 item 父 Empty 下）
     for iid, loc in (('A_living_dining_balcony_pendant_lamp_01', (4.9, -5.4, 2.02)),
                      ('A_living_dining_balcony_pendant_lamp_02', (6.55, -5.4, 1.97)),
@@ -173,6 +176,7 @@ def build_lights(mats, colls):
         # ('lt_fill_kitchen', (5.15, 0.30, 1.50), (RX, 0, 0), (0.9, 0.55), 45.0),  # 已停用
         ('lt_fill_pbath', (9.9, 0.55, 1.85), (RX, 0, 0), (0.6, 0.7), 60.0),       # W05
         ('lt_fill_mbath', (14.45, -4.35, 1.75), (0, RY, 0), (1.0, 0.9), 60.0),    # W10
+        ('lt_fill_master', (10.9, -10.02, 2.30), (1.35, 0, 0), (3.2, 2.0), 150.0), # FINAL1 D3：主卧室内隐藏柔光（CLAUDE.md 8 章先例）
         ('lt_fill_corridor', (10.2, -3.6, 2.52), (0, 0, 0), (1.5, 1.0), 25.0),    # 干区顶柔光
     ]
     for name, loc, rot, size, watts in fills:

@@ -16,15 +16,13 @@ CAM_OVERRIDES = {
     # --- REWORK #9 遮挡修正 ---
     '03_living_A_from_foyer': {'location': (3.95, -6.35, 1.35), 'exposure': 1.80},
     '06_living_B_from_foyer': {'location': (3.95, -6.35, 1.35), 'exposure': 1.80},
-    '11_foyer': {'location': (3.25, -4.95, 1.5), 'look_at': (2.2, -6.2, 1.1), 'lens': 16,
-                 'exposure': 1.70},   # 同时看到端景柜和西墙镜面门
+    '11_foyer': {'location': (2.65, -6.02, 1.5), 'look_at': (2.60, -4.85, 1.05), 'lens': 18,
+                 'exposure': 2.25},   # FINAL1 D7：回看入户门；D3 曝光反推 147->210
+    '11b_foyer_cabinet': {'exposure': 2.25},   # FINAL1 D7 新增：端景柜+鞋柜+镜面门
     '16_son_room': {'location': (11.3, -2.6, 1.45), 'exposure': 1.95},
     '16b_son_room_blue': {'location': (11.3, -2.6, 1.45), 'exposure': 1.95},
-    '18_public_bath_wet': {'location': (10.60, -2.20, 0.75),  # R2 追加2：水平相机（D-056 参数搜索定案）
-                           'look_at': (9.35, -1.2, 0.75), 'lens': 10,
-                           # 水平+低机位+10mm 超广角：9 点投影最小边距 0.230（马桶 8 角+隔断中心），
-                           # 竖线竖直（无俯仰）。旧俯拍方案（tilt 15）废弃。
-                           'shift_y': -0.10,
+    '18_public_bath_wet': {'location': (9.90, -2.20, 1.35),   # FINAL1 D11：正常视高（取代 D-056）
+                           'look_at': (9.55, -0.55, 1.10), 'lens': 19,
                            'exposure': 2.25},
     # --- 曝光初值（其余机位）---
     '01_aerial_A': {'exposure': 1.15},   # R2FIX m4：+0.3 提亮浅色纯底
@@ -33,14 +31,14 @@ CAM_OVERRIDES = {
     '05_living_A_tv_wall': {'exposure': 1.55},
     '07_living_B_from_balcony': {'exposure': 1.80},
     '08_living_B_tv_wall': {'exposure': 1.80},
-    '09_kitchen_walnut': {'exposure': 2.25},   # R2FIX：厨房补光停用后由世界光承担，+0.65 档
-    '10_kitchen_olive': {'exposure': 2.25},
+    '09_kitchen_walnut': {'exposure': 1.95},   # FINAL1 D3：WB+世界光提权后压曝光保缝线对比
+    '10_kitchen_olive': {'exposure': 1.95},
     '12_master_bed_screen': {'exposure': 1.75},
-    '13_master_wardrobe_vanity': {'exposure': 2.30},
-    '14_parents_room': {'exposure': 1.40},
+    '13_master_wardrobe_vanity': {'exposure': 2.20},   # D3：224/231 略超 225 降一档
+    '14_parents_room': {'exposure': 1.15},   # D3：242.6 略超 225
     '15_daughter_room': {'exposure': 1.95},   # 北向无直射光
-    '17_public_bath_dry': {'exposure': 1.90},
-    '19_master_bath': {'exposure': 2.10},
+    '17_public_bath_dry': {'exposure': 2.15},   # D3：176->210
+    '19_master_bath': {'exposure': 2.25},   # D3：188->210
     '20_terrace': {'exposure': 0.75,
                    # R2FIX2 N2：相机移入露台范围内（工单定值 (9.65,-10.5,1.5) 望
                    # (11.6,-11.7,0.6)，lens 18；plant_01 (9.6,-10.5) 在机位下方不碰；

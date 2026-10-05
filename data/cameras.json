@@ -237,16 +237,16 @@
    "scheme": "A",
    "type": "PERSP",
    "location": [
-    2.7,
-    -4.95,
+    2.65,
+    -6.3,
     1.5
    ],
    "look_at": [
-    2.7,
-    -6.6,
-    1.1
+    2.6,
+    -4.85,
+    1.05
    ],
-   "lens_mm": 16,
+   "lens_mm": 18,
    "sensor_width_mm": 36,
    "resolution": [
     1920,
@@ -414,16 +414,16 @@
    "scheme": "A",
    "type": "PERSP",
    "location": [
-    10.3,
-    -2.3,
-    1.5
+    9.9,
+    -2.2,
+    1.35
    ],
    "look_at": [
-    9.8,
-    -0.4,
+    9.55,
+    -0.55,
     1.1
    ],
-   "lens_mm": 16,
+   "lens_mm": 19,
    "sensor_width_mm": 36,
    "resolution": [
     1920,
@@ -436,13 +436,13 @@
    "scheme": "A",
    "type": "PERSP",
    "location": [
-    11.25,
-    -5.1,
+    11.3,
+    -5.05,
     1.5
    ],
    "look_at": [
-    13.4,
-    -4.0,
+    13.3,
+    -4.05,
     1.2
    ],
    "lens_mm": 16,
@@ -540,6 +540,28 @@
     2048
    ],
    "description": "主卧 720° 全景"
+  },
+  {
+   "id": "11b_foyer_cabinet",
+   "scheme": "A",
+   "type": "PERSP",
+   "location": [
+    3.3,
+    -4.95,
+    1.5
+   ],
+   "look_at": [
+    2.3,
+    -6.1,
+    1.05
+   ],
+   "lens_mm": 20,
+   "sensor_width_mm": 36,
+   "resolution": [
+    1920,
+    1080
+   ],
+   "description": "玄关回看：端景柜+户内鞋柜+镜面门（FINAL1 D7 新增）"
   }
  ]
 }

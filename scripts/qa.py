@@ -12,6 +12,19 @@ import config
 import util
 import architecture
 
+# FINAL1 R3：A 方案餐椅重排（layout 冻结，建模器覆盖；qa 以此为期望 bbox）
+FINAL1_CHAIR_POS = {
+    'A_living_dining_balcony_dining_chair_01': (5.82, -4.95, 6.22, -4.55),
+    'A_living_dining_balcony_dining_chair_02': (5.82, -6.25, 6.22, -5.85),
+    'A_living_dining_balcony_dining_chair_03': (6.35, -4.95, 6.75, -4.55),
+    'A_living_dining_balcony_dining_chair_04': (6.35, -6.25, 6.75, -5.85),
+}
+FINAL1_REPLACED = {
+    'A_living_dining_balcony_dining_chair_05',
+    'A_living_dining_balcony_tv_cabinet_01',
+    'common_foyer_stool_01',
+    'common_elevator_hall_cabinet_01',
+}
 L = util.load_layout()
 WALLS = {w['id']: w for w in L['walls']}
 GEO = {w['id']: architecture.wall_geo(w, L['walls']) for w in L['walls']}
@@ -254,10 +267,10 @@ def check_counts():
         log('FAIL', 'floors mismatch missing=%s extra=%s' %
             (expect_floors - floor_ids, floor_ids - expect_floors))
     ncam = len([o for o in bpy.data.objects if o.type == 'CAMERA'])
-    if ncam == 29:   # REWORK：23 + 16b + CAL + R2FIX M1 柜门特写 ×3 + R2FIX2 N1 西墙柜特写
+    if ncam == 30:   # REWORK：29 + FINAL1 D7 新增 11b
         log('PASS', 'cameras %d' % ncam)
     else:
-        log('FAIL', 'cameras %d != 29' % ncam)
+        log('FAIL', 'cameras %d != 30' % ncam)
     markers = [o.name for o in bpy.data.objects if 'marker' in o.name.lower()]
     if markers:
         log('FAIL', 'marker objects built: %s' % markers[:3])
@@ -381,6 +394,15 @@ def check_items_bbox():
         xy_allow = xy_extra + (0.65 if typ == 'floor_lamp' else (
             0.025 if typ == 'bookcase' else (0.20 if typ == 'vanity' else 0.0)))
         bad = []
+        if item['id'] in FINAL1_CHAIR_POS:
+            x0, y0, x1, y1 = FINAL1_CHAIR_POS[item['id']]
+            ibmin = (x0, y0, ibmin[2])
+            ibmax = (x1, y1, ibmax[2])
+        if item['id'] == 'common_parents_room_nightstand_01':
+            ibmin = (ibmin[0], ibmin[1], 0.45)
+            ibmax = (ibmax[0], ibmax[1], 0.85)
+        if item['id'] == 'common_kitchen_cabinet_02':
+            ibmin = (ibmin[0], ibmin[1], 0.0)   # FINAL1 R4/D6：西墙浅吊柜改通高 z0-2.30
         for a in range(3):
             tol_out = 0.005 + (z_top_allow if a == 2 else xy_allow)
             tol_lo = 0.005 + (0 if a == 2 else xy_allow)
@@ -390,6 +412,9 @@ def check_items_bbox():
                 bad.append('axis%d out (%.3f..%.3f vs %.3f..%.3f)'
                            % (a, cmin[a], cmax[a], ibmin[a], ibmax[a]))
         tol_near_h, tol_near_z = 0.025, 0.035
+        if typ == 'dining_chair':
+            tol_near_h = 0.06   # FINAL1 D5 新椅型：Ø18 细腿内收、薄靠背（设计内收）
+            tol_near_z = 0.06
         for a in range(2):
             near_tol = tol_near_h + xy_allow
             if ibmin[a] + near_tol < cmin[a] or cmax[a] < ibmax[a] - near_tol:
@@ -643,6 +668,8 @@ def check_m3_completeness():
         typ = item.get('type')
         if typ in ('marker', 'wall_finish'):
             continue
+        if item['id'] in FINAL1_REPLACED:
+            continue   # FINAL1：被 D 系列方案替换/删除的项（build_final1_extras 重建）
         expect += 1
         root = bpy.data.objects.get(item['id'])
         if root is None:
@@ -654,7 +681,9 @@ def check_m3_completeness():
             continue
         z0 = min(util.obj_world_bbox(k)[0][2] for k in kids)
         z_expect = item.get('z_base', 0.0) if 'bbox' not in item else 0.0
-        if typ not in hang_ok and z0 > z_expect + 0.006:
+        if item['id'] == 'common_parents_room_nightstand_01':
+            pass   # FINAL1 D9：壁挂床头柜（离地 0.45 设计如此）
+        elif typ not in hang_ok and z0 > z_expect + 0.006:
             log('FAIL', 'item %s floats %.3fm' % (item['id'], z0))
             float_bad += 1
     if missing:

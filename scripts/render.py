@@ -140,6 +140,13 @@ def setup_cycles(scene, preset):
     except Exception:
         pass
     util.set_agx_look(scene)   # REWORK 2.5（枚举拼写兼容）
+    # FINAL1 D3 步骤 4：View 层白平衡 5300K（工单允许幅度 5000-5500K；
+    # 4000K 主照明的无日光房间白墙 R-B 物理顶死 ~22+，前三步治理后启用）
+    try:
+        scene.view_settings.use_white_balance = True
+        scene.view_settings.white_balance_temperature = 5000.0   # 工单允许下限=最强校正（temperature 语义=场景光源色温）
+    except (TypeError, AttributeError) as e:
+        print('[render][warn] view white balance unavailable: %s' % e)
     return dev
 
 
