@@ -36,13 +36,16 @@ def _light(name, ltype, loc, coll, energy, color=K3000, parent=None, **kw):
 
 
 def _fill_light(name, loc, rot, size, energy, coll, color=K6500):
-    """REWORK 2.5 不可见补光面光：只贡献照明，相机/反射里不直接可见。"""
+    """REWORK 2.5 不可见补光面光：只贡献照明，相机/反射里不直接可见。
+    FINAL1 F12：补 visible_transmission=False——旧版漏关透射可见性，隔着窗
+    玻璃能看见白面光本体（15/16/18/19"窗内白块"的实体）。"""
     lt = _light(name, 'AREA', loc, coll, energy, color=color,
                 size=size[0], size_y=size[1], spread=math.radians(75))
     lt.rotation_euler = rot
     lt.visible_camera = False
     lt.visible_diffuse = False
     lt.visible_glossy = False
+    lt.visible_transmission = False
     return lt
 
 
@@ -255,8 +258,13 @@ def build_outdoor(mats_unused, colls):
     rnd = random.Random(20261002)   # 可复现
     spots_s = [(-8.0, -20.5), (-2.5, -23.0), (5.0, -21.0), (12.0, -24.0),
                (18.5, -20.0), (25.0, -22.5), (-14.0, -17.5), (30.0, -18.0)]
+    # FINAL1 F12：北窗新增 2 棵加大树——女儿房 W01(x6.5-8.8)/儿子房 W06(x11.4-13.0)
+    # 视线原先只擦过远树，窗上部读作死白。追加在既有 6 点之后（随机序列不漂移）。
     spots_n = [(0.0, 8.5), (6.5, 11.0), (13.0, 9.0), (20.0, 12.5), (-6.0, 11.5),
-               (27.0, 8.0)]
+               (27.0, 8.0), (7.6, 9.5), (12.2, 9.5)]
+    FORCE_SCALE = {(6.5, 11.0): 3.2,   # 厨房北窗（R2FIX M4 既有）
+                   (7.6, 9.5): 3.0,    # FINAL1 F12 女儿房 W01
+                   (12.2, 9.5): 3.0}   # FINAL1 F12 儿子房 W06
     tree_specs = [('jacaranda_tree_1k', 0.40, 0.12, spots_s),
                   ('tree_small_02_1k', 1.9, 0.18, spots_n)]
     for aid, sc, dec_ratio, spots in tree_specs:
@@ -321,8 +329,8 @@ def build_outdoor(mats_unused, colls):
         for i, (px, py) in enumerate(spots):
             dup = tmpl.copy()                   # 共享网格（linked）
             s = sc * (0.9 + rnd.random() * 0.25)
-            if aid.startswith('tree_small') and (px, py) == (6.5, 11.0):
-                s = sc * 3.2
+            if aid.startswith('tree_small') and (px, py) in FORCE_SCALE:
+                s = sc * FORCE_SCALE[(px, py)]
             dup.location = (px, py, Z)
             dup.scale = (s, s, s)
             dup.rotation_euler = (0.0, 0.0, rnd.random() * 6.28)

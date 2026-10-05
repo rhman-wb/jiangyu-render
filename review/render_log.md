@@ -109,3 +109,13 @@
 - 全景超时记录：P1 960.8s / P3 989.6s / P2 967.9s，均超第 9 章 900s 线。已启动 192smp 预案重渲，跨夜任务中断未产出；**保留 256smp 版本交付**（更高采样，重渲仅增噪点），偏差如实记录（D-059）。
 - 曝光沿用各轮定值；机位参数与 R2FIX2 终版一致，未做任何改动。
 - 验收：qa_final 3/0（存在/分辨率/8bit RGB）；visual_review_final 23 张全过。
+
+## FINAL1 第 1 轮（2026-10-05，REWORK_FINAL1 F1–F13 + 第 2 轮 A）
+
+- 设备 oneAPI Arc 核显 ｜ Cycles ｜ preview 960×540（pano 2048×1024）/ 64smp / 阈值 0.10 ｜ OIDN ｜ AgX Base Contrast ｜ 8bit RGB ｜ seed 42
+- 重建 2 次（render_f1_build.log / render_f1_build2.log）：①全量修复（F10 扶手方向当轮返正）②F7 帘高补修。回归 qa.py 238/0、qa_coplanar 0。
+- 批次：F-A 12 张（01,03,04,09,11,12,13,15–19）15–21s/张；panoA P1/P3 76/87s；F-B 02,06,07,08,P2 20s/张+P2 76s；F-olive 10 号 18s（variant=14 objs，与场景 kitchen_front 计数一致）。12/P3 于 F7 帘高修复后补渲（20.4s/72s）。
+- C 批（--f1v 临时变体，渲后 revert，blend 零污染）：C1 门色 04×3 + 14×3 + 13×3（14 行门不可见改 13，D-063）；C2 电视墙 05/04×2（created 25/11 件）；C3 格栅 05×2。C1_door_white_04 首验 appendix-A 215 slots + leaf4/frame36。
+- 曝光沿用各轮定值；机位参数未动（D11/D12 的 18/19 机位调整属停 2）。
+- 交付：renders/preview 20 张重渲 + C 系 15 张；review/crops_final1 19 张 F 项裁图 + R1–R7 顶视图；compare_final1 三组拼图。
+- 验收：qa_final1 数值全 PASS（窗区近白 0.0%×4）；visual_review_final1 23 张全过；qa_final1.md F1–F13 逐项达成。

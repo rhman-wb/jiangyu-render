@@ -299,11 +299,14 @@ def _door_handle(name, g, u_edge, mats, coll, half_t=0.026):
     util.make_box(name, bmin, bmax, coll=coll, mat=mats['dark'], role='metal_black')
 
 
-def _jamb_lines(wid, k, g, a, b, head, mats, coll):
+def _jamb_lines(wid, k, g, a, b, head, mats, coll, frame_role='door_frame_wood',
+                gap_w=0.04):
     """门套窄线条（REWORK_R1FIX F4 / 规格 4.3 "4cm 可见宽度"）：
-    洞口三边（左右顶）各两条 4cm 线，贴两侧墙皮向外凸 4cm；不包墙厚——
-    洞口侧壁保持 wall_paint。旧版 jamb_d=0.16 筒子板在斜视角（12 号机位）
-    露出 16cm 宽通高 walnut 面，即主卧北墙"木纹竖条"的实体（D-043）。"""
+    洞口三边（左右顶）各两条 4cm 线，贴两侧墙皮向外凸 4cm。
+    FINAL1 F11：洞口侧壁（reveal）加与门套同 role 的衬里盒（左右竖 + 顶横，
+    跨全墙厚，内缩 0.5mm 避共面），封掉门扇与洞口边之间的亮白缝；
+    role 跟随 frame_role —— D2 换门色时衬里自动跟随。
+    gap_w = 门扇边到洞口边的间隙宽（木门/长虹门 0.04，开发商玻璃门 0.015）。"""
     fw = 0.04
     c = g['v_center']
     t = config.WALL_T_EXT if g['ext'] else config.WALL_T
@@ -318,7 +321,18 @@ def _jamb_lines(wid, k, g, a, b, head, mats, coll):
             else:
                 bmin, bmax = (min(v0, v1), u0, z0), (max(v0, v1), u1, z1)
             util.make_box('door_%s_%d%s%s' % (wid, k, tag, side), bmin, bmax,
-                          coll=coll, mat=mats['white'], role='door_frame_wood')
+                          coll=coll, mat=mats['white'], role=frame_role)
+    # F11 洞口侧壁衬里：覆盖 gap_w 宽的 reveal 环带（内缩 0.5mm 避与墙段端面共面）
+    e = 0.0005
+    for tag, u0, u1, z0, z1 in (('lin_l', a + e, a + gap_w - e, 0.0, head),
+                                ('lin_r', b - gap_w + e, b - e, 0.0, head),
+                                ('lin_t', a + e, b - e, head - gap_w + e, head - e)):
+        if g['axis'] == 'x':
+            bmin, bmax = (u0, c - t / 2, z0), (u1, c + t / 2, z1)
+        else:
+            bmin, bmax = (c - t / 2, u0, z0), (c + t / 2, u1, z1)
+        util.make_box('door_%s_%d%s' % (wid, k, tag), bmin, bmax,
+                      coll=coll, mat=mats['white'], role=frame_role)
 
 
 def _fluted_door(wid, k, g, a, b, head, mats, coll):
@@ -361,12 +375,18 @@ def build_doors(layout, mats, coll):
             elif typ == 'glass_door':
                 # 开发商玻璃门（W15 两扇 / W17 三扇），关闭。
                 # REWORK 2.2：深灰铝框 + 清玻璃，绝不能是木门
+                # FINAL1 F7：门扇装配顶从 head-0.05 改到 head —— 原本装配顶 2.35 与
+                # 过梁带底 head=2.40 之间留 5cm 通长水平缝，太阳从缝直入，掠射到
+                # 主卧床头东墙成斜光带（探针 OPEN 直射区 y-8.7..-7.05/z1.6..2.0）。
+                # F11：玻璃门洞口加石墨色 reveal 衬里（gap 1.5cm）。
+                _jamb_lines(w['id'], k, g, a, b, head, mats, coll,
+                            frame_role='door_frame_graphite', gap_w=0.015)
                 n = 2 if (b - a) < 1.5 else 3
                 for i in range(n):
                     ua = a + (b - a) * i / n
                     ub = a + (b - a) * (i + 1) / n
                     _panel_frame('door_%s_%d' % (w['id'], i), g, ua + 0.015, ub - 0.015,
-                                 0.05, head - 0.05, mats, coll, glass=True,
+                                 0.05, head, mats, coll, glass=True,
                                  frame_role='door_frame_graphite',
                                  glass_role='glass_clear')
             elif typ == 'door' and (w['id'], k) in FLUTED_DOORS:

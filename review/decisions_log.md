@@ -295,3 +295,26 @@
 - **全景超时偏差**：P1/P2/P3 256smp 单张 961/968/990s，超第 9 章 900s 线。预案（192smp+0.03）启动后跨夜任务中断；比对后保留已完成的 256smp 版本（重渲仅降质），如实记录不重渲的理由。
 - **分辨率断言**：新建 scripts/qa_final.py（纯文件读 IHDR）——20 张 final=1920×1080、3 张 pano=4096×2048、colortype=2、contact_sheet 存在 → review/qa_final.md 3/0。render.py 内联 assert_output_size 每张渲后即验（REWORK #7 既有）。
 - **成品 contact_sheet**：23 格（16b 自动缺席跳过）；15/16 格 caption 含完整 KIDS_NOTE（截断上限放宽后完整可读）。
+
+## D-060 FINAL1 第 1 轮（REWORK_FINAL1 · F1–F13 根因与修法）
+- **F5 根因（工单三查全部证实）**：①洞 0.26² < 盆外径 0.32×0.30；②实心盆沿顶 z0.855 顶穿台面分段缘（底 0.85）5mm；③"内腔"挂 mats['dark'] 而 role=ceramic_white。修：洞=外径−2cm（0.28×0.26），盆体重写为开顶白瓷杯（四壁+底，沿口压台面底 −2mm 避共面）；隐藏台面单看盆体的排查在 Blender 内完成——盆体本无盆腔几何。
+- **F8 打标口径**：ceiling_mounted = role led_strip（20 条灯带盒）+ 根名含 pendant_lamp + fx_ceiling_/fx_spot_ 前缀（幂等），共 69 件；render.py 鸟瞰按属性隐藏、finally+收尾双恢复，只动 hide_render；出风口 ceil_living_ac_slot 本在 CEILINGS 集合不重复处理。
+- **F9 机制**：build_open_niche 写 root['shelf_top_zs']（三格：B 墙柜/主卧桌格/玄关格）；_fx_props._shelf_tops() 读属性、缺失即 raise；西墙 fx_bc_* 不动（已一致）。
+- **F10 回归事故**：扶手前撑方向符号写反伸出 bbox 0.16m，qa 11 FAIL 当轮修正（向桌侧收）；终态 qa 238/0。
+- **偏差**：灶下抽屉实高 0.16/0.24/0.28（0.17:0.25:0.30 缩放至可用高 0.68）；梳妆薄抽屉 0.08（容膝 ≥0.62 硬门槛优先于工单 0.12）；11 号补入第 1 轮重渲（工单清单漏列，F9 验收需要）。
+
+## D-061 F7 斜光带双重根因（两轮未修的真相）
+- **根因一**：glass_door 门扇装配顶 head−0.05=2.35 与过梁底 2.40 间 5cm 通长缝（W17/W15 同代码路径），太阳直入。修：装配顶改 head + 石墨 reveal 衬里（F11 同批）。
+- **根因二**（封缝后光带仍在才暴露）：主卧纱帘顶 2.28 低于玻璃芯顶 2.355，露出 7.5cm 未遮挡玻璃带，玻璃 visible_shadow=False（规格日光设定）→ 太阳直穿投影成带。修：主卧纱帘+两侧遮光帘顶 2.28→2.38（帘装门头 2.40 下沿，真实做法）。
+- **工具**：scripts/diag_f7.py（--probe ray_cast 反查 OPEN/GLASS/SHEER 分类图 + --render 藏太阳对比）随库存档；诊断图 review/screenshots/f7_diag_*。全程未删太阳、未整体调暗。
+- **教训**：R2/R2FIX 两轮按"缝"排查未果，实为"透明玻璃+帘高"的组合；ray_cast 探针一次定位。
+
+## D-062 F12 根因修正与北窗外景
+- **根因修正**：工单写"关闭 visible_camera/transmission/glossy"——实况 `_fill_light` 已关 camera/diffuse/glossy，**漏的只有 visible_transmission**；补光面光透过窗玻璃本体可见 = 15/16/18/19 窗内白块共同实体。一处修复覆盖四图。
+- **北窗外景**：北树 spots 增 (7.6,9.5)/(12.2,9.5)，FORCE_SCALE ×3.0 对准 W01/W06 窗心；FORCE_SCALE 表替代厨房特例 if（厨房 ×3.2 保持）；随机种子不变、既有 14 处布点零漂移。
+- **数值**：窗区 ≥250 占比 15/16/18/19 = 0.0%×4（门槛 ≤30%）。
+
+## D-063 C1–C3 临时变体机制（final1_variants.py / --f1v）
+- **设计**：render.py 新增 --f1v NAME；apply = 附录A 胡桃重映射（根名前缀+slot 材质∈{walnut,walnut_dark}(+role) 键控，14 条规则 215 slots）+ 选项叠加；revert 逆序还原 slots→hidden→删 created，全程 try/finally 且**从不 save**——blend 零污染（C 批后 git status 证实仅渲染产物变更）。
+- **口径**：C1 选项 3（燕麦门）门套随门扇同色（工单未写套色，与选项 1"门套同色"表述对齐，混合版可补）；C1 下行原定 14 号机位——实拍门在机位身后不可见，改用 13 号（门特写），14 号三版保留备查；餐椅 C 期 wood→metal_black 为 D5 前的近似（新椅型属 D5）。
+- **C2 几何**：方案1 背景板凸 3cm（电视背板 1–2cm 隐入板内，相机不可见，如实注明）+ 四缘 15mm 暗槽灯带 + 北端格栅 15×(20+20mm) + 挂画 1.0×0.7@z1.5；方案2 整墙洗墙灯槽（z2.70 全长 4.75m）+ 挂画 + 弧形落地灯；两案同换 2.4m 窄电视柜（云白+4cm 胡桃顶线+底灯带），电视位置不动。

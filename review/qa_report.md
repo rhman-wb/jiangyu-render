@@ -108,7 +108,7 @@ blend: D:\ClaudeCodeProject2026\jiangyu-render\blend\jiangyu.blend
 - **PASS** ray W02 window visible (win_W02_0glass)
 - **PASS** ray W05 window visible (win_W05_0glass)
 - **PASS** ray W06 window visible (fx_curt_son_sheer)
-- **PASS** ray W10 window visible (fx_blind_mb_slats7)
+- **PASS** ray W10 window visible (win_W10_0glass)
 - **PASS** ray W18 window visible (fx_curt_living_sheer_A)
 - **PASS** ray W23 window visible (fx_curt_parents_sheer)
 - **PASS** no floor overlap (13 slabs)
@@ -134,14 +134,14 @@ blend: D:\ClaudeCodeProject2026\jiangyu-render\blend\jiangyu.blend
 - **PASS** item common_foyer_stool_01 bbox ok (5 parts)
 - **PASS** item common_elevator_hall_cabinet_01 bbox ok (8 parts)
 - **PASS** item common_living_dining_balcony_bookcase_01 bbox ok (8 parts)
-- **PASS** item common_living_dining_balcony_bookcase_02 bbox ok (18 parts)
+- **PASS** item common_living_dining_balcony_bookcase_02 bbox ok (22 parts)
 - **PASS** item common_living_dining_balcony_plant_01 bbox ok (9 parts)
 - **PASS** item common_living_dining_balcony_planter_01 bbox ok (1 parts)
 - **PASS** item common_living_dining_balcony_stool_01 bbox ok (3 parts)
 - **PASS** item common_living_dining_balcony_artwork_01 bbox ok (2 parts)
 - **PASS** item common_living_dining_balcony_laundry_cabinet_01 bbox ok (14 parts)
 - **PASS** item common_master_bedroom_wardrobe_01 bbox ok (44 parts)
-- **PASS** item common_master_bedroom_dressing_table_01 bbox ok (25 parts)
+- **PASS** item common_master_bedroom_dressing_table_01 bbox ok (30 parts)
 - **PASS** item common_master_bedroom_stool_01 bbox ok (5 parts)
 - **PASS** item common_master_bedroom_bed_01 bbox ok (8 parts)
 - **PASS** item common_master_bedroom_headboard_01 bbox ok (1 parts)
@@ -151,12 +151,12 @@ blend: D:\ClaudeCodeProject2026\jiangyu-render\blend\jiangyu.blend
 - **PASS** item common_master_bedroom_open_niche_01 bbox ok (8 parts)
 - **PASS** item common_master_bedroom_chair_01 bbox ok (4 parts)
 - **PASS** item common_master_bedroom_rug_01 bbox ok (1 parts)
-- **PASS** item common_master_bath_vanity_01 bbox ok (16 parts)
+- **PASS** item common_master_bath_vanity_01 bbox ok (19 parts)
 - **PASS** item common_master_bath_mirror_cabinet_01 bbox ok (2 parts)
 - **PASS** item common_master_bath_toilet_01 bbox ok (3 parts)
 - **PASS** item common_master_bath_glass_partition_01 bbox ok (5 parts)
 - **PASS** item common_master_bath_shower_floor_01 bbox ok (2 parts)
-- **PASS** item common_corridor_vanity_01 bbox ok (25 parts)
+- **PASS** item common_corridor_vanity_01 bbox ok (31 parts)
 - **PASS** item common_corridor_mirror_cabinet_01 bbox ok (3 parts)
 - **PASS** item common_public_bath_wet_shower_floor_01 bbox ok (2 parts)
 - **PASS** item common_public_bath_wet_glass_partition_01 bbox ok (5 parts)
@@ -316,7 +316,7 @@ blend: D:\ClaudeCodeProject2026\jiangyu-render\blend\jiangyu.blend
 - **PASS** scheme collections correct
 - **PASS** all 112 items built, none missing
 - **PASS** no floating furniture
-- **PASS** all 1500 meshes have role
+- **PASS** all 1563 meshes have role
 - **PASS** all roles resolvable
 - **PASS** no wood material on forbidden roles (2.4)
 - **PASS** all meshes/lights in exactly one scheme collection

@@ -301,24 +301,47 @@ def build_side_table(item, mats, coll):
 
 
 # ---------------------------------------------------------------- 椅
+_TABLE_CENTER_CACHE = {}
+
+
+def _table_center(group):
+    """同组餐桌（*_island_02）中心，FINAL1 F10 靠背朝向用。"""
+    if group not in _TABLE_CENTER_CACHE:
+        tc = None
+        for it in util.load_layout()['items']:
+            if it.get('group') == group and it['id'].endswith('island_02'):
+                b = it['bbox']
+                tc = ((b['min'][0] + b['max'][0]) / 2, (b['min'][1] + b['max'][1]) / 2)
+                break
+        _TABLE_CENTER_CACHE[group] = tc
+    return _TABLE_CENTER_CACHE[group]
+
+
 def build_dining_chair(item, mats, coll):
-    """中古弧形扶手餐椅 / 混搭椅：座垫 + 弧背 + 四腿 + 扶手条。"""
+    """中古弧形扶手餐椅 / 混搭椅：座垫 + 薄弧背 + 四腿 + 扶手条。
+    FINAL1 F10：靠背按椅心-桌心四向（±x/±y）判定，端椅（x 向）不再把靠背
+    做成横贯全宽的 0.32m 实心块；背板厚一律 ≤4cm。椅型/材质留 D5。"""
     cid = item['id']
     bmin, bmax = item['bbox']['min'], item['bbox']['max']
     root = R(item, mats, coll)
     x0, y0, z0 = bmin
     x1, y1, z1 = bmax
-    # 面朝桌子（规格 7.2）：以 item 中点朝向最近桌心近似——白模统一弧背在 -Y 侧（桌在北侧），
-    # 南侧两椅(y>桌心)翻转由 stage1 数据已定位，这里按 y 中点相对房间判一次
-    back_south = (y0 + y1) / 2 > -5.4  # 桌带 y≈-5.4，椅在桌南侧则背朝南
-    if back_south:
-        by0, by1 = y1 - 0.08, y1
+    cx, cy = (x0 + x1) / 2, (y0 + y1) / 2
+    tc = _table_center(item.get('group'))
+    dx = cx - tc[0] if tc else 0.0
+    dy = cy - tc[1] if tc else 1.0
+    back_x = abs(dx) > abs(dy)          # 靠背在 x 远桌侧（端椅）
+    bt = 0.04                            # 背板厚 ≤4cm
+    if back_x:
+        bu0, bu1 = ((x1 - bt, x1) if dx > 0 else (x0, x0 + bt))
+        box(root, cid + '_back', (bu0, y0 + 0.02, 0.47), (bu1, y1 - 0.02, z1 - 0.015),
+            coll, mats['wood'], bevel=0.012, role='wood')
     else:
-        by0, by1 = y0, y1 - 0.08
+        bv0, bv1 = ((y1 - bt, y1) if dy > 0 else (y0, y0 + bt))
+        box(root, cid + '_back', (x0 + 0.02, bv0, 0.47), (x1 - 0.02, bv1, z1 - 0.015),
+            coll, mats['wood'], bevel=0.012, role='wood')
     box(root, cid + '_seat', (x0 + 0.02, y0 + 0.02, 0.40), (x1 - 0.02, y1 - 0.02, 0.47),
         coll, mats['white'], bevel=0.02, role='seat_oat')
-    box(root, cid + '_back', (x0 + 0.02, by0, 0.47), (x1 - 0.02, by1, z1 - 0.015),
-        coll, mats['wood'], bevel=0.025, role='wood')
     # R2 #14：收分腿（上粗下细两段）
     for i, (lx, ly) in enumerate(((x0 + 0.035, y0 + 0.035), (x1 - 0.035, y0 + 0.035),
                                   (x0 + 0.035, y1 - 0.035), (x1 - 0.035, y1 - 0.035))):
@@ -326,16 +349,29 @@ def build_dining_chair(item, mats, coll):
             (lx + 0.018, ly + 0.018, 0.40), coll, mats['wood'], role='wood')
         box(root, '%s_legt%d' % (cid, i), (lx - 0.012, ly - 0.012, 0.0),
             (lx + 0.012, ly + 0.012, 0.20), coll, mats['wood'], role='wood')
-    # 弧形扶手（两侧两段折线，前端下俯模拟弧线）
-    for j, ax in ((0, x0 + 0.05), (1, x1 - 0.05)):
-        box(root, '%s_arm%d' % (cid, j), (ax - 0.018, y0 + 0.06, 0.62),
-            (ax + 0.018, y1 - 0.06, 0.66), coll, mats['wood'], bevel=0.01,
-            role='wood')
-        ay = y1 - 0.06 if back_south else y0 + 0.06
-        ay2 = (ay - 0.25) if back_south else (ay + 0.25)
-        box(root, '%s_armf%d' % (cid, j), (ax - 0.016, min(ay, ay2), 0.575),
-            (ax + 0.016, max(ay, ay2), 0.625), coll, mats['wood'], bevel=0.012,
-            role='wood')
+    # 扶手：两根侧轨平行于朝桌方向 + 前端下俯支撑
+    if back_x:
+        for j, ay in ((0, y0 + 0.05), (1, y1 - 0.05)):
+            box(root, '%s_arm%d' % (cid, j), (x0 + 0.06, ay - 0.018, 0.62),
+                (x1 - 0.06, ay + 0.018, 0.66), coll, mats['wood'], bevel=0.01,
+                role='wood')
+            axf = (x0 + 0.31) if dx > 0 else (x1 - 0.31)
+            ax2 = axf - (0.25 if dx > 0 else -0.25)   # 向桌侧收（不出 bbox）
+            box(root, '%s_armf%d' % (cid, j),
+                (min(axf, ax2), ay - 0.016, 0.575),
+                (max(axf, ax2), ay + 0.016, 0.625),
+                coll, mats['wood'], bevel=0.012, role='wood')
+    else:
+        for j, ax in ((0, x0 + 0.05), (1, x1 - 0.05)):
+            box(root, '%s_arm%d' % (cid, j), (ax - 0.018, y0 + 0.06, 0.62),
+                (ax + 0.018, y1 - 0.06, 0.66), coll, mats['wood'], bevel=0.01,
+                role='wood')
+            ayf = (y0 + 0.31) if dy > 0 else (y1 - 0.31)
+            ay2 = ayf - (0.25 if dy > 0 else -0.25)   # 向桌侧收（不出 bbox）
+            box(root, '%s_armf%d' % (cid, j), (ax - 0.016,
+                min(ayf, ay2), 0.575),
+                (ax + 0.016, max(ayf, ay2), 0.625),
+                coll, mats['wood'], bevel=0.012, role='wood')
 
 
 def build_chair(item, mats, coll):
@@ -533,14 +569,16 @@ def build_floor_lamp(item, mats, coll):
     cyl(root, cid + '_base', c, 0.15, z0, z0 + 0.02, coll, mats['dark'],
         role='metal_black')
     # 弧形细杆：Bezier 三段（立直 -> 弯弧 -> 水平悬伸），bevel 成 Ø24mm 杆
+    # FINAL1 F1：add(2) 只得 3 点而 pts 有 4 个，zip 截断末点 -> 弧臂止于 x+0.16、
+    # 灯罩悬空在 x+0.46。改为 add(len(pts)-1)，弧臂接到灯罩正上方。
     cu = bpy.data.curves.new(cid + '_arc', 'CURVE')
     cu.dimensions = '3D'
     sp = cu.splines.new('BEZIER')
-    sp.bezier_points.add(2)
     pts = [(c[0], c[1], z0),
            (c[0], c[1], z0 + h * 0.60),
            (c[0] + 0.16, c[1], z0 + h * 0.92),
            (c[0] + 0.46, c[1], z0 + h * 0.97)]
+    sp.bezier_points.add(len(pts) - 1)
     for bp, p in zip(sp.bezier_points, pts):
         bp.co = p
         bp.handle_left_type = bp.handle_right_type = 'AUTO'
@@ -799,7 +837,11 @@ def build_nightstand(item, mats, coll):
 
 
 def build_dressing_table(item, mats, coll):
-    """主卧一体梳妆台：胡桃木台面 + 侧板 + 奶白小吊柜(parts) + 镜子。"""
+    """主卧一体梳妆台：胡桃木台面 + 侧板 + 奶白小吊柜(parts) + 镜子。
+    FINAL1 F4：旧版 side0/side1 立在 x 两端（贴墙面 + 朝房正面），把台面下正面
+    封死（13 号看不到容膝空腔）；中横板 _shelf 也挡膝。现侧板移到 y 两端，
+    删中横板，台面下挂 0.08m 薄抽屉（容膝净高 ≥0.62 硬门槛优先于工单 0.12，
+    偏差记 qa_final1）。本轮不改材质（D1 处理）。"""
     cid = item['id']
     bmin, bmax = item['bbox']['min'], item['bbox']['max']
     root = R(item, mats, coll)
@@ -807,12 +849,16 @@ def build_dressing_table(item, mats, coll):
     x1, y1 = bmax[0], bmax[1]
     box(root, cid + '_top', (x0, y0, 0.70), (x1, y1, 0.75), coll, mats['wood'],
         bevel=0.01, role='wood')
-    box(root, cid + '_side0', (x0, y0 + 0.02, 0.0), (x0 + 0.04, y1 - 0.02, 0.70),
+    box(root, cid + '_side0', (x0, y0, 0.0), (x1, y0 + 0.04, 0.70),
         coll, mats['wood'], role='wood')
-    box(root, cid + '_side1', (x1 - 0.04, y0 + 0.02, 0.0), (x1, y1 - 0.02, 0.70),
+    box(root, cid + '_side1', (x0, y1 - 0.04, 0.0), (x1, y1, 0.70),
         coll, mats['wood'], role='wood')
-    box(root, cid + '_shelf', (x0 + 0.04, y0 + 0.04, 0.22), (x1 - 0.04, y1 - 0.04, 0.26),
+    # 薄抽屉：体 + 东侧前脸 + 120mm 短拉手（容膝空腔 y 0.92 / z 0.62）
+    box(root, cid + '_drw', (x0 + 0.03, y0 + 0.05, 0.62), (x1 - 0.025, y1 - 0.05, 0.70),
         coll, mats['wood'], role='wood')
+    B.add_fronts(root, cid + 'drw', coll, mats['wood'], 'x', x1 - 0.005, -1,
+                 y0 + 0.05, y1 - 0.05, 0.625, 0.695, 'drw', max_w=0.5,
+                 pulls=True, pull_len=0.12, pull_mat=mats['dark'], role='wood')
     for p in item.get('parts', []):
         pb = p['bbox']
         # R2FIX M1-0：吊柜体前脸缩到门板内皮（原 body 前皮盖门板 5mm）
@@ -929,10 +975,13 @@ def _fx_curtains(mats, colls):
         pleated_panel('fx_curt_living_bo_e_%s' % grp, 8.3, 9.1, -11.36, 0.55, 2.45,
                       0.05, 0.14, cc, blackout, role='curtain_blackout')
     # 主卧落地门窗（W17 x9.6..12.4）：纱帘全幅 + 遮光帘两侧
-    pleated_panel('fx_curt_master_sheer', 9.6, 12.4, -10.30, 0.02, 2.28, 0.035, 0.16, c, sheer)
-    pleated_panel('fx_curt_master_bo_w', 9.6, 10.3, -10.22, 0.02, 2.28, 0.05, 0.14,
+    # FINAL1 F7：帘顶 2.28 -> 2.38 —— 原帘顶低于玻璃门顶（玻璃芯顶 2.355），
+    # 露出 7.5cm 未遮挡玻璃带，太阳（玻璃关阴影）从带内直穿，在床头东墙投出
+    # 斜光带（diag_f7 探针 GLASS 光路链证实）；帘装门头(2.40)下沿为真实做法。
+    pleated_panel('fx_curt_master_sheer', 9.6, 12.4, -10.30, 0.02, 2.38, 0.035, 0.16, c, sheer)
+    pleated_panel('fx_curt_master_bo_w', 9.6, 10.3, -10.22, 0.02, 2.38, 0.05, 0.14,
                   c, blackout, role='curtain_blackout')
-    pleated_panel('fx_curt_master_bo_e', 11.7, 12.4, -10.22, 0.02, 2.28, 0.05, 0.14,
+    pleated_panel('fx_curt_master_bo_e', 11.7, 12.4, -10.22, 0.02, 2.38, 0.05, 0.14,
                   c, blackout, role='curtain_blackout')
     # 父母房飘窗（W23 x0.55..2.95）：纱帘 + 卷帘箱
     # R2 #20：帘改窗洞内挂——x 收进两端矮书格之间（0.85..2.65），底边离坐榻面 2cm（0.47），
@@ -952,10 +1001,15 @@ def _fx_curtains(mats, colls):
                   c, blackout, role='curtain_blackout')
     pleated_panel('fx_curt_son_bo_e', 12.4, 12.95, -0.24, 0.92, 2.26, 0.05, 0.13,
                   c, blackout, role='curtain_blackout')
-    # 主卫窗（W10 y-4.9..-3.8）：防水百叶帘放下 1/3（只留叶片，叶片间透光）
-    for i in range(9):
-        box(None, 'fx_blind_mb_slats%d' % i, (13.574, -4.9, 0.8 + i * 0.12),
-            (13.586, -3.8, 0.87 + i * 0.12), c, mats['white'], role='blind')
+    # 主卫窗（W10 y-4.9..-3.8，sill 1.2 / head 2.2）：防水百叶帘放下 1/3。
+    # FINAL1 F6：旧版 9 片 z=0.8+i*0.12 覆 0.80-1.95，叶片压到窗台以下、占窗下 2/3。
+    # 现叶片只占窗洞上 1/3（约 1.87-2.16，6 片、片高 0.04、节距 0.05），y 收进
+    # 窗洞内 2cm，顶部 4cm 帘头盒；x 保持在 W10 reveal 内。
+    box(None, 'fx_blind_mb_head', (13.574, -4.88, 2.16), (13.586, -3.82, 2.20),
+        c, mats['white'], role='blind')
+    for i in range(6):
+        box(None, 'fx_blind_mb_slats%d' % i, (13.574, -4.88, 1.87 + i * 0.05),
+            (13.586, -3.82, 1.91 + i * 0.05), c, mats['white'], role='blind')
 
 
 def _fx_lights(mats, coll, ceil_coll=None):
@@ -995,13 +1049,26 @@ def _fx_lights(mats, coll, ceil_coll=None):
             1.32, 1.50, c, mats['glass'], role='opal_glass')
 
 
+def _shelf_tops(niche_id):
+    """FINAL1 F9：读开放格层板顶面 z（builtins.build_open_niche 写入 root 的
+    自定义属性）。缺属性即 raise——摆件坐标禁止再硬编码。"""
+    r = bpy.data.objects.get(niche_id)
+    ts = r.get('shelf_top_zs') if r is not None else None
+    if not ts:
+        raise RuntimeError('[furniture] shelf_top_zs missing on %s' % niche_id)
+    return [float(z) for z in ts]
+
+
 def _fx_props(mats, colls):
-    """摆件（REWORK #2：B 整墙柜开放格摆件挂 SCHEME_B；#18 香草盆归位台面）。"""
+    """摆件（REWORK #2：B 整墙柜开放格摆件挂 SCHEME_B；#18 香草盆归位台面）。
+    FINAL1 F9：开放格摆件底面 z 一律由 _shelf_tops 从层板顶面计算，
+    不再硬编码（旧版 B 格 1.06/0.94/1.10 vs 实际层板顶 0.98/1.33，悬空+穿插）。"""
     c = colls['common']
-    # 玄关端景格：乳白陶罐 + 小画（art_abstract）
-    sph(None, 'fx_foyer_jar', (2.55, -6.48, 1.06), 0.09, c, mats['white'],
+    # 玄关端景格：乳白陶罐 + 小画（art_abstract）——底面落在层板顶 0.98
+    ftop = _shelf_tops('common_foyer_open_niche_01')[0]
+    sph(None, 'fx_foyer_jar', (2.55, -6.48, ftop + 0.09), 0.09, c, mats['white'],
         role='vase_white')
-    box(None, 'fx_foyer_pic', (2.95, -6.56, 1.0), (3.15, -6.52, 1.22), c,
+    box(None, 'fx_foyer_pic', (2.95, -6.56, ftop), (3.15, -6.52, ftop + 0.22), c,
         mats['wood'], role='art_abstract')
     # 厨房台面：砧板 + 油壶 + 香草盆（规格 5.4；REWORK #18 归位到北台面）
     box(None, 'fx_kn_board', (5.0, -1.62, 0.9), (5.6, -1.42, 0.918), c,
@@ -1077,9 +1144,13 @@ def _fx_props(mats, colls):
         verts=20, role='ceramic_brick')
     # B 整墙柜开放格：书 + 孩子作品（REWORK #2 → SCHEME_B）
     cb = colls['scheme_b']
-    # R2FIX m1：B 开放格摆件重做——彩色方块换成可辨识物件：
+    # R2FIX m1 + FINAL1 F9：B 开放格摆件重做——彩色方块换成可辨识物件：
     # 书组（3-6 本/组、高矮不一、低饱和书脊、部分平放叠置）/ 陶罐 / 唱片+支架，
     # 每格 1-3 组留白。书脊色即四种点缀/软装低饱和色（role 复用）。
+    # z 全部由层板顶面推导：下层 z0=tops[0]（净空到上层板底），
+    # 上层 tops[1] 净空仅 ~0.15m，只放平放唱片/小罐。
+    bt = _shelf_tops('B_living_dining_balcony_open_niche_01')   # [0.98, 1.33]
+    z0 = bt[0]
     spine_roles = ('fabric_oat', 'leather_caramel', 'fabric_olive', 'pillow_brick')
     shelf_y = (-9.9, -9.3, -8.7, -8.1, -7.5, -6.9, -6.3, -5.8)
     for i, y in enumerate(shelf_y):
@@ -1090,33 +1161,43 @@ def _fx_props(mats, colls):
             for k in range(nb):
                 bh = 0.20 + 0.02 * ((i + k) % 3)
                 yy = y - 0.12 + k * th
-                box(None, 'fx_Bs%d_b%d' % (i, k), (8.99, yy, 1.06),
-                    (9.15, yy + th, 1.06 + bh), cb, mats['white'],
+                box(None, 'fx_Bs%d_b%d' % (i, k), (8.99, yy, z0),
+                    (9.15, yy + th, z0 + bh), cb, mats['white'],
                     role=spine_roles[(i + k) % 4])
             for k in range(2):              # 平放叠置
-                box(None, 'fx_Bs%d_f%d' % (i, k), (8.99, y - 0.10 + k * 0.012, 1.06 + 0.22 + k * 0.032),
-                    (9.15, y + 0.12 - k * 0.02, 1.06 + 0.22 + (k + 1) * 0.032), cb,
+                box(None, 'fx_Bs%d_f%d' % (i, k),
+                    (8.99, y - 0.10 + k * 0.012, z0 + 0.24 + k * 0.032),
+                    (9.15, y + 0.12 - k * 0.02, z0 + 0.24 + (k + 1) * 0.032), cb,
                     mats['white'], role=spine_roles[(i + k + 1) % 4])
         elif kind == 1:                     # 陶罐（旋转体：罐身+颈+沿口）
             pot = 'ceramic_brick' if i % 2 else 'vase_white'
-            cyl(None, 'fx_Bs%d_pot' % i, (9.075, y), 0.085, 0.94, 1.10, cb,
+            cyl(None, 'fx_Bs%d_pot' % i, (9.075, y), 0.085, z0, z0 + 0.16, cb,
                 mats['white'], verts=20, role=pot)
-            cyl(None, 'fx_Bs%d_neck' % i, (9.075, y), 0.045, 1.10, 1.20, cb,
+            cyl(None, 'fx_Bs%d_neck' % i, (9.075, y), 0.045, z0 + 0.16, z0 + 0.26, cb,
                 mats['white'], verts=20, role=pot)
-            cyl(None, 'fx_Bs%d_lip' % i, (9.075, y), 0.062, 1.20, 1.225, cb,
+            cyl(None, 'fx_Bs%d_lip' % i, (9.075, y), 0.062, z0 + 0.26, z0 + 0.285, cb,
                 mats['white'], verts=20, role=pot)
         else:                               # 唱片：立放圆盘 x3 + 小支架
+            box(None, 'fx_Bs%d_recstand' % i, (8.99, y - 0.10, z0),
+                (9.15, y + 0.10, z0 + 0.025), cb, mats['wood'], role='wood')
             for k in range(3):
+                zc = z0 + 0.025 + 0.102
                 d = cyl(None, 'fx_Bs%d_rec%d' % (i, k), (9.075, y - 0.05 + k * 0.05),
-                        0.10, 1.10, 1.106, cb, mats['dark'], verts=24,
+                        0.10, zc - 0.003, zc + 0.003, cb, mats['dark'], verts=24,
                         role='metal_black')
                 d.rotation_euler = (0.0, math.radians(90), 0.0)
-            box(None, 'fx_Bs%d_recstand' % i, (8.99, y - 0.10, 1.06),
-                (9.15, y + 0.10, 1.085), cb, mats['wood'], role='wood')
-    # 主卧书桌上方开放格：书 + 小件
+    # 上层（tops[1] 净空 ~0.15m）：平放唱片 + 乳白小罐，3 处留白式点缀
+    for j, y in enumerate((-9.3, -7.5, -6.3)):
+        d = cyl(None, 'fx_Bu_rec%d' % j, (9.075, y), 0.10, bt[1], bt[1] + 0.012, cb,
+                mats['dark'], verts=24, role='metal_black')
+        sph(None, 'fx_Bu_jar%d' % j, (9.075, y + 0.14, bt[1] + 0.05), 0.05, cb,
+            mats['white'], role='vase_white')
+    # 主卧书桌上方开放格：书 + 小件（落层板顶）
+    mt = _shelf_tops('common_master_bedroom_open_niche_01')   # [1.38, 1.73, 2.08]
     for i, y in enumerate((-6.3, -5.8)):
-        box(None, 'fx_desk_book%d' % i, (12.46, y - 0.1, 1.5), (12.66, y + 0.1, 1.74),
-            c, mats['white' if i % 2 else 'wood'], role='book')
+        box(None, 'fx_desk_book%d' % i, (12.46, y - 0.1, mt[i]),
+            (12.66, y + 0.1, mt[i] + 0.24), c, mats['white' if i % 2 else 'wood'],
+            role='book')
     # 琴叶榕（规格 5.1；REWORK #13 弯曲叶）
     cyl(None, 'fx_fiddle_pot', (3.75, -11.15), 0.19, 0.0, 0.38, c, mats['wood'],
         role='plant_pot_brick')

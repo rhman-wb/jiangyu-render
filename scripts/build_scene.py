@@ -104,6 +104,27 @@ def _tag_variant_groups():
     return n_k, n_s
 
 
+def _tag_ceiling_mounted():
+    """FINAL1 F8：顶装件打标 ceiling_mounted=True——render.py 的 hide_ceilings
+    机位（鸟瞰 01/02）按属性统一隐藏，替代只藏 CEILINGS 集合的旧逻辑
+    （吊灯在方案集合、灯带盒在 COMMON，旧版全部漏藏成"悬空灯具"）。
+    范围 = role led_strip（cove+tv+bn 灯带盒）+ 根名含 pendant_lamp（吊杆/球）
+    + fx_ceiling_/fx_spot_ 前缀（已在 CEILINGS 集合，打标幂等无害）。"""
+    n = 0
+    for o in bpy.data.objects:
+        if o.type not in ('MESH', 'CURVE'):
+            continue
+        root = o
+        while root.parent is not None:
+            root = root.parent
+        if (o.get('role') == 'led_strip' or 'pendant_lamp' in root.name
+                or o.name.startswith(('fx_ceiling_', 'fx_spot_'))):
+            o['ceiling_mounted'] = True
+            n += 1
+    print('[build] ceiling_mounted tagged: %d' % n)
+    return n
+
+
 def main():
     util.clear_scene()
     scene = bpy.context.scene
@@ -141,6 +162,7 @@ def main():
     if scene.node_tree is not None:
         scene.node_tree.nodes.clear()
     _tag_variant_groups()                        # F1/F2：变体对象打标（先于保存）
+    _tag_ceiling_mounted()                       # FINAL1 F8：顶装件打标
 
     # MCP Poly Haven 开关是场景级属性（decisions_log D-004）
     try:

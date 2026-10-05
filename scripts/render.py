@@ -38,7 +38,7 @@ def parse_args():
     argv = sys.argv[sys.argv.index('--') + 1:] if '--' in sys.argv else []
     opts = {'white': '--white' in argv, 'cams': [], 'scheme': 'A',
             'preset': None, 'variant': None, 'wood': None, 'out': None,
-            'samples': None}
+            'samples': None, 'f1v': None}
     if '--cams' in argv:
         opts['cams'] = [c.strip() for c in argv[argv.index('--cams') + 1].split(',') if c.strip()]
     if '--scheme' in argv:
@@ -51,6 +51,8 @@ def parse_args():
         opts['wood'] = argv[argv.index('--wood') + 1].upper()
     if '--out' in argv:
         opts['out'] = argv[argv.index('--out') + 1]
+    if '--f1v' in argv:   # FINAL1：C1-C3 临时变体（final1_variants.apply/revert）
+        opts['f1v'] = argv[argv.index('--f1v') + 1]
     if '--samples' in argv:   # REWORK_R1FIX2 F3：CAL=256 / C1=128（降噪抹木纹的补救）
         opts['samples'] = int(argv[argv.index('--samples') + 1])
     return opts
@@ -262,28 +264,55 @@ def main():
         # 变体：CLI 显式优先，否则用机位自带（10 橄榄绿 / 16b 雾霾蓝）
         variant = opts['variant'] or cam.get('variant')
         nv = 0
-        if variant:
-            # REWORK_R1FIX F1/F2：关 Persistent Data 防材质缓存；0 objs 直接 raise
-            scene.cycles.use_persistent_data = False
-            nv = set_variant(variant, True)
-            if nv == 0:
-                raise RuntimeError('[render] variant %s matched 0 objects on cam %s'
-                                   % (variant, cam_prefix))
         base = opts['out'] if opts['out'] else ('%s%s' % (prefix_out, cid))
         out = os.path.join(outdir, '%s.png' % base)
         scene.render.filepath = out
+        # FINAL1 F8：鸟瞰机位按属性隐藏顶装件（吊灯/灯带/吸顶/筒灯/出风口）
+        hid = []
+        if bool(cam.get('hide_ceilings', False)):
+            for o in bpy.data.objects:
+                if o.get('ceiling_mounted') and not o.hide_render:
+                    o.hide_render = True
+                    hid.append(o)
+        f1_state = None
         t0 = time.perf_counter()
-        bpy.ops.render.render(write_still=True)
-        print('[render] saved %s (%.1fs, exp=%.2f%s)' %
+        try:
+            if opts['f1v']:
+                # FINAL1：C1-C3 临时变体（附录A 重映射 + 选项），revert 恢复
+                import final1_variants
+                scene.cycles.use_persistent_data = False
+                f1_state = final1_variants.apply(opts['f1v'])
+            if variant:
+                # REWORK_R1FIX F1/F2：关 Persistent Data 防材质缓存；0 objs 直接 raise
+                scene.cycles.use_persistent_data = False
+                nv = set_variant(variant, True)
+                if nv == 0:
+                    raise RuntimeError('[render] variant %s matched 0 objects on cam %s'
+                                       % (variant, cam_prefix))
+            bpy.ops.render.render(write_still=True)
+        finally:
+            # FINAL1：恢复全部临时改动（render/assert 抛异常也不许泄漏进下一张）
+            if variant:
+                set_variant(variant, False)
+            if f1_state is not None:
+                import final1_variants
+                final1_variants.revert(f1_state)
+            if variant or f1_state is not None:
+                scene.cycles.use_persistent_data = True
+            for o in hid:
+                o.hide_render = False
+        print('[render] saved %s (%.1fs, exp=%.2f%s%s)' %
               (out, time.perf_counter() - t0, cam.get('exposure', 0.0),
-               (' variant=%s(%d objs)' % (variant, nv)) if variant else ''))
-        if variant:
-            set_variant(variant, False)
-            scene.cycles.use_persistent_data = True
+               (' variant=%s(%d objs)' % (variant, nv)) if variant else '',
+               (' f1v=%s' % opts['f1v']) if opts['f1v'] else ''))
         if res is not None:
             assert_output_size(out, res)
     if ceil_coll is not None:
         ceil_coll.hide_render = False
+    # FINAL1 F8 兜底：任何路径下确保顶装件恢复可见
+    for o in bpy.data.objects:
+        if o.get('ceiling_mounted') and o.hide_render:
+            o.hide_render = False
     aerial_base = bpy.data.objects.get('out_aerial_base')
     ground = bpy.data.objects.get('out_ground')
     if aerial_base is not None:
