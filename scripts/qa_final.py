@@ -14,7 +14,7 @@ FINALS = ['01_aerial_A', '02_aerial_B', '03_living_A_from_foyer',
           '10_kitchen_olive', '11_foyer', '12_master_bed_screen',
           '13_master_wardrobe_vanity', '14_parents_room', '15_daughter_room',
           '16_son_room', '17_public_bath_dry', '18_public_bath_wet',
-          '19_master_bath', '20_terrace']
+          '19_master_bath', '20_terrace', '11b_foyer_cabinet']   # FINAL1 D7 新增（交付 21 张透视）
 PANOS = ['P1_living_A_pano', 'P2_living_B_pano', 'P3_master_pano']
 
 
@@ -47,7 +47,7 @@ def main():
         if r != (1920, 1080, 8, 2):
             bad.append('%s(%s)' % (cid, '缺失' if r is None else
                                    '%dx%d d%d c%d' % r))
-    log(not bad, 'final 20 张全部存在且为 1920x1080 / 8bit RGB %s' %
+    log(not bad, 'final 21 张（含 11b）全部存在且为 1920x1080 / 8bit RGB %s' %
         ('' if not bad else '异常：' + '；'.join(bad[:4])))
 
     bad = []

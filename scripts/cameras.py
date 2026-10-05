@@ -16,9 +16,10 @@ CAM_OVERRIDES = {
     # --- REWORK #9 遮挡修正 ---
     '03_living_A_from_foyer': {'location': (3.95, -6.35, 1.35), 'exposure': 1.80},
     '06_living_B_from_foyer': {'location': (3.95, -6.35, 1.35), 'exposure': 1.80},
-    '11_foyer': {'location': (2.65, -6.02, 1.5), 'look_at': (2.60, -4.85, 1.05), 'lens': 18,
+    '11_foyer': {'location': (3.32, -6.10, 1.5), 'look_at': (2.45, -5.05, 1.05), 'lens': 16,   # FINAL1 成品抽查返工：东南角对角看（门+鞋柜+凳同框）
                  'exposure': 2.25},   # FINAL1 D7：回看入户门；D3 曝光反推 147->210
-    '11b_foyer_cabinet': {'exposure': 2.25},   # FINAL1 D7 新增：端景柜+鞋柜+镜面门
+    '11b_foyer_cabinet': {'location': (3.30, -4.92, 1.5), 'look_at': (2.30, -6.05, 1.05), 'lens': 18,
+                          'exposure': 2.25},   # 端景柜+镜面门+鞋柜+长凳   # FINAL1 D7 新增：端景柜+鞋柜+镜面门
     '16_son_room': {'location': (11.3, -2.6, 1.45), 'exposure': 1.95},
     '16b_son_room_blue': {'location': (11.3, -2.6, 1.45), 'exposure': 1.95},
     '18_public_bath_wet': {'location': (9.90, -2.20, 1.35),   # FINAL1 D11：正常视高（取代 D-056）
